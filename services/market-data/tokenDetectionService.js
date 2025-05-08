@@ -36,10 +36,8 @@ import { config } from '../../config/config.js';
 const CONFIG = {
     // How often to check for new tokens (in seconds)
     CHECK_INTERVAL_SECONDS: 30,
-    // Cleanup old token sets daily to save Redis memory
-    CLEANUP_INTERVAL_HOURS: 24,
-    // How long to keep old token sets for historical analysis (in days)
-    KEEP_OLD_SETS_DAYS: 1,
+    // Cleanup old token sets more frequently to save Redis memory
+    CLEANUP_INTERVAL_MINUTES: 5,
     // Maximum number of tokens to process in a batch
     BATCH_SIZE: 50,
     // Delay between processing batches (in milliseconds)
@@ -153,16 +151,16 @@ class TokenDetectionService extends BaseService {
         
         this.cleanupInterval = setInterval(async () => {
             try {
-                const removed = await tokenListDeltaTracker.cleanupOldSets(CONFIG.KEEP_OLD_SETS_DAYS);
+                const removed = await tokenListDeltaTracker.cleanupOldSets(true);
                 if (removed > 0) {
                     logApi.info(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} Cleanup removed ${removed} old token sets`);
                 }
             } catch (error) {
                 logApi.error(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.RED}Error in cleanup interval:${fancyColors.RESET}`, error);
             }
-        }, CONFIG.CLEANUP_INTERVAL_HOURS * 60 * 60 * 1000);
+        }, CONFIG.CLEANUP_INTERVAL_MINUTES * 60 * 1000);
         
-        logApi.info(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} Started cleanup interval (every ${CONFIG.CLEANUP_INTERVAL_HOURS} hours)`);
+        logApi.info(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} Started cleanup interval (every ${CONFIG.CLEANUP_INTERVAL_MINUTES} minutes)`);
     }
     
     /**

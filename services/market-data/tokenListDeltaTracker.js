@@ -63,7 +63,9 @@ class TokenListDeltaTracker {
   constructor() {
     this.KEY_PREFIX = 'jupiter_tokens';
     this.LATEST_KEY = `${this.KEY_PREFIX}_latest`;
-    this.EXPIRY_DAYS = 0.003; // Keep sets for ~5 minutes only
+    this.PREVIOUS_KEY = `${this.KEY_PREFIX}_previous`;
+    this.EXPIRY_SECONDS = 60; // Keep sets for just 1 minute
+    this.MAX_STORED_SETS = 2; // Only keep the latest and previous sets
   }
 
   /**
@@ -88,6 +90,12 @@ class TokenListDeltaTracker {
       const timestamp = Date.now();
       const currentKey = `${this.KEY_PREFIX}_${timestamp}`;
       
+      // Get the previous latest key before we do anything else
+      const previousLatest = await client.get(this.LATEST_KEY);
+      
+      // First, clean up any old keys to avoid accumulating data
+      await this.cleanupOldSets(true); // force cleanup
+      
       // Store the new set
       const pipeline = client.pipeline();
       
@@ -98,10 +106,8 @@ class TokenListDeltaTracker {
         pipeline.sadd(currentKey, ...batch);
       }
       
-      pipeline.expire(currentKey, 300); // Expire after 5 minutes (hard-coded for safety)
-      
-      // Get the previous latest key
-      pipeline.get(this.LATEST_KEY);
+      // Set a shorter expiry - 60 seconds instead of 5 minutes
+      pipeline.expire(currentKey, this.EXPIRY_SECONDS);
       
       // Execute pipeline and get results
       const results = await pipeline.exec();
@@ -111,14 +117,16 @@ class TokenListDeltaTracker {
         throw new Error('Redis pipeline execution failed');
       }
       
-      // Get previous key from results
-      const previousKey = results[2][1]; // [command index][1 for value, 0 for error]
+      // Update keys - save previous key before updating latest
+      if (previousLatest) {
+        await client.set(this.PREVIOUS_KEY, previousLatest, 'EX', this.EXPIRY_SECONDS);
+      }
       
-      // Set the current key as the latest
-      await client.set(this.LATEST_KEY, currentKey);
+      // Set the current key as the latest with expiry
+      await client.set(this.LATEST_KEY, currentKey, 'EX', this.EXPIRY_SECONDS * 2);
       
       // If there's no previous key, everything is new
-      if (!previousKey) {
+      if (!previousLatest) {
         logApi.info(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} ${fancyColors.CYAN}First token list tracked: ${tokenAddresses.length} tokens${fancyColors.RESET}`);
         return {
           added: tokenAddresses,
@@ -129,10 +137,10 @@ class TokenListDeltaTracker {
       }
       
       // Find new tokens (in current but not previous)
-      const newTokens = await client.sdiff(currentKey, previousKey);
+      const newTokens = await client.sdiff(currentKey, previousLatest);
       
       // Find removed tokens (in previous but not current)
-      const removedTokens = await client.sdiff(previousKey, currentKey);
+      const removedTokens = await client.sdiff(previousLatest, currentKey);
       
       // Calculate unchanged count
       const unchanged = tokenAddresses.length - newTokens.length;
@@ -178,35 +186,34 @@ class TokenListDeltaTracker {
   
   /**
    * Clean up old token sets to save memory
-   * @param {number} keepDays - Number of days to keep token sets
+   * @param {boolean} [force=false] - Force cleanup regardless of timestamps
    * @returns {Promise<number>} - Number of keys removed
    */
-  async cleanupOldSets(keepDays = 0.003) { // Default to 5 minutes
+  async cleanupOldSets(force = false) {
     try {
       const client = redisManager.client;
-      const keys = await client.keys(`${this.KEY_PREFIX}_*`);
-      const latestKey = await client.get(this.LATEST_KEY);
       
-      const cutoffTime = Date.now() - (keepDays * 24 * 60 * 60 * 1000);
+      // Get all token set keys
+      const keys = await client.keys(`${this.KEY_PREFIX}_*`);
+      
+      // Get latest and previous key references
+      const latestKey = await client.get(this.LATEST_KEY);
+      const previousKey = await client.get(this.PREVIOUS_KEY);
+      
       let removedCount = 0;
       
+      // Skip the reference pointers themselves
+      const keysToKeep = [this.LATEST_KEY, this.PREVIOUS_KEY, latestKey, previousKey].filter(Boolean);
+      
       for (const key of keys) {
-        // Skip the latest key indicator
-        if (key === this.LATEST_KEY) continue;
+        // Skip if this is a key we want to keep
+        if (keysToKeep.includes(key)) continue;
         
-        // Don't delete the latest set
-        if (key === latestKey) continue;
+        // Delete all other keys for aggressive cleanup
+        await client.del(key);
+        removedCount++;
         
-        // Parse timestamp from key
-        const keyParts = key.split('_');
-        const keyTimestamp = parseInt(keyParts[keyParts.length - 1], 10);
-        
-        // If older than cutoff, delete it
-        if (keyTimestamp < cutoffTime) {
-          await client.del(key);
-          removedCount++;
-          logApi.debug(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} Cleaned up old token set: ${key}`);
-        }
+        logApi.debug(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} Cleaned up token set: ${key}`);
       }
       
       if (removedCount > 0) {

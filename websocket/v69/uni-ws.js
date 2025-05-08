@@ -217,7 +217,7 @@ class UnifiedWebSocketServer {
   initializeTopicHandlers() {
     // Market Data handler
     this.registerEventHandler(
-      'market:broadcast', 
+      SERVICE_EVENTS.MARKET_DATA_BROADCAST, // Assuming this is the correct event name from serviceEvents
       (data) => this.broadcastToTopic(TOPICS.MARKET_DATA, {
         type: MESSAGE_TYPES.DATA,
         topic: TOPICS.MARKET_DATA,
@@ -228,7 +228,7 @@ class UnifiedWebSocketServer {
     
     // Terminal Data handler
     this.registerEventHandler(
-      'terminal:broadcast', 
+      SERVICE_EVENTS.TERMINAL_BROADCAST, // Assuming this is the correct event name from serviceEvents
       (data) => this.broadcastToTopic(TOPICS.TERMINAL, {
         type: MESSAGE_TYPES.DATA,
         topic: TOPICS.TERMINAL,
@@ -237,6 +237,15 @@ class UnifiedWebSocketServer {
         data: data,
         timestamp: new Date().toISOString()
       })
+    );
+
+    // Launch Event - Address Revealed handler
+    this.registerEventHandler(
+      SERVICE_EVENTS.LAUNCH_EVENT_ADDRESS_REVEALED,
+      (payload) => {
+        logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} Broadcasting ADDRESS_REVEALED to LAUNCH_EVENTS topic.`);
+        this.broadcastToTopic(TOPICS.LAUNCH_EVENTS, payload); // The payload is already structured correctly by the service
+      }
     );
     
     // Add more topic handlers as needed for other event types

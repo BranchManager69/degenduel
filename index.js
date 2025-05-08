@@ -86,7 +86,8 @@ import testRoutes from "./archive/test-routes.js";
 import maintenanceRoutes from "./routes/admin/maintenance.js";
 import countdownRoutes from "./routes/admin/countdown.js";
 import authRoutes from "./routes/auth.js";
-import contestRoutes from "./routes/contests.js";
+// Import the modular contests router directly
+import contestRoutes from "./routes/contests/index.js";
 // dd-serv routes have been permanently removed
 import v3TokensRoutes from "./routes/v3/tokens.js";
 import prismaActivityRoutes from "./routes/prisma/activity.js";
@@ -308,6 +309,7 @@ app.use("/api/v3/tokens", maintenanceCheck, v3TokensRoutes);
 // more protected routes (inaccessible when in maintenance mode)
 app.use("/api/users", maintenanceCheck, userRoutes);
 app.use("/api/devices", maintenanceCheck, deviceRoutes);
+// Contest routes now use modular architecture
 app.use("/api/contests", maintenanceCheck, contestRoutes);
 app.use("/api/trades", maintenanceCheck, tradeRoutes);
 app.use("/api/tokens", maintenanceCheck, tokenRoutes); // v1 tokens

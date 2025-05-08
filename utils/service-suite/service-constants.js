@@ -37,7 +37,7 @@ export const SERVICE_NAMES = {
     // TOKEN_WHITELIST is deprecated - using token.is_active flag instead
     MARKET_DATA: 'market_data_service',
     TOKEN_WHITELIST: 'token_whitelist_service', // Kept for backwards compatibility
-    TOKEN_REFRESH_SCHEDULER: 'token_refresh_scheduler_service', // Advanced token refresh scheduler
+    TOKEN_REFRESH_SCHEDULER: 'token_refresh_scheduler_service',
     TOKEN_DEX_DATA: 'token_dex_data_service', // DEX pool data service
     TOKEN_DETECTION: 'token_detection_service', // New token detection service
     TOKEN_ENRICHMENT: 'token_enrichment_service', // New token enrichment service
@@ -45,7 +45,7 @@ export const SERVICE_NAMES = {
 
     // Contest Layer Services
     CONTEST_EVALUATION: 'contest_evaluation_service',
-    CONTEST_SCHEDULER: 'contest_scheduler_service', // New Contest Scheduler service
+    CONTEST_SCHEDULER: 'ContestSchedulerService',
     ACHIEVEMENT: 'achievement_service',
     REFERRAL: 'referral_service',
     LEVELING: 'leveling_service',
@@ -71,6 +71,7 @@ export const SERVICE_NAMES = {
     NOTIFICATION: 'notification_service', // General notification service
     DISCORD_NOTIFICATION: 'discord_notification_service', // Discord integration service
     DISCORD_INTERACTIVE: 'discord_interactive_service', // Discord interactive service
+    LAUNCH_EVENT: 'LaunchEventService', // Added new service name
 };
 
 export const SERVICE_LAYERS = {
@@ -302,6 +303,15 @@ export const SERVICE_METADATA = {
         updateFrequency: 'event-based',
         criticalLevel: 'low',
         dependencies: []
+    },
+
+    // Launch Event service metadata
+    [SERVICE_NAMES.LAUNCH_EVENT]: { // Added metadata for LaunchEventService
+        layer: SERVICE_LAYERS.INFRASTRUCTURE, // Placing in Infrastructure layer
+        description: 'Monitors countdown and triggers launch events via WebSocket.',
+        updateFrequency: '10s', // Based on default checkIntervalMs
+        criticalLevel: 'high', // Important for the launch event
+        dependencies: [] // No hard dependencies defined yet
     }
 
 };

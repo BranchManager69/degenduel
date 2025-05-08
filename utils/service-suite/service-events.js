@@ -13,12 +13,14 @@ export const SERVICE_EVENTS = {
     SERVICE_STATUS_CHANGE: 'service:status_change',
     
     // Contest events
-    CONTEST_CREATED: 'contest:created',
+    CONTEST_CREATED: 'contest_created',
     CONTEST_STARTED: 'contest:started',
     CONTEST_ENDED: 'contest:ended',
     CONTEST_CANCELLED: 'contest:cancelled',
     CONTEST_ACTIVITY: 'contest:activity',
     CONTEST_COMPLETED: 'contest:completed', // New event for contest completion with winners
+    CONTEST_EVALUATED: 'contest_evaluated',
+    LAUNCH_EVENT_ADDRESS_REVEALED: 'launch_event_address_revealed',
     
     // User events
     USER_ACHIEVEMENT: 'user:achievement',

@@ -61,6 +61,7 @@ import contestSchedulerService from '../../services/contestSchedulerService.js';
 import achievementService from '../../services/achievementService.js';
 import referralService from '../../services/referralService.js';
 import levelingService from '../../services/levelingService.js';
+import launchEventService from '../../services/launchEventService.js';
 
 //   (5)  Wallet Layer
 import contestWalletService from '../../services/contest-wallet/index.js';
@@ -201,7 +202,7 @@ class ServiceInitializer {
             serviceManager.register(marketDataService, [SERVICE_NAMES.SOLANA_ENGINE]);
             
             // Register advanced token refresh scheduler if enabled in config
-            if (config.services.token_refresh_scheduler_service) {
+            if (config.services.token_refresh_scheduler) {
                 // Register the service directly (it's already a proper BaseService)
                 serviceManager.register(tokenRefreshIntegration, [SERVICE_NAMES.MARKET_DATA, SERVICE_NAMES.SOLANA_ENGINE]);
                 logApi.info(`${fancyColors.GREEN}Registered advanced token refresh scheduler${fancyColors.RESET}`);
@@ -296,6 +297,16 @@ class ServiceInitializer {
             serviceManager.register(referralService, [SERVICE_NAMES.CONTEST_EVALUATION]);
         } else {
             logApi.info(`${fancyColors.YELLOW}Skipping registration of referral_service - disabled in config${fancyColors.RESET}`);
+        }
+        
+        // Register Launch Event Service if enabled
+        if (config.services.launch_event) {
+            if (VERBOSE_SERVICE_INIT_LOGS) {
+                logApi.info(`${fancyColors.YELLOW}┃ 🔹 Registering Launch Event Service ${fancyColors.RESET}`);
+            }
+            serviceManager.register(launchEventService, []); // No hard dependencies for now
+        } else {
+            logApi.info(`${fancyColors.YELLOW}Skipping registration of Launch Event Service - disabled in config${fancyColors.RESET}`);
         }
         
         if (VERBOSE_SERVICE_INIT_LOGS) {

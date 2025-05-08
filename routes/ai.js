@@ -1,6 +1,17 @@
 // routes/ai.js
 
 /**
+ * AI Routes
+ * 
+ * @description Handles AI-related endpoints
+ * 
+ * @author BranchManager69
+ * @version 2.0.0
+ * @updated 2025-04-14
+ * @created 2025-05-08
+ */
+
+/**
  * @swagger
  * tags:
  *   name: AI
@@ -13,6 +24,8 @@ import { logApi } from '../utils/logger-suite/logger.js';
 import rateLimit from 'express-rate-limit';
 import prisma from '../config/prisma.js';
 import { requireAuth, requireAdmin, requireSuperAdmin } from '../middleware/auth.js';
+
+// Config
 //import { config } from '../config/config.js';
 
 const router = express.Router();

@@ -441,6 +441,7 @@ model users {
   privileges                user_privileges[] // Added back-relation for user privileges
   owned_managed_wallets     managed_wallets[]           @relation("ManagedWalletOwner") // Added back-relation for managed wallets
   refresh_tokens            refresh_tokens[]
+  biometric_auth_challenges biometric_auth_challenges[] // Added relation for biometric challenges
 
   @@index([wallet_address], map: "idx_users_wallet")
   @@index([username], map: "idx_users_username")
@@ -500,11 +501,11 @@ model ai_decisions {
 }
 
 model auth_challenges {
-  wallet_address String    @id
+  wallet_address String    @id // Remains linked to wallet_address for initial signature challenge
   nonce          String
   expires_at     DateTime  @db.Timestamptz(6)
   created_at     DateTime? @default(now()) @db.Timestamptz(6)
-  credential_id  String? // Added for biometric auth challenges
+  // credential_id field removed
 
   @@index([expires_at], map: "idx_auth_challenges_expires")
   @@map("auth_challenges")
@@ -512,17 +513,34 @@ model auth_challenges {
 
 model biometric_credentials {
   id            Int       @id @default(autoincrement())
-  user_id       String    @db.VarChar(44)
+  user_id       Int       // Changed from String to Int
   credential_id String    @unique
   public_key    String
   device_info   Json?     @default("{}")
   created_at    DateTime  @default(now()) @db.Timestamptz(6)
   last_used     DateTime? @db.Timestamptz(6)
   counter       BigInt    @default(0)
-  user          users     @relation(fields: [user_id], references: [wallet_address], onDelete: Cascade)
+  user          users     @relation(fields: [user_id], references: [id], onDelete: Cascade) // Updated relation
 
   @@index([user_id], map: "idx_biometric_credentials_user")
   @@map("biometric_credentials")
+}
+
+// New table for biometric challenges
+model biometric_auth_challenges {
+  id            String    @id @default(cuid())
+  user_id       Int       // Links to users.id
+  challenge     String    @unique // The WebAuthn challenge string
+  type          String    // 'registration' or 'authentication'
+  credential_id String?   // Potentially store intended credential ID for auth challenges
+  expires_at    DateTime  @db.Timestamptz(6)
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+
+  user          users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([expires_at])
+  @@map("biometric_auth_challenges")
 }
 
 model blockchain_transactions {

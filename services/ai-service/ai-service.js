@@ -1168,4 +1168,5 @@ export const generateDidiResponse = aiService.generateDidiResponse.bind(aiServic
 export const generateAIResponse = aiService.generateAIResponse.bind(aiService);
 export const generateTokenAIResponse = aiService.generateTokenAIResponse.bind(aiService);
 //   Example: Legacy
-export const generateLegacyChatCompletion = aiService.generateChatCompletion.bind(aiService); 
+// Legacy method is now replaced with generateFullResponse
+export const generateLegacyChatCompletion = aiService.generateFullResponse.bind(aiService); 

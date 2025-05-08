@@ -698,12 +698,13 @@ const config = {
       vanity_wallet_service: true, // Vanity Wallet Service
       solana_service: true,
       solana_engine_service: true, // New SolanaEngine service
-      token_refresh_scheduler: true, // Advanced token refresh scheduler
+      token_refresh_scheduler_service: true, // Renamed key to underscore format
       token_dex_data_service: true, // DEX pool data service
       token_detection_service: true, // New token detection service
       token_enrichment_service: true, // New token enrichment service
       discord_notification_service: true, // Discord notification service (webhook notifications)
       discord_interactive_service: true, // Discord interactive service (DegenDuel AI Discord Bot)
+      launch_event: true, // Added new service
       // Additional services would be defined here as we expand this pattern
       // etc.
     },
@@ -712,6 +713,7 @@ const config = {
     development: {
 
       ai_service: false,
+      launch_event: true, // Enabled in dev for testing
 
       // DISABLED IN DEVELOPMENT 
       //   These are NOT NEEDED and CAUSE SERIOUS ISSUES with concurrent prod services (race conditions):
@@ -733,7 +735,7 @@ const config = {
       vanity_wallet_service: false, // Disable vanity wallet service in development
       solana_service: false, // [EDIT: DISABLED 4/24/25] Keep Solana service enabled in development for connection management
       solana_engine_service: false, // [EDIT: DISABLED 4/24/25] Keep SolanaEngine service enabled in development for testing
-      token_refresh_scheduler: false, // Disable advanced token refresh scheduler in development
+      token_refresh_scheduler_service: false, // Renamed key to underscore format, kept disabled in dev
       token_dex_data_service: false, // Disable DEX pool data service in development
       token_detection_service: false, // Disable token detection service in development
       token_enrichment_service: false, // Disable token enrichment service in development
@@ -897,10 +899,10 @@ const config = {
       return profile.vanity_wallet_service;
     },
     
-    get token_refresh_scheduler_service() {
+    get token_refresh_scheduler() { // Renamed getter (removed _service suffix)
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
-      return profile.token_refresh_scheduler;
+      return profile.token_refresh_scheduler_service; // Access profile using the new underscore key
     },
     
     get token_dex_data_service() {
@@ -933,6 +935,12 @@ const config = {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.discord_interactive_service;
+    },
+
+    get launch_event() { // Added getter for the new service
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.launch_event;
     },
   
   },
@@ -979,6 +987,7 @@ const config = {
       SKYDUEL: 'skyduel',
       TERMINAL: 'terminal',
       LOGS: 'logs',
+      LAUNCH_EVENTS: 'launch-events', // Added new topic for launch related events
     },
     
     // Message types for the unified WebSocket
