@@ -42,6 +42,7 @@ export const SERVICE_NAMES = {
     TOKEN_DETECTION: 'token_detection_service', // New token detection service
     TOKEN_ENRICHMENT: 'token_enrichment_service', // New token enrichment service
     JUPITER_CLIENT: 'jupiter_client', // Jupiter API client for market data
+    TOKEN_ACTIVATION: 'token_activation_service', // <-- ADDED NEW SERVICE NAME
 
     // Contest Layer Services
     CONTEST_EVALUATION: 'contest_evaluation_service',
@@ -140,10 +141,10 @@ export const SERVICE_METADATA = {
     },
     [SERVICE_NAMES.JUPITER_CLIENT]: {
         layer: SERVICE_LAYERS.DATA,
-        description: 'Jupiter API client for market data',
-        updateFrequency: '1m',
-        criticalLevel: 'medium',
-        dependencies: [SERVICE_NAMES.SOLANA_ENGINE]
+        description: 'Jupiter API client & Token Address Sync', // Updated description
+        updateFrequency: 'dynamic', // Syncs daily, prices on demand
+        criticalLevel: SERVICE_CRITICALITY.MEDIUM,
+        dependencies: [] // More self-contained now
     },
     [SERVICE_NAMES.TOKEN_WHITELIST]: {
         layer: SERVICE_LAYERS.DATA,
@@ -151,6 +152,13 @@ export const SERVICE_METADATA = {
         updateFrequency: '1h',
         criticalLevel: 'low',
         dependencies: []
+    },
+    [SERVICE_NAMES.TOKEN_ACTIVATION]: { // <-- ADDED METADATA FOR NEW SERVICE
+        layer: SERVICE_LAYERS.DATA,
+        description: 'Manages the active status of tokens based on dynamic criteria.',
+        updateFrequency: '15m', // Default, configurable by its internal interval
+        criticalLevel: SERVICE_CRITICALITY.MEDIUM,
+        dependencies: [SERVICE_NAMES.JUPITER_CLIENT] // Needs Jupiter for metrics
     },
 
     // Contest Layer Services

@@ -1,0 +1,233 @@
+96|degenduel-api  |  DegenDuel Logger Initialized 
+96|degenduel-api  | Console log level: info
+96|degenduel-api  | File log level: info
+96|degenduel-api  | Log files directory: /home/branchmanager/websites/degenduel/logs
+96|degenduel-api  | Log files:
+96|degenduel-api  |   - api-YYYY-MM-DD.log (all logs)
+96|degenduel-api  |   - error-YYYY-MM-DD.log (error logs only)
+96|degenduel-api  |   - debug-YYYY-MM-DD.log (debug logs only)
+96|degenduel-api  | 🚀 PM2 restart monitor initializing...
+96|degenduel-api  | 03:00:36 AM [ERROR]  production  🔹 PM2 Restart #1154 detected for degenduel_server (production) {"alertLevel":"critical","environment":"production","restartCount":1154,"recentRestarts":59,"pm2Id":"0"}
+96|degenduel-api  | 03:00:36 AM [ERROR]  production  🔹 ❗ CRITICAL_ALERT: SERVER_RESTART {"alert_type":"server_restart","alert_level":"critical","environment":"production","initiated_by":"pm2","reason":"Frequent restarts detected (59 restarts in 60 minutes)","is_planned":false,"server_name":"degenduel_server","pm2_id":"0"}
+96|degenduel-api  | 03:00:37 AM [INFO] AUTH_DEBUG_MODE:
+96|degenduel-api  | 03:00:37 AM [INFO] [contestEvaluationService]  🌐 Using SolanaEngine for Solana RPC access
+96|degenduel-api  | 03:00:37 AM [INFO] [LocalVanityGenerator]  Initialized  with solana-keygen grind, 4 threads (reduced), 90% CPU limit (lowered)
+96|degenduel-api  | 03:00:37 AM [INFO] [VanityGeneratorManager]  Initialized  Local vanity wallet generator
+96|degenduel-api  | 03:00:37 AM [INFO] [contestWalletService]  Initializing  Contest Wallet Service
+96|degenduel-api  | 03:00:37 AM [INFO] [contestWalletService] Test batch formatting:  TEST BATCH MESSAGE 
+96|degenduel-api  | 03:00:37 AM [INFO] [VanityWalletService] Calculated timeout for pattern "DUEL" (4 chars): 159 seconds
+96|degenduel-api  | 03:00:37 AM [INFO] [VanityWalletService] Calculated timeout for pattern "DEGEN" (5 chars): 1800 seconds
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 Initializing Privy client 
+96|degenduel-api  |      {"appId":"cm7w4m...","appIdLength":25,"appSecretProvided":true}
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 Privy client initialized successfully 
+96|degenduel-api  | 
+96|degenduel-api  | 03:00:38 AM [INFO] Biometric authentication initialized (using user.id)
+96|degenduel-api  | 03:00:38 AM [INFO] [*NEW*] Auth routes mounted
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 [*NEW*] Modular contest routes initialized
+96|degenduel-api  | 03:00:38 AM [INFO] 🏦 DegenDuel Treasury address:
+96|degenduel-api  | 03:00:38 AM [INFO] [LiquiditySimService] Instance created (constructor run).
+96|degenduel-api  | 03:00:38 AM [WARN] [LiquiditySimService] Singleton instance created. Automatic WebSocket registration and demo server are DISABLED.
+96|degenduel-api  | Starting DegenDuel API in fork mode
+96|degenduel-api  | 03:00:38 AM [INFO] Server starting | Environment: production, Port: 3004
+96|degenduel-api  | 03:00:38 AM [INFO] [RedisSession] Redis session store initialized
+96|degenduel-api  | 03:00:38 AM [INFO]          🌐 Main API docs:       https://degenduel.me/api-docs
+96|degenduel-api  | 03:00:38 AM [INFO]          🌐 JSON API docs:       https://degenduel.me/api-docs-json
+96|degenduel-api  | 03:00:38 AM [INFO] ✓ Basic Express Configuration Complete
+96|degenduel-api  | 03:00:38 AM [INFO] 🌐 Configuring Routes...
+96|degenduel-api  | 03:00:38 AM [INFO] ✓ All Routes Mounted
+96|degenduel-api  | 🚀 DegenDuel Initialization Starting
+96|degenduel-api  | 🔍 Swagger docs available at /api-docs
+96|degenduel-api  | 🔧 Active Service Profile: production
+96|degenduel-api  |   - Enabled: ai_service, market_data, contest_evaluation, token_whitelist, liquidity, user_balance_tracking, wallet_rake, contest_scheduler, achievement_service, referral_service, leveling_service, contest_wallet_service, admin_wallet_service, wallet_generator_service, vanity_wallet_service, solana_service, solana_engine_service, token_refresh_scheduler_service, token_dex_data_service, token_detection_service, token_enrichment_service, token_activation_service, discord_notification_service, discord_interactive_service, launch_event_service, portfolio_snapshot_service
+96|degenduel-api  |   - Disabled: 
+96|degenduel-api  | 03:00:38 AM [INFO] ⚙️ DegenDuel Initialization Starting {"event_type":"initialization_start","_highlight":true,"_color":"#6A0DAD"}
+96|degenduel-api  | 03:00:38 AM [INFO] 
+96|degenduel-api  | 📊 Database Layer Initialization
+96|degenduel-api  | 03:00:38 AM [INFO] Initializing PostgreSQL database...
+96|degenduel-api  | 03:00:38 AM [INFO] [Redis] Connected successfully
+96|degenduel-api  | 03:00:38 AM [INFO] [Redis] Diagnostics:
+96|degenduel-api  | 03:00:38 AM [WARN] [Redis] WARNING: Redis memory usage is approaching limit (1.14M/0MB)
+96|degenduel-api  | 03:00:38 AM [INFO] Info: Starting a postgresql pool with 9 connections. {"target":"quaint::pooled"}
+96|degenduel-api  | 03:00:38 AM [INFO] PostgreSQL database initialized successfully
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 ✅ [Database] PostgreSQL {"category":"Database","component":"PostgreSQL","status":"success","details":null,"_icon":"✅","_color":"#00AA00","_highlight":false}
+96|degenduel-api  | 03:00:38 AM [INFO] Database initialized successfully at /home/branchmanager/websites/degenduel/data/leaderboard.db
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 ✅ [Database] SQLite | {"path":"/home/websites/degenduel/data/leaderboard.db"} {"category":"Database","component":"SQLite","status":"success","details":{"path":"/home/websites/degenduel/data/leaderboard.db"},"_icon":"✅","_color":"#00AA00","_highlight":false}
+96|degenduel-api  | 03:00:38 AM [INFO] ✅ All databases initialized successfully
+96|degenduel-api  | 03:00:38 AM [INFO] 
+96|degenduel-api  | 🔌 WebSocket Layer Initialization
+96|degenduel-api  | 03:00:38 AM [INFO] 🔌 🔌 Initializing Unified WebSocket Server {"event_type":"initialization_start","_icon":"🔄","_color":"#0078D7"}
+96|degenduel-api  | 03:00:38 AM [INFO] 🔌 Initializing Unified WebSocket Server {"_icon":"🌟","_color":"#FF00FF"}
+96|degenduel-api  | 03:00:38 AM [INFO] 🔍 WebSocket pre-initialization check: config.websocket=true
+96|degenduel-api  | 🔍 Creating UnifiedWebSocketServer with config: {"hasConfig":true,"hasWebSocketConfig":true,"configuredPath":"/api/v69/ws"}
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 Initialized subscriptions for topics: market-data, portfolio, system, contest, contest-chat, user, admin, wallet, wallet-balance, skyduel, terminal, logs, launch-events
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 WebSocket server configured with maxPayload size: 5.00MB
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 WebSocket server events configured
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 Registered event handler for market:broadcast
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 Registered event handler for terminal:broadcast
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 Registered event handler for vanity:dashboard_update
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 Registered event handler for system:status
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 Registered event handler for wallet:balance_update
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 Registered event handler for solana:subscribe
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 Registered event handler for solana:unsubscribe
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 Registered event handler for close
+96|degenduel-api  | 03:00:38 AM [INFO] [solana-pubsub] Solana PubSub handler initialized
+96|degenduel-api  | 03:00:38 AM [INFO] [services] Service event handlers registered successfully
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 Service event listeners configured
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 Setting up Unified WebSocket event handlers...
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 Registered event handler for market:broadcast
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 Registered event handler for terminal:broadcast
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 Registered event handler for vanity:dashboard_update
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 Registered event handler for system:status
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 Registered event handler for wallet:balance_update
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 Registered event handler for solana:subscribe
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 Registered event handler for solana:unsubscribe
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 Registered event handler for close
+96|degenduel-api  | 03:00:38 AM [INFO] [solana-pubsub] Solana PubSub handler initialized
+96|degenduel-api  | 03:00:38 AM [INFO] [services] Service event handlers registered successfully
+96|degenduel-api  | 03:00:38 AM [INFO] [ContestEvents] Registering contest event handlers...
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 Unified WebSocket event handlers setup complete.
+96|degenduel-api  | ✅ WebSocket server stored in config.websocket.unifiedWebSocket
+96|degenduel-api  | 03:00:38 AM [INFO] 🔍 WebSocket created: true, stored in config: true
+96|degenduel-api  | 03:00:38 AM [INFO] ✅ Unified WebSocket server initialized successfully at undefined {"_icon":"✅","_color":"#00AA00"}
+96|degenduel-api  | 03:00:38 AM [INFO] 🔌 ✅ Unified WebSocket Server Ready {"event_type":"initialization_complete","_icon":"✅","_color":"#00AA00"}
+96|degenduel-api  | 03:00:38 AM [INFO] 🔹 ✅ [WebSocket] UnifiedWebSocket | {"path":"/api/v69/ws"} {"category":"WebSocket","component":"UnifiedWebSocket","status":"success","details":{"path":"/api/v69/ws"},"_icon":"✅","_color":"#00AA00","_highlight":false}
+96|degenduel-api  | 03:00:38 AM [INFO] ✅ All WebSocket servers initialized successfully
+96|degenduel-api  | 03:00:38 AM [INFO] 💬 WebSocket server ready, emitting ready event
+96|degenduel-api  | 03:00:38 AM [INFO] 
+96|degenduel-api  | 🛠️ Services Layer Initialization
+96|degenduel-api  | 03:00:38 AM [INFO] 📋 Registering services...
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager] Registering solana_engine_service... {"type":"object","isInstance":true,"hasConfig":true,"configName":"solana_engine_service","directName":"solana_engine_service","dependencies":[]}
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager]  solana_engine_service 
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager] Registering wallet_generator_service... {"type":"object","isInstance":true,"hasConfig":true,"configName":"wallet_generator_service","directName":"wallet_generator_service","dependencies":[]}
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager]  wallet_generator_service 
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager] Registering liquidity_service... {"type":"object","isInstance":true,"hasConfig":true,"configName":"liquidity_service","directName":"liquidity_service","dependencies":["wallet_generator_service"]}
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager]  liquidity_service 
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager] Registering discord_notification_service... {"type":"object","isInstance":true,"hasConfig":true,"configName":"discord_notification_service","directName":"discord_notification_service","dependencies":[]}
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager]  discord_notification_service 
+96|degenduel-api  | 03:00:38 AM [INFO] Registered Discord notification service
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager] Registering discord_interactive_service... {"type":"object","isInstance":true,"hasConfig":true,"configName":"discord_interactive_service","directName":"discord_interactive_service","dependencies":[]}
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager]  discord_interactive_service 
+96|degenduel-api  | 03:00:38 AM [INFO] Registered Discord interactive service
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager] Registering market_data_service... {"type":"object","isInstance":true,"hasConfig":true,"configName":"market_data_service","directName":"market_data_service","dependencies":["solana_engine_service"]}
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager]  market_data_service 
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager] Registering token_refresh_scheduler_service... {"type":"object","isInstance":true,"hasConfig":true,"configName":"token_refresh_scheduler_service","directName":"token_refresh_scheduler_service","dependencies":["market_data_service","solana_engine_service"]}
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager]  token_refresh_scheduler_service 
+96|degenduel-api  | 03:00:38 AM [INFO] Registered advanced token refresh scheduler
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager] Registering token_dex_data_service... {"type":"object","isInstance":true,"hasConfig":true,"directName":"token_dex_data_service","dependencies":[]}
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager]  token_dex_data_service 
+96|degenduel-api  | 03:00:38 AM [INFO] Registered token DEX data service
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager] Registering token_detection_service... {"type":"object","isInstance":true,"hasConfig":true,"configName":"token_detection_service","directName":"token_detection_service","dependencies":["solana_engine_service"]}
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager]  token_detection_service 
+96|degenduel-api  | 03:00:38 AM [INFO] Registered token detection service
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager] Registering token_enrichment_service... {"type":"object","isInstance":true,"hasConfig":true,"configName":"token_enrichment_service","directName":"token_enrichment_service","dependencies":["token_detection_service","solana_engine_service"]}
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager]  token_enrichment_service 
+96|degenduel-api  | 03:00:38 AM [INFO] Registered token enrichment service
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager] Registering token_activation_service... {"type":"object","isInstance":true,"hasConfig":true,"configName":"token_activation_service","directName":"token_activation_service","dependencies":["jupiter_client"]}
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager]  token_activation_service 
+96|degenduel-api  | 03:00:38 AM [INFO] Registered Token Activation Service
+96|degenduel-api  | 03:00:38 AM [INFO] Skipping registration of token_priority_service - disabled in config
+96|degenduel-api  | 03:00:38 AM [INFO] ┗━━━━━━━━━━━ ✅ DATA LAYER REGISTRATION COMPLETE
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager] Registering contest_evaluation_service... {"type":"object","isInstance":true,"hasConfig":true,"configName":"contest_evaluation_service","directName":"contest_evaluation_service","dependencies":["market_data_service"]}
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager]  contest_evaluation_service 
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager] Registering ContestSchedulerService... {"type":"object","isInstance":true,"hasConfig":true,"configName":"ContestSchedulerService","directName":"ContestSchedulerService","dependencies":["wallet_generator_service"]}
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager]  ContestSchedulerService 
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager] Registering achievement_service... {"type":"object","isInstance":true,"hasConfig":true,"configName":"achievement_service","directName":"achievement_service","dependencies":[]}
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager]  achievement_service 
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager] Registering leveling_service... {"type":"object","isInstance":true,"hasConfig":true,"configName":"leveling_service","directName":"leveling_service","dependencies":[]}
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager]  leveling_service 
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager] Registering referral_service... {"type":"object","isInstance":true,"hasConfig":true,"configName":"referral_service","directName":"referral_service","dependencies":["contest_evaluation_service"]}
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager]  referral_service 
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager] Registering portfolio_snapshot_service... {"type":"object","isInstance":true,"hasConfig":true,"configName":"portfolio_snapshot_service","directName":"portfolio_snapshot_service","dependencies":["market_data_service","contest_evaluation_service"]}
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager]  portfolio_snapshot_service 
+96|degenduel-api  | 03:00:38 AM [INFO] Skipping registration of Launch Event Service - disabled in config
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager] Registering contest_wallet_service... {"type":"object","isInstance":true,"hasConfig":true,"configName":"contest_wallet_service","directName":"contest_wallet_service","dependencies":["contest_evaluation_service"]}
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager]  contest_wallet_service 
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager] Registering admin_wallet_service... {"type":"object","isInstance":true,"hasConfig":true,"configName":"admin_wallet_service","directName":"admin_wallet_service","dependencies":["contest_wallet_service"]}
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager]  admin_wallet_service 
+96|degenduel-api  | 03:00:38 AM [INFO] Skipping registration of wallet_rake_service - deprecated and replaced by contest_wallet_service
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager] Registering user_balance_tracking_service... {"type":"object","isInstance":true,"hasConfig":true,"configName":"user_balance_tracking_service","directName":"user_balance_tracking_service","dependencies":["solana_engine_service"]}
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager]  user_balance_tracking_service 
+96|degenduel-api  | 03:00:38 AM [INFO] DEBUG: After registering user_balance_tracking_service
+96|degenduel-api  | 03:00:38 AM [INFO] ⚠️ DEBUGGING ISSUE: Checking active config entries before vanity_wallet_service
+96|degenduel-api  | 03:00:38 AM [INFO] ⚠️ Ensuring solana_service remains disabled - it has been replaced by solana_engine_service
+96|degenduel-api  | 03:00:38 AM [INFO] ⚠️ SIMPLIFIED FIX: Using safer approach to handle deprecated solana_service
+96|degenduel-api  | 03:00:38 AM [INFO] ⚠️ REMOVED PROBLEMATIC REGISTER FUNCTION WRAPPER
+96|degenduel-api  | 03:00:38 AM [INFO] ⚠️ DEBUGGING: About to register vanity_wallet_service
+96|degenduel-api  | 03:00:38 AM [INFO] Registering vanity_wallet_service...
+96|degenduel-api  | 03:00:38 AM [INFO] 🔥 VANITY WALLET HOOK POINT
+96|degenduel-api  | 03:00:38 AM [INFO] 🔥 STACK AFTER VANITY:     at ServiceManager.register (file:///home/branchmanager/websites/degenduel/utils/service-suite/service-manager.js:90:27)
+96|degenduel-api  |     at ServiceInitializer.registerWalletLayer (file:///home/branchmanager/websites/degenduel/utils/service-suite/service-initializer.js:392:36)
+96|degenduel-api  |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+96|degenduel-api  |     at async ServiceInitializer.registerCoreServices (file:///home/branchmanager/websites/degenduel/utils/service-suite/service-initializer.js:96:13)
+96|degenduel-api  |     at async initializeServer (file:///home/branchmanager/websites/degenduel/index.js:474:21)
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager] Registering vanity_wallet_service... {"type":"object","isInstance":true,"hasConfig":true,"configName":"vanity_wallet_service","directName":"vanity_wallet_service","dependencies":["solana_engine_service"]}
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager]  vanity_wallet_service 
+96|degenduel-api  | 03:00:38 AM [INFO] Successfully registered vanity_wallet_service
+96|degenduel-api  | 03:00:38 AM [INFO] NOTE: solana_service is deprecated - it has been completely removed and replaced by solanaEngine
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager] Registering ai_service... {"type":"object","isInstance":true,"hasConfig":true,"configName":"ai_service","directName":"ai_service","dependencies":[]}
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceManager]  ai_service 
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceInitializer] Added dependency: liquidity_service → wallet_generator_service
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceInitializer] Skipping all solana_service dependencies - service has been deprecated
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceInitializer] Added dependency: contest_evaluation_service → market_data_service
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceInitializer] Added dependency: contest_wallet_service → contest_evaluation_service
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceInitializer] Added dependency: admin_wallet_service → contest_wallet_service
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceInitializer] Added dependency: portfolio_snapshot_service → market_data_service
+96|degenduel-api  | 03:00:38 AM [INFO] [ServiceInitializer] Added dependency: portfolio_snapshot_service → contest_evaluation_service
+96|degenduel-api  | 03:00:38 AM [INFO] 🔌 Registered 22 services across 4 layers
+96|degenduel-api  | 03:00:38 AM [INFO] 🚀 Initializing services...
+96|degenduel-api  | 03:00:38 AM [INFO] [SERVICE INIT] Starting service initialization in order...
+96|degenduel-api  | 03:00:38 AM [INFO] [SERVICE INIT] Initializing infrastructure services...
+96|degenduel-api  | 03:00:38 AM [INFO] [SolanaEngine]  INITIALIZING  SolanaEngine Service
+96|degenduel-api  | 03:00:38 AM [INFO] Initializing ConnectionManager with v2 RPC client
+96|degenduel-api  | 03:00:38 AM [WARN]  production  🔹 🚨 SERVER_ALERT: SERVER_RESTART {"alert_type":"server_event","alert_level":"critical","admin":"pm2","action":"SERVER_RESTART","environment":"production","details":{"initiated_by":"pm2","reason":"Frequent restarts detected (59 restarts in 60 minutes)","is_planned":false,"server_name":"degenduel_server","environment":"production","pm2_id":"0","hostname":"dd-ec2","uptime":19.777741743,"memory":{"rss":1287430144,"heapTotal":101928960,"heapUsed":74294456,"external":3979186,"arrayBuffers":66048},"nodeVersion":"v20.19.1","platform":"linux","timestamp":"2025-05-10T07:00:36.932Z"}}
+96|degenduel-api  | 03:00:38 AM [INFO] 👑        Admin Action Log   SERVER  by BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp 
+96|degenduel-api  | 03:00:38 AM [INFO] v2 RPC client initialized successfully for endpoint: https://mainnet.helius-rpc.com/?api-key=8fd1a2cd-76e7-4462-b38b-1026960edd40
+96|degenduel-api  | 03:00:38 AM [INFO] [heliusClient]  INITIALIZING  Helius client
+96|degenduel-api  | 03:00:38 AM [INFO] [heliusClient]  CONNECTING  to Helius WebSocket (reconnection #0)
+96|degenduel-api  | 03:00:38 AM [INFO] [heliusClient] Helius client initialized successfully
+96|degenduel-api  | 03:00:38 AM [INFO]  CIRCUIT BREAKER RESET  jupiter_client initializing...
+96|degenduel-api  | 03:00:38 AM [INFO] [JupiterClient] Jupiter client core initialized. Starting background token sync tasks...
+96|degenduel-api  | 03:00:38 AM [INFO] [JupiterClient] Starting daily token sync. Interval: 24 hours.
+96|degenduel-api  | 03:00:38 AM [INFO] [dexscreenerClient]  INITIALIZING  DexScreener client
+96|degenduel-api  | 03:00:38 AM [INFO] [dexscreenerClient] DexScreener client initialized successfully
+96|degenduel-api  | 03:00:38 AM [ERROR] [SolanaEngine] Failed to initialize Helius Kite client: Missing clusterWebSocketURL. Either provide a valid cluster name (mainnet-beta, testnet, devnet, helius-mainnet, helius-devnet, localnet) or two valid URLs. {"error":{}}
+96|degenduel-api  | 03:00:38 AM [INFO] [JupiterClient] Registered new price update callback
+96|degenduel-api  | 03:00:38 AM [INFO]  CIRCUIT BREAKER RESET  solana_engine_service initializing...
+96|degenduel-api  | 03:00:38 AM [INFO] [SolanaEngine] SolanaEngine Service initialized successfully
+96|degenduel-api  | 03:00:38 AM [INFO] [SolanaEngine]  STARTING  SolanaEngine Service
+96|degenduel-api  | 03:00:38 AM [INFO] [JupiterClient] Sufficient tokens (15371) in DB, skipping initial full sync. Daily delta sync will handle new tokens.
+96|degenduel-api  | 03:00:38 AM [INFO] [SolanaEngine]  SUBSCRIBING  to prices for 15371 tokens (via Jupiter client)
+96|degenduel-api  | 03:00:38 AM [INFO] JupiterClient.subscribeToPrices called, but direct subscriptions are deprecated. Token activity drives price fetching.
+96|degenduel-api  | 03:00:38 AM [INFO] [SolanaEngine] Successfully subscribed to 15371 tokens
+96|degenduel-api  | 03:00:38 AM [INFO] [SolanaEngine] Loaded 15371 tokens from database
+96|degenduel-api  | 03:00:38 AM [INFO] [SolanaEngine] SolanaEngine Service started successfully
+96|degenduel-api  | 03:00:38 AM [INFO]  CIRCUIT BREAKER RESET  wallet_generator_service initializing...
+96|degenduel-api  | 03:00:38 AM [INFO] [wallet_generator_service] ✅  Wallet Generator Service initialized 
+96|degenduel-api  | 03:00:38 AM [INFO]  CIRCUIT BREAKER RESET  liquidity_service initializing...
+96|degenduel-api  | 03:00:38 AM [INFO] [heliusClient] Connected to Helius WebSocket (total reconnections: 0, last connected: 2025-05-10T07:00:38.822Z)
+96|degenduel-api  | 03:00:38 AM [INFO] [liquidityService] Connection test via solanaEngine successful.
+96|degenduel-api  | 03:00:38 AM [INFO] [liquidityService] 🔍 Checking for existing liquidity wallets... 
+96|degenduel-api  | 03:00:38 AM [INFO] [liquidityService] 📊  Liquidity Wallets:  1  found 
+96|degenduel-api  | 03:00:38 AM [INFO] [liquidityService] 🤑  Active Liquidity Wallets:  1  found 
+96|degenduel-api  | 03:00:38 AM [INFO] [liquidityService] Using wallet: FqskNjBm89A7VwYLexgH6bNRYVXUMwd9iYvwnDW6aRf6 (Balance: 0.0000 SOL) 
+96|degenduel-api  | 03:00:38 AM [INFO] [liquidityService] Liquidity Service initialized 
+96|degenduel-api  | 03:00:38 AM [INFO]  CIRCUIT BREAKER RESET  discord_notification_service initializing...
+96|degenduel-api  | 03:00:38 AM [INFO] Discord channel configuration: {"contests":"1359718078211952662","trades":"1365816130043772928","announcements":"1366007812223664149"}
+96|degenduel-api  | 03:00:39 AM [INFO] Discord Interactive Bot connected as Didi - DegenDuel AI#7039
+96|degenduel-api  | 03:00:39 AM [INFO] Bot is in 1 Discord servers: 
+96|degenduel-api  | 03:00:39 AM [INFO]  CIRCUIT BREAKER RESET  ai_service initializing...
+96|degenduel-api  | 03:00:39 AM [INFO] [ai_service] Cleaned up 4 old service logs
+96|degenduel-api  | 03:00:39 AM [INFO] [ai_service] AI Service initialized with periodic analysis enabled
+96|degenduel-api  | 03:00:39 AM [INFO] [SERVICE INIT] Initializing remaining services...
+96|degenduel-api  | 03:00:39 AM [INFO] [MktDataSvc]  INITIALIZING (Transitional State)  MarketDataService - Most operations are temporarily bypassed.
+96|degenduel-api  | 03:00:39 AM [INFO]  CIRCUIT BREAKER RESET  market_data_service initializing...
+96|degenduel-api  | 03:00:39 AM [INFO] [MktDataSvc] Connected to market database, found 15371 tokens
+96|degenduel-api  | 03:00:39 AM [INFO] [MktDataSvc] Jupiter client not initialized yet, using existing singleton...
+96|degenduel-api  | 03:00:39 AM [INFO] [MktDataSvc] Set up token status reporting (every 60 hours)
+96|degenduel-api  | 03:00:39 AM [INFO] [MktDataSvc]  MINIMALLY INITIALIZED  MarketDataService initialization (transitional) complete.
+96|degenduel-api  | 03:00:39 AM [INFO] [SERVICE INIT] Service market_data_service initialization completed successfully
+96|degenduel-api  | 03:00:39 AM [INFO] [TokenRefreshService] Initializing token refresh service...
+96|degenduel-api  | 03:00:39 AM [INFO] [TokenRefreshIntegration] Initializing token refresh integration
+96|degenduel-api  | 03:00:39 AM [INFO] [TokenRefreshSched] Loaded 6 priority tiers from database
+96|degenduel-api  | 03:00:39 AM [INFO] [TokenRefreshSched] Configuration loaded: {"maxTokensPerBatch":500,"minIntervalSeconds":15,"batchDelayMs":3000,"apiRateLimit":30,"features":{"prioritization":true,"dynamicIntervals":true,"adaptiveRateLimit":true}}
+96|degenduel-api  | 03:00:39 AM [INFO] [TokenRefreshSched] Jupiter client not initialized yet, using existing singleton...

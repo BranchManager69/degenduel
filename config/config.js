@@ -721,10 +721,11 @@ const config = {
       token_dex_data_service: true, // DEX pool data service
       token_detection_service: true, // New token detection service
       token_enrichment_service: true, // New token enrichment service
-      discord_notification_service: true, // Discord notification service (webhook notifications)
-      discord_interactive_service: true, // Discord interactive service (DegenDuel AI Discord Bot)
-      launch_event_service: true, // Added new service
-      portfolio_snapshot_service: true, // New portfolio snapshot service
+      token_activation_service: true,
+      discord_notification_service: true,
+      discord_interactive_service: true,
+      launch_event_service: true,
+      portfolio_snapshot_service: true,
       // Additional services would be defined here as we expand this pattern
       // etc.
     },
@@ -769,6 +770,7 @@ const config = {
       token_detection_service: false, // Disable token detection service in development
       token_enrichment_service: false, // Disable token enrichment service in development
       portfolio_snapshot_service: false, // Disable portfolio snapshot service to prevent double-snapshotting in development (causes race conditions)
+      token_activation_service: false, // Explicitly false for dev unless overridden by specific needs
       
       // Any future services that may cause conflicts with prod services would be disabled here too
     }
@@ -1004,6 +1006,14 @@ const config = {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.portfolio_snapshot_service;
+    },
+
+    // TOKEN ACTIVATION SERVICE
+    get token_activation_service() {
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      // Ensure a default of false if not specified in a profile, though it should be.
+      return profile.token_activation_service === undefined ? false : profile.token_activation_service;
     },
 
     // [Future Services Go Here]
