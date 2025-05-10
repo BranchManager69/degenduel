@@ -47,6 +47,7 @@ import tokenDEXDataService from '../../services/token-dex-data-service.js';
 import tokenDetectionService from '../../services/market-data/tokenDetectionService.js';
 // [the one below is brand new!]
 import tokenEnrichmentService from '../../services/token-enrichment/index.js';
+import tokenActivationService from '../../services/token-activation/index.js';
 // [the one below doesn't exist yet...]
 //import tokenPriorityService from '../../services/token-priority/index.js';
 
@@ -235,6 +236,15 @@ class ServiceInitializer {
                 logApi.info(`${fancyColors.YELLOW}Skipping registration of token_enrichment_service - disabled in config${fancyColors.RESET}`);
             }
 
+            // Register Token Activation Service here, as it depends on JupiterClient (part of SolanaEngine conceptually or directly)
+            // and provides data for other services like MarketData or TokenRefreshScheduler.
+            if (config.services.token_activation_service) {
+                serviceManager.register(tokenActivationService, [SERVICE_NAMES.JUPITER_CLIENT]);
+                logApi.info(`${fancyColors.GREEN}Registered Token Activation Service${fancyColors.RESET}`);
+            } else {
+                logApi.info(`${fancyColors.YELLOW}Skipping registration of token_activation_service - disabled in config${fancyColors.RESET}`);
+            }
+
             // Token priority service is not fully implemented yet
             if (config.services.token_priority_service) {
                 // Temporarily disabled until implementation is complete
@@ -245,7 +255,7 @@ class ServiceInitializer {
             }
 
         } else {
-            logApi.info(`${fancyColors.YELLOW}Skipping registration of market_data_service - disabled in config${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.YELLOW}Skipping registration of market_data_service and its dependents (like token_activation_service) - disabled in config${fancyColors.RESET}`);
         }
         
         // Token whitelist service has been permanently disabled (using token.is_active flag instead)
