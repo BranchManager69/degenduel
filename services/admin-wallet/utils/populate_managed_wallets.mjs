@@ -65,7 +65,7 @@ const ENCRYPTION_CONFIG = {
     ivLength: 16, // bytes
 }; 
 
-function encryptPrivateKeyBytes(privateKeyBuffer, encryptionKeyHex) {
+function encryptPrivateKeyBytes_local(payloadString, encryptionKeyHex) {
     if (!encryptionKeyHex || encryptionKeyHex.length !== 64) {
         throw new Error('Invalid or missing encryption key hex (must be 64 hex chars).');
     }
@@ -77,7 +77,8 @@ function encryptPrivateKeyBytes(privateKeyBuffer, encryptionKeyHex) {
             encryptionKeyBuffer,
             iv
         );
-        const encrypted = Buffer.concat([cipher.update(privateKeyBuffer), cipher.final()]);
+        const payloadBuffer = Buffer.from(payloadString, 'utf8');
+        const encrypted = Buffer.concat([cipher.update(payloadBuffer), cipher.final()]);
         const tag = cipher.getAuthTag();
         return JSON.stringify({
             encrypted: encrypted.toString('hex'),
@@ -85,9 +86,8 @@ function encryptPrivateKeyBytes(privateKeyBuffer, encryptionKeyHex) {
             tag: tag.toString('hex')
         });
     } catch (error) {
-        // Use logApi for consistency, but this is a critical script error path
-        logApi.error(fancyColors.RED + `Encryption failed: ${error.message}` + fancyColors.RESET, error);
-        throw new Error(`Failed to encrypt private key: ${error.message}`);
+        logApi.error(fancyColors.RED + `Encryption failed (local): ${error.message}` + fancyColors.RESET, error);
+        throw new Error(`Failed to encrypt (local): ${error.message}`);
     }
 }
 
@@ -129,7 +129,7 @@ async function populateWallets() {
 
     const ownerIdToAssign = await determineOwnerId(); // Determine owner at the start
 
-    logApi.info(fancyColors.CYAN + `--- Starting: Generating and Inserting ${totalWalletsToCreate} Managed Wallets for Owner ID ${ownerIdToAssign} (WebCryptoAPI/pkcs8) ---` + fancyColors.RESET);
+    logApi.info(fancyColors.CYAN + `--- Starting: Generating ${totalWalletsToCreate} Managed Wallets (v2 Seed Encryption) for Owner ID ${ownerIdToAssign} ---` + fancyColors.RESET);
     logApi.progress.start(); // Initialize progress display
 
     let walletsCreated = 0;
@@ -143,49 +143,47 @@ async function populateWallets() {
             );
             const rawPublicKeyArrayBuffer = await crypto.webcrypto.subtle.exportKey('raw', cryptoKeyPair.publicKey);
             const publicKeyBytes = new Uint8Array(rawPublicKeyArrayBuffer);
-            const publicKey = bs58.encode(publicKeyBytes);
+            const publicKeyString = bs58.encode(publicKeyBytes);
 
-            if (!cryptoKeyPair.privateKey.extractable) {
-                throw new Error("PANIC: Generated private key is somehow not extractable despite setting flag.");
-            }
             const pkcs8PrivateKeyArrayBuffer = await crypto.webcrypto.subtle.exportKey('pkcs8', cryptoKeyPair.privateKey);
             const pkcs8Bytes = new Uint8Array(pkcs8PrivateKeyArrayBuffer);
-            const privateKeySeedBytes = pkcs8Bytes.slice(-32);
+            const privateKeySeedBytes_32 = pkcs8Bytes.slice(-32); // This is our Uint8Array 32-byte seed
             
-            if (privateKeySeedBytes.length !== 32) {
-                 throw new Error(`Extracted private key seed is not 32 bytes long: ${privateKeySeedBytes.length}`);
-            }
-            
-            const solanaSecretKey64Bytes = new Uint8Array(64);
-            solanaSecretKey64Bytes.set(privateKeySeedBytes);      
-            solanaSecretKey64Bytes.set(publicKeyBytes, 32);    
-
-            const privateKeyBufferForEncryption = Buffer.from(solanaSecretKey64Bytes);
-
-            if (privateKeyBufferForEncryption.length !== 64) {
-                throw new Error(`Constructed 64-byte secret key has unexpected length: ${privateKeyBufferForEncryption.length}`);
-            }
-            if (publicKeyBytes.length !== 32) { 
-                throw new Error(`Raw public key has unexpected length: ${publicKeyBytes.length}`);
+            if (privateKeySeedBytes_32.length !== 32) {
+                 throw new Error(`Extracted private key seed is not 32 bytes: ${privateKeySeedBytes_32.length}`);
             }
 
-            const encryptedPrivateKeyJson = encryptPrivateKeyBytes(privateKeyBufferForEncryption, WALLET_ENCRYPTION_KEY_HEX);
+            // 2. Prepare 32-byte seed FOR ENCRYPTION (as a base58 string)
+            const seedStringForEncryption = bs58.encode(privateKeySeedBytes_32);
+
+            // 3. Encrypt the SEED STRING using the local encrypt function
+            const baseEncryptedJsonString = encryptPrivateKeyBytes_local(seedStringForEncryption, WALLET_ENCRYPTION_KEY_HEX);
             
-            const assignedToUserType = `Owner ID ${ownerIdToAssign}`; // Simplified
+            // 4. Add Version Marker to the encrypted JSON
+            const parsedEncrypted = JSON.parse(baseEncryptedJsonString);
+            const finalEncryptedJsonToStore = JSON.stringify({
+                ...parsedEncrypted,
+                version: 'v2_seed_admin', // Our new version marker for seeds
+                // aad: crypto.randomBytes(16).toString('hex') // Optional: Add AAD if desired for extra context
+            });
             
             const walletData = {
                 id: crypto.randomUUID(), 
-                public_key: publicKey,
-                encrypted_private_key: encryptedPrivateKeyJson,
-                label: `Generated Admin Wallet ${i + 1} (Owner: ${assignedToUserType}, WebCrypto/pkcs8)`,
+                public_key: publicKeyString,
+                encrypted_private_key: finalEncryptedJsonToStore, // Store the versioned JSON
+                label: `Generated Admin Wallet ${i + 1} (Owner: ${ownerIdToAssign}, v2 Seed Encrypted)`,
                 status: 'active',
-                metadata: { generated_by_script: true, script_run_time: new Date().toISOString(), key_gen_method: 'WebCryptoAPI_pkcs8' },
+                metadata: { 
+                    generated_by_script: true, 
+                    script_run_time: new Date().toISOString(), 
+                    key_gen_method: 'WebCryptoAPI_pkcs8_v2seed' // Updated method description
+                },
                 ownerId: ownerIdToAssign,
             };
 
             await prisma.managed_wallets.create({ data: walletData });
             walletsCreated++;
-            logApi.progress.update(walletsCreated, totalWalletsToCreate, [`Creating wallet for ${assignedToUserType}:`]);
+            logApi.progress.update(walletsCreated, totalWalletsToCreate, [`Creating v2 seed wallet for ${ownerIdToAssign}:`]);
         }
 
         logApi.progress.finish({

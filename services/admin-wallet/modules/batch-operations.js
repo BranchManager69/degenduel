@@ -24,6 +24,7 @@ import { decryptWallet, createKeypairFromPrivateKeyCompat } from './wallet-crypt
 import { logApi } from '../../../utils/logger-suite/logger.js'; // For logging skips
 import { fancyColors } from '../../../utils/colors.js'; // Added for fancy logging
 import { config as globalConfigForCommitment } from '../../../config/config.js'; // For commitment constant
+import { getAddressFromPublicKey } from '@solana/addresses'; // Import for deriving address from CryptoKey
 
 // Default commitment level for critical balance checks in this module
 const UPFRONT_BALANCE_COMMITMENT = globalConfigForCommitment.solana?.commitments?.batch_balance_check || 'confirmed';
@@ -47,13 +48,13 @@ export async function massTransferSOL(fromWalletEncrypted, transfers, solanaEngi
     const { transferSOL } = await import('./wallet-transactions.js');
     const { executeRpcMethod, LAMPORTS_PER_SOL } = await import('../utils/solana-compat.js');
     
-    // Get sender's public key for logging in BatchTransferItem
-    let fromPublicKeyString;
-    let fromKeypair; // To be used for balance check
+    let fromPublicKeyString_for_logging; // Renamed for clarity from fromPublicKeyString
+    let fromSigner_v2; // Renamed from fromKeypair for clarity, holds CryptoKeyPair
     try {
         const decryptedSenderKey = decryptWallet(fromWalletEncrypted, encryptionKey);
-        fromKeypair = createKeypairFromPrivateKeyCompat(decryptedSenderKey);
-        fromPublicKeyString = fromKeypair.publicKey.toString();
+        fromSigner_v2 = await createKeypairFromPrivateKeyCompat(decryptedSenderKey); // This is now async
+        // fromSigner_v2.publicKey is a CryptoKey object. We need its string representation for getBalance.
+        fromPublicKeyString_for_logging = await getAddressFromPublicKey(fromSigner_v2.publicKey);
     } catch (e) {
         logApi.error(`${fancyColors.RED}[Batch ${batchIdentifier}] Critical Error: Failed to decrypt sender wallet. Aborting batch.${fancyColors.RESET}`, e);
         throw ServiceError.authentication('Failed to decrypt sender wallet for batch operation', {
@@ -67,12 +68,12 @@ export async function massTransferSOL(fromWalletEncrypted, transfers, solanaEngi
             throw ServiceError.validation('Batch size exceeds maximum allowed');
         }
 
-        // === UPFRONT BALANCE + FEE CHECK (existing, uses fromKeypair from above) ===
+        // === UPFRONT BALANCE + FEE CHECK ===
         const balanceResult = await executeRpcMethod(
             solanaEngine,
             'getBalance',
-            fromKeypair.publicKey, // Use the already derived keypair
-            UPFRONT_BALANCE_COMMITMENT // Explicitly pass commitment
+            fromPublicKeyString_for_logging, // PASS THE STRING ADDRESS HERE
+            UPFRONT_BALANCE_COMMITMENT 
         );
         const senderBalance = balanceResult.value ?? balanceResult; 
         const totalAmountLamports = transfers.reduce((sum, t) => sum + (t.amount * LAMPORTS_PER_SOL), 0);
@@ -105,7 +106,7 @@ export async function massTransferSOL(fromWalletEncrypted, transfers, solanaEngi
         for (const chunk of chunks) {
             const chunkPromises = chunk.map(async (transfer, indexInChunk) => {
                 // Create a unique identifier for this specific transfer item
-                const itemIdentifierPayload = `${batchIdentifier}-${transfer.toAddress}-${transfer.amount}-${fromPublicKeyString}`;
+                const itemIdentifierPayload = `${batchIdentifier}-${transfer.toAddress}-${transfer.amount}-${fromPublicKeyString_for_logging}`;
                 const itemIdentifier = crypto.createHash('sha256').update(itemIdentifierPayload).digest('hex');
 
                 try {
@@ -153,7 +154,7 @@ export async function massTransferSOL(fromWalletEncrypted, transfers, solanaEngi
                             itemIdentifier,
                             status: "SUCCESS",
                             signature: transferResult.signature,
-                            fromWalletAddress: fromPublicKeyString,
+                            fromWalletAddress: fromPublicKeyString_for_logging,
                             toAddress: transfer.toAddress,
                             amount: transfer.amount,
                             // mint is null for SOL transfers
@@ -171,7 +172,7 @@ export async function massTransferSOL(fromWalletEncrypted, transfers, solanaEngi
                             itemIdentifier,
                             status: "FAILED_PERMANENT",
                             error: errorMessage,
-                            fromWalletAddress: fromPublicKeyString,
+                            fromWalletAddress: fromPublicKeyString_for_logging,
                             toAddress: transfer.toAddress,
                             amount: transfer.amount,
                             // mint is null for SOL transfers
@@ -261,13 +262,12 @@ export async function massTransferTokens(fromWalletEncrypted, mint, transfers, s
     const { transferToken } = await import('./wallet-transactions.js');
     const { executeRpcMethod, LAMPORTS_PER_SOL } = await import('../utils/solana-compat.js');
 
-    // Get sender's public key for logging in BatchTransferItem
-    let fromPublicKeyString;
-    let fromKeypair; // To be used for balance check
+    let fromPublicKeyString_for_logging;
+    let fromSigner_v2;
     try {
         const decryptedSenderKey = decryptWallet(fromWalletEncrypted, encryptionKey);
-        fromKeypair = createKeypairFromPrivateKeyCompat(decryptedSenderKey);
-        fromPublicKeyString = fromKeypair.publicKey.toString();
+        fromSigner_v2 = await createKeypairFromPrivateKeyCompat(decryptedSenderKey); // This is now async
+        fromPublicKeyString_for_logging = await getAddressFromPublicKey(fromSigner_v2.publicKey);
     } catch (e) {
         logApi.error(`${fancyColors.RED}[Batch ${batchIdentifier}] (Token) Critical Error: Failed to decrypt sender wallet. Aborting batch.${fancyColors.RESET}`, e);
         throw ServiceError.authentication('Failed to decrypt sender wallet for batch token operation', {
@@ -282,12 +282,12 @@ export async function massTransferTokens(fromWalletEncrypted, mint, transfers, s
             throw ServiceError.validation('Batch size exceeds maximum allowed');
         }
 
-        // === UPFRONT SOL FEE CHECK (uses fromKeypair from above) ===
+        // === UPFRONT SOL FEE CHECK ===
         const balanceResult = await executeRpcMethod(
             solanaEngine,
             'getBalance',
-            fromKeypair.publicKey,
-            UPFRONT_BALANCE_COMMITMENT // Explicitly pass commitment
+            fromPublicKeyString_for_logging, // PASS THE STRING ADDRESS HERE
+            UPFRONT_BALANCE_COMMITMENT 
         );
         const senderBalance = balanceResult.value ?? balanceResult;
         const estimatedFeePerTx = 10000; 
@@ -319,7 +319,7 @@ export async function massTransferTokens(fromWalletEncrypted, mint, transfers, s
 
         for (const chunk of chunks) {
             const chunkPromises = chunk.map(async (transfer) => {
-                const itemIdentifierPayload = `${batchIdentifier}-${transfer.toAddress}-${transfer.amount}-${mint}-${fromPublicKeyString}`;
+                const itemIdentifierPayload = `${batchIdentifier}-${transfer.toAddress}-${transfer.amount}-${mint}-${fromPublicKeyString_for_logging}`;
                 const itemIdentifier = crypto.createHash('sha256').update(itemIdentifierPayload).digest('hex');
 
                 try {
@@ -364,7 +364,7 @@ export async function massTransferTokens(fromWalletEncrypted, mint, transfers, s
                             itemIdentifier,
                             status: "SUCCESS",
                             signature: transferResult.signature,
-                            fromWalletAddress: fromPublicKeyString,
+                            fromWalletAddress: fromPublicKeyString_for_logging,
                             toAddress: transfer.toAddress,
                             amount: transfer.amount,
                             mint: mint 
@@ -382,7 +382,7 @@ export async function massTransferTokens(fromWalletEncrypted, mint, transfers, s
                             itemIdentifier,
                             status: "FAILED_PERMANENT",
                             error: errorMessage,
-                            fromWalletAddress: fromPublicKeyString,
+                            fromWalletAddress: fromPublicKeyString_for_logging,
                             toAddress: transfer.toAddress,
                             amount: transfer.amount,
                             mint: mint

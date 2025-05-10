@@ -62,6 +62,7 @@ import achievementService from '../../services/achievementService.js';
 import referralService from '../../services/referralService.js';
 import levelingService from '../../services/levelingService.js';
 import launchEventService from '../../services/launchEventService.js';
+import portfolioSnapshotService from '../../services/portfolioSnapshotService.js';
 
 //   (5)  Wallet Layer
 import contestWalletService from '../../services/contest-wallet/index.js';
@@ -299,6 +300,14 @@ class ServiceInitializer {
             logApi.info(`${fancyColors.YELLOW}Skipping registration of referral_service - disabled in config${fancyColors.RESET}`);
         }
         
+        // Register Portfolio Snapshot Service if enabled
+        // It depends on Market Data and Contest Evaluation (for active contests/participants)
+        if (config.services.portfolio_snapshot_service) { // Assuming a config flag will be added
+            serviceManager.register(portfolioSnapshotService, [SERVICE_NAMES.MARKET_DATA, SERVICE_NAMES.CONTEST_EVALUATION]);
+        } else {
+            logApi.info(`${fancyColors.YELLOW}Skipping registration of portfolio_snapshot_service - disabled in config${fancyColors.RESET}`);
+        }
+        
         // Register Launch Event Service if enabled
         if (config.services.launch_event) {
             if (VERBOSE_SERVICE_INIT_LOGS) {
@@ -482,6 +491,7 @@ class ServiceInitializer {
                 [SERVICE_NAMES.TOKEN_REFRESH_SCHEDULER]: 'token_refresh_scheduler_service',
                 [SERVICE_NAMES.TOKEN_DETECTION]: 'token_detection_service',
                 [SERVICE_NAMES.TOKEN_ENRICHMENT]: 'token_enrichment_service',
+                [SERVICE_NAMES.PORTFOLIO_SNAPSHOT]: 'portfolio_snapshot_service',
                 // Add other services as they get profile support
             };
             
@@ -531,6 +541,10 @@ class ServiceInitializer {
         // Only add this dependency if both services are enabled
         addDependencyIfEnabled(SERVICE_NAMES.CONTEST_WALLET, SERVICE_NAMES.CONTEST_EVALUATION);
         addDependencyIfEnabled(SERVICE_NAMES.ADMIN_WALLET, SERVICE_NAMES.CONTEST_WALLET);
+
+        // Add dependencies for Portfolio Snapshot Service
+        addDependencyIfEnabled(SERVICE_NAMES.PORTFOLIO_SNAPSHOT, SERVICE_NAMES.MARKET_DATA);
+        addDependencyIfEnabled(SERVICE_NAMES.PORTFOLIO_SNAPSHOT, SERVICE_NAMES.CONTEST_EVALUATION);
     }
 
     /**

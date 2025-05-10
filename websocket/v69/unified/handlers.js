@@ -22,6 +22,7 @@ import { MESSAGE_TYPES, TOPICS, formatAuthFlowVisual, parseClientInfo, getLocati
 import { fetchTerminalData } from './services.js';
 import { rateLimiter } from './modules/rate-limiter.js';
 import { heliusBalanceTracker } from '../../../services/solana-engine/helius-balance-tracker.js';
+import serviceEvents from '../../../utils/service-suite/service-events.js';
 
 // Config
 import config from '../../../config/config.js';
@@ -1171,7 +1172,7 @@ export async function handleClientLogs(ws, message, server) {
       timestamp: new Date().toISOString()
     });
     
-    // Log summary (debug level to avoid log flooding)
+    // Log summary (debug level to avoid spamming logs with broadcasts)
     logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.GREEN}Received ${logs.length} client logs via WebSocket${fancyColors.RESET}`);
   } catch (error) {
     logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error processing client logs:${fancyColors.RESET}`, error);
@@ -1186,7 +1187,7 @@ export async function handleClientLogs(ws, message, server) {
  */
 export async function handleCommand(ws, message, server) {
   // Commands require authentication
-  if (!ws.clientInfo.isAuthenticated) {
+  if (!ws.clientInfo?.isAuthenticated || !ws.clientInfo?.userId) {
     return server.sendError(ws, 'Authentication required for commands', 4013);
   }
   
@@ -1194,19 +1195,91 @@ export async function handleCommand(ws, message, server) {
   if (!message.topic || !message.action) {
     return server.sendError(ws, 'Command requires topic and action', 4014);
   }
+
+  // Normalize topic
+  const normalizedTopic = normalizeTopic(message.topic);
+  const senderWalletAddress = ws.clientInfo.userId;
+  const senderNickname = ws.clientInfo.nickname || senderWalletAddress.substring(0, 6) + '...';
+  const senderRole = ws.clientInfo.role || 'user';
   
-  logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Command received: ${message.topic}/${message.action}${fancyColors.RESET}`);
+  logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.YELLOW}Command received: ${normalizedTopic}/${message.action} from ${senderNickname}${fancyColors.RESET}`);
   
   // Handle command based on topic
   try {
-    switch (message.topic) {
-      // Implement command handlers for different topics
+    switch (normalizedTopic) {
+      case TOPICS.CONTEST_CHAT:
+        if (message.action === 'SEND_MESSAGE' || message.action === 'sendMessage') {
+          const { contestId, text } = message.data || {};
+
+          // Validate input
+          if (!contestId || typeof contestId !== 'number' || !text || typeof text !== 'string' || text.trim().length === 0) {
+            return server.sendError(ws, 'Command requires numeric contestId and non-empty text in data', 4016);
+          }
+          if (text.length > 500) { // Example length limit
+              return server.sendError(ws, 'Message text exceeds 500 character limit', 4017);
+          }
+
+          // TODO: Add validation: Check if user is actually in the contest / allowed to chat
+          // This might involve checking contest_participants table
+          // const participant = await prisma.contest_participants.findUnique({ where: { contest_id_wallet_address: { contest_id: contestId, wallet_address: senderWalletAddress } } });
+          // if (!participant) { return server.sendError(ws, 'Not participating in this contest', 4033); }
+
+          const isAdmin = ['admin', 'superadmin'].includes(senderRole.toLowerCase());
+
+          // Save message to database
+          const savedMessage = await prisma.contest_chat_messages.create({
+            data: {
+              contest_id: contestId,
+              sender_wallet_address: senderWalletAddress,
+              message_text: text.trim(), // Trim whitespace
+              // created_at is handled by default
+            },
+            include: { sender: { select: { nickname: true, role: true }} } // Include sender details for the event
+          });
+
+          // Emit event for broadcasters to pick up
+          const eventData = {
+            id: savedMessage.id.toString(),
+            contestId: savedMessage.contest_id,
+            sender: {
+              wallet: savedMessage.sender_wallet_address,
+              // Use nickname/role from the ws.clientInfo for consistency if sender include fails or is different
+              nickname: ws.clientInfo.nickname || savedMessage.sender?.nickname || 'Unknown',
+              role: ws.clientInfo.role || savedMessage.sender?.role || 'user'
+            },
+            text: savedMessage.message_text,
+            timestamp: savedMessage.created_at.toISOString(),
+            isAdmin: isAdmin
+          };
+          serviceEvents.emit('contest:chat:message', eventData);
+
+          // Send acknowledgment back to sender (optional)
+          server.send(ws, {
+            type: MESSAGE_TYPES.ACKNOWLEDGMENT,
+            topic: normalizedTopic,
+            action: message.action,
+            requestId: message.requestId, // Echo request ID if present
+            data: { success: true, messageId: savedMessage.id },
+            timestamp: new Date().toISOString()
+          });
+
+          logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.CYAN}User ${senderNickname} sent chat message to contest ${contestId}${fancyColors.RESET}`);
+
+        } else {
+          server.sendError(ws, `Unknown action for ${normalizedTopic}: ${message.action}`, 4009);
+        }
+        break;
+
+      // --- Add other COMMAND handlers for different topics below --- 
+      // case TOPICS.SOME_OTHER_TOPIC:
+      //  // ... handler logic ...
+      //  break;
       
       default:
-        server.sendError(ws, `Commands not implemented for topic: ${message.topic}`, 5003);
+        server.sendError(ws, `Commands not implemented for topic: ${normalizedTopic}`, 5003);
     }
   } catch (error) {
-    logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error handling command:${fancyColors.RESET}`, error);
+    logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error handling command (${normalizedTopic}/${message.action}):${fancyColors.RESET}`, error);
     server.sendError(ws, 'Error processing command', 5004);
   }
 }

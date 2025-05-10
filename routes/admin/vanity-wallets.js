@@ -7,7 +7,6 @@ import VanityApiClient from '../../services/vanity-wallet/vanity-api-client.js';
 import { requireSuperAdmin, requireAdmin } from '../../middleware/auth.js';
 import AdminLogger from '../../utils/admin-logger.js';
 import crypto from 'crypto';
-import { Keypair } from '@solana/web3.js';
 import config from '../../config/config.js';
 import prisma from '../../config/prisma.js';
 

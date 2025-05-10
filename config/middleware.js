@@ -1,12 +1,12 @@
 // config/middleware.js
 
 import express from 'express';
+import helmet from 'helmet';
 import { requireAdmin, requireAuth, requireSuperAdmin } from '../middleware/auth.js';
+import { restrictDevAccess } from '../middleware/devAccessMiddleware.js';
+import { environmentMiddleware } from '../middleware/environmentMiddleware.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import { config } from './config.js';
-import helmet from 'helmet';
-import { environmentMiddleware } from '../middleware/environmentMiddleware.js';
-import { restrictDevAccess } from '../middleware/devAccessMiddleware.js';
 // ⛔ REMOVED: import { websocketBypassMiddleware } from '../middleware/debugMiddleware.js';
 import { fancyColors } from '../utils/colors.js';
 
@@ -40,9 +40,7 @@ export function configureMiddleware(app) {
     
     // Method 2: Detect by URL pattern (fallback)
     const hasWebSocketURL = 
-      req.url.includes('/ws/') || 
-      req.url.includes('/socket') ||
-      req.url.includes('/websocket');
+      req.url.includes('/api/v69/ws');
     
     // Combined detection - prioritize header evidence, fallback to URL
     const isWebSocketRequest = 
@@ -118,24 +116,6 @@ export function configureMiddleware(app) {
     'https://twitter.com',
     'https://x.com',
     'https://api.twitter.com',
-    // GPU Server origins - allowing all possible origins from this range
-    'http://192.222.51.100',
-    'http://192.222.51.101',
-    'http://192.222.51.102',
-    'http://192.222.51.110',
-    'http://192.222.51.111',
-    'http://192.222.51.112',
-    'http://192.222.51.120',
-    'http://192.222.51.121',
-    'http://192.222.51.122',
-    'http://192.222.51.123',
-    'http://192.222.51.124',
-    'http://192.222.51.125',
-    'http://192.222.51.126',
-    'http://192.222.51.127',
-    'http://192.222.51.128',
-    'http://192.222.51.129',
-    'http://192.222.51.130',
     // Local development with IP addresses
     'http://127.0.0.1:3004',
     'http://127.0.0.1:3005',
@@ -194,95 +174,65 @@ export function configureMiddleware(app) {
 
   // CORS middleware with WebSocket bypass and special handling for GPU server endpoints
   app.use((req, res, next) => {
-    // Skip CORS entirely for WebSocket requests
     if (req.WEBSOCKET_REQUEST === true) {
       return next();
     }
 
-    // Special CORS bypass for vanity wallet endpoints used by GPU server
-    // This ensures the GPU server can always access these endpoints regardless of origin
-    if (req.path.includes('/api/admin/vanity-wallets/jobs/') || req.path.includes('/api/admin/vanity-callback')) {
-      // Get client IP for validation
-      const clientIp = req.headers['x-forwarded-for'] || 
-                      req.connection.remoteAddress || 
-                      req.socket.remoteAddress;
-                      
-      // Remove IPv6 prefix if present
-      let ipAddress = clientIp;
-      if (ipAddress && ipAddress.startsWith('::ffff:')) {
-        ipAddress = ipAddress.substring(7);
-      }
-      
-      // Check if this is a request from the GPU server IP range (192.222.51.*)
-      if (ipAddress && ipAddress.startsWith('192.222.51.')) {
-        logApi.info(`${fancyColors.BLUE}💎 CORS bypass for GPU server at ${ipAddress} accessing ${req.path}${fancyColors.RESET}`);
-        
-        // Set permissive CORS headers for GPU server
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', '*');
-        res.setHeader('Access-Control-Max-Age', '86400');
-        
-        // Handle preflight
-        if (req.method === 'OPTIONS') {
-          return res.status(204).end();
-        }
-        
-        return next();
-      }
-    }
-    
-    // Process CORS for regular HTTP requests
     let origin = req.headers.origin;
-    
+    let derivedFrom = 'req.headers.origin';
+
     if (!origin && req.headers.referer) {
       try {
         const url = new URL(req.headers.referer);
         origin = url.origin;
+        derivedFrom = 'req.headers.referer';
       } catch (error) {
-        logApi.warn('⚠️ Invalid referer URL:', req.headers.referer);
+        logApi.warn('⚠️ Invalid referer URL for CORS:', req.headers.referer);
+        derivedFrom = 'referer_error';
       }
     }
 
     if (!origin && req.headers.host) {
       const protocol = req.secure ? 'https' : 'http';
       origin = `${protocol}://${req.headers.host}`;
+      derivedFrom = 'req.headers.host';
     }
     
-    // Function to check if origin is allowed
+    logApi.info(`[CORS_DEBUG] Evaluating origin: '${origin}', Derived from: '${derivedFrom}', Path: ${req.path}, Method: ${req.method}`);
+
     const isOriginAllowed = (originToCheck) => {
       if (allowedOrigins.includes(originToCheck)) {
+        logApi.info(`[CORS_DEBUG] Origin '${originToCheck}' IS in allowedOrigins list.`);
         return true;
       }
-      
       if (originToCheck && (
           originToCheck.startsWith('http://localhost:') || 
           originToCheck.startsWith('http://127.0.0.1:') ||
           originToCheck.startsWith('https://localhost:') || 
           originToCheck.startsWith('https://127.0.0.1:')
       )) {
+        logApi.info(`[CORS_DEBUG] Origin '${originToCheck}' IS a localhost variant.`);
         return true;
       }
-      
+      logApi.warn(`[CORS_DEBUG] Origin '${originToCheck}' NOT in allowedOrigins or localhost variants.`);
       return false;
     };
 
-    // Standard CORS headers for allowed origins
     if (origin && isOriginAllowed(origin)) {
+      logApi.info(`[CORS_DEBUG] ALLOWING origin: '${origin}' for path: ${req.path}. Setting ACAO header.`);
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Cache-Control,X-Wallet-Address,Accept,Origin');
       res.setHeader('Access-Control-Allow-Credentials', 'true');
       res.setHeader('Access-Control-Max-Age', '86400');
     } else {
-      logApi.warn(`❌ Origin not allowed: ${origin}`);
+      logApi.warn(`❌ Origin not allowed by BACKEND_MIDDLEWARE: '${origin}' for path: ${req.path}`);
     }
 
-    // Handle preflight
     if (req.method === 'OPTIONS') {
+      logApi.info(`[CORS_DEBUG] OPTIONS request for path: ${req.path}, origin: '${origin}'. Responding 204.`);
       return res.status(204).end();
     }
-
     next();
   });
 
@@ -296,28 +246,7 @@ export function configureMiddleware(app) {
     // Apply Helmet for regular HTTP requests
     return helmet({
       useDefaults: false,
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          connectSrc: [
-            "'self'", 
-            // Allow all WebSocket origins
-            'wss://*', 'ws://*',
-            // Specific endpoints
-            'https://*.degenduel.me', 'wss://*.degenduel.me',
-            'https://*.branch.bet', 'wss://*.branch.bet',
-            'https://dduel.me', 'wss://dduel.me',
-            'https://*.dduel.me', 'wss://*.dduel.me',
-            // Development origins
-            'http://localhost:*', 'ws://localhost:*'
-          ],
-          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-          styleSrc: ["'self'", "'unsafe-inline'"],
-          imgSrc: ["'self'", 'data:', 'blob:'],
-          fontSrc: ["'self'"],
-          frameAncestors: ["'none'"]
-        }
-      },
+      contentSecurityPolicy: false,
       crossOriginEmbedderPolicy: false,
       crossOriginOpenerPolicy: false,
       crossOriginResourcePolicy: { policy: "cross-origin" }

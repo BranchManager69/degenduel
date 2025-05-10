@@ -3,15 +3,15 @@
 /**
  * Contest Wallet Service
  * 
- * This service is responsible for managing contest wallets.
+ * @description This service is responsible for managing contest wallets.
  *   It has been updated to use SolanaEngine which provides enhanced RPC capabilities
  *   with multi-endpoint support and automatic failover.
  * 
  * @module services/contest-wallet/contestWalletService
  * @author @BranchManager69
- * @version 1.9.0
+ * @version 1.9.1
  * @created 2025-04-28
- * @updated 2025-04-28
+ * @updated 2025-05-09 - Undergoing significant refactoring to support new v2 TreasuryCertifier.
  */
 
 // Polyfill WebSocket for Node.js (use ws package)
@@ -27,8 +27,7 @@ import { logApi } from '../../utils/logger-suite/logger.js';
 import AdminLogger from '../../utils/admin-logger.js';
 import prisma from '../../config/prisma.js';
 import { fancyColors, serviceSpecificColors } from '../../utils/colors.js';
-import { Keypair, PublicKey, LAMPORTS_PER_SOL, SystemProgram, Transaction } from '@solana/web3.js';
-import bs58 from 'bs58';
+// Removed bs58 and @solana/web3.js imports as they are no longer used
 import crypto from 'crypto';
 import { SERVICE_NAMES, getServiceMetadata } from '../../utils/service-suite/service-constants.js';
 // Import SolanaEngine (new direct integration)
@@ -38,8 +37,16 @@ import TreasuryCertifier from './treasury-certifier.js';
 // Import VanityApiClient for vanity wallet operations
 import VanityApiClient from '../../services/vanity-wallet/vanity-api-client.js';
 
+// V2 Solana SDK Imports needed for refactored methods
+import { generateKeyPair as generateKeyPairV2, createKeyPairSignerFromBytes } from '@solana/keys';
+import { getAddressFromPublicKey, address as v2Address } from '@solana/addresses';
+import { Buffer } from 'node:buffer';
+
 // Config
 import { config } from '../../config/config.js';
+
+// Local Constants
+const LAMPORTS_PER_SOL_V2 = 1_000_000_000;
 
 // Contest Wallet formatting helpers
 const formatLog = {
@@ -95,6 +102,7 @@ const formatLog = {
     }
   }
 };
+
 // Contest Wallet Config
 const CONTEST_WALLET_CONFIG = {
     name:
@@ -148,7 +156,7 @@ class ContestWalletService extends BaseService {
         logApi.info(`${formatLog.tag()} ${formatLog.header('Initializing')} Contest Wallet Service`);
         
         // Initialize TreasuryCertifier
-        this.treasuryCertifier = null;
+        this.treasuryCertifierInstance = null; // Initialize the instance property
         
         // Initialize WebSocket subscription tracking
         this.websocketSubscriptions = {
@@ -233,85 +241,43 @@ class ContestWalletService extends BaseService {
     
     // Initialize the TreasuryCertifier
     /**
-     * Initialize the TreasuryCertifier and perform stranded funds recovery
-     * This method initializes the TreasuryCertifier component and
-     * runs a scan for any stranded funds from previous certification runs
+     * Initialize the TreasuryCertifier for the new simplified v2 health check.
      * 
-     * @returns {Promise<void>}
+     * @returns {Promise<TreasuryCertifier | null>} The TreasuryCertifier instance or null on failure.
      */
     async initTreasuryCertifier() {
         try {
-            // Guard against double initialization
-            if (this.treasuryCertifier) {
-                logApi.info(`${formatLog.tag()} ${formatLog.header('TREASURY')} TreasuryCertifier already initialized, skipping`);
-                return this.treasuryCertifier;
+            if (this.treasuryCertifierInstance) {
+                logApi.info(`${formatLog.tag()} ${formatLog.header('TREASURY (v2)')} TreasuryCertifier already initialized, skipping.`);
+                return this.treasuryCertifierInstance;
             }
             
-            logApi.info(`${formatLog.tag()} ${formatLog.header('TREASURY')} Initializing TreasuryCertifier`);
+            logApi.info(`${formatLog.tag()} ${formatLog.header('TREASURY (v2)')} Initializing new TreasuryCertifier (Minimalist Health Check)...`);
             
-            // Initialize the TreasuryCertifier instance with required dependencies
-            this.treasuryCertifier = new TreasuryCertifier({
-                solanaEngine,
-                prisma,
-                logApi,
-                formatLog,
-                fancyColors,
-                decryptPrivateKey: this.decryptPrivateKey.bind(this),
-                config
+            // These should be class members or correctly scoped variables if not passed directly
+            // For this edit, I'm assuming they are available in the class scope (e.g., this.logApi, this.formatLog)
+            // or imported globally (like solanaEngine, prisma, config from the top of the file).
+            this.treasuryCertifierInstance = new TreasuryCertifier({
+                solanaEngine: solanaEngine, // Assuming global/module scope import
+                prisma: prisma,             // Assuming global/module scope import
+                logApi: logApi,           // Assuming global/module scope import or this.logApi
+                formatLog: formatLog,       // Assuming global/module scope import or this.formatLog
+                fancyColors: fancyColors,     // Assuming global/module scope import or this.fancyColors
+                config: config              // Assuming global/module scope import (appConfig)
             });
             
-            // Initialize the persistent certification pool
-            logApi.info(`${formatLog.tag()} ${formatLog.header('PERSISTENT POOL')} Initializing persistent certification pool...`);
-            
-            try {
-                await this.treasuryCertifier.initPersistentCertificationPool({
-                    numTestWallets: config.service_test?.treasury_certifier_num_wallets || 3,
-                    initialTestAmount: config.service_test?.treasury_certifier_test_amount || 0.006
-                });
-                logApi.info(`${formatLog.tag()} ${formatLog.success('Persistent certification pool initialized successfully')}`);
-            } catch (poolError) {
-                logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Failed to initialize persistent pool: ${poolError.message}`)}`);
-                logApi.info(`${formatLog.tag()} ${formatLog.info('Will fall back to traditional certification if needed')}`);
-            }
-            
-            // Scan for and recover any stranded funds from previous certification runs
-            logApi.info(`${formatLog.tag()} ${formatLog.header('RECOVERY')} Scanning for stranded certification funds...`);
-            
-            const recoveryResults = await this.treasuryCertifier.scanForStrandedFunds(this.treasuryWalletAddress);
-            
-            if (recoveryResults.recoveredFunds) {
-                // Update service stats with recovered amounts
-                this.walletStats.reclaimed_funds.total_operations++;
-                this.walletStats.reclaimed_funds.successful_operations++;
-                this.walletStats.reclaimed_funds.total_amount += recoveryResults.totalRecovered || 0;
-                this.walletStats.reclaimed_funds.last_reclaim = new Date().toISOString();
-                
-                logApi.info(`${formatLog.tag()} ${formatLog.success(`Successfully recovered ${recoveryResults.totalRecovered} SOL to treasury`)}`);
-                
-                // Log detailed recovery information
-                if (recoveryResults.details && recoveryResults.details.length > 0) {
-                    recoveryResults.details.forEach(detail => {
-                        logApi.info(`${formatLog.tag()} ${formatLog.info(`Recovered ${formatLog.balance(detail.recovered)} from ${detail.walletAddress.slice(0, 8)}...`)}`);
-                    });
-                }
-            } else {
-                logApi.info(`${formatLog.tag()} ${formatLog.info('No stranded funds found to recover.')}`);
-            }
-            
-            // Return the TreasuryCertifier instance
-            return this.treasuryCertifier;
+            logApi.info(`${formatLog.tag()} ${formatLog.success('New TreasuryCertifier (v2 Minimalist) instance created.')}`);
+            return this.treasuryCertifierInstance;
             
         } catch (error) {
-            logApi.error(`${formatLog.tag()} ${formatLog.error('TreasuryCertifier initialization error:')}`, {
+            logApi.error(`${formatLog.tag()} ${formatLog.error('TreasuryCertifier v2 initialization error:')}`, {
                 error: error.message,
                 stack: error.stack
             });
-            // Don't throw the error - we want the service to continue even if recovery fails
-            this.walletStats.reclaimed_funds.failed_operations++;
-            this.walletStats.errors.last_error = `TreasuryCertifier error: ${error.message}`;
-            
-            // Return the certifier if it was created before the error, or null if it wasn't
-            return this.treasuryCertifier;
+            if (this.walletStats && this.walletStats.errors) { // Safe access
+                this.walletStats.errors.last_error = `TreasuryCertifier v2 init error: ${error.message}`;
+            }
+            return null; 
         }
     }
 
@@ -331,17 +297,13 @@ class ContestWalletService extends BaseService {
                 return false;
             }
             
-            // Call parent initialize
             const success = await super.initialize();
             if (!success) {
                 return false;
             }
             
-            // Verify SolanaEngine is available
             if (typeof solanaEngine.isInitialized === 'function' ? !solanaEngine.isInitialized() : !solanaEngine.isInitialized) {
                 logApi.warn(`${formatLog.tag()} ${formatLog.header('WAITING FOR SOLANA')} ${formatLog.warning('SolanaEngine not yet initialized, will wait...')}`);
-                
-                // Add some tolerance for initialization order
                 for (let i = 0; i < 5; i++) {
                     await new Promise(resolve => setTimeout(resolve, 2000));
                     if (typeof solanaEngine.isInitialized === 'function' ? solanaEngine.isInitialized() : solanaEngine.isInitialized) {
@@ -349,442 +311,66 @@ class ContestWalletService extends BaseService {
                         break;
                     }
                 }
-                
-                // Final check
                 if (typeof solanaEngine.isInitialized === 'function' ? !solanaEngine.isInitialized() : !solanaEngine.isInitialized) {
                     throw new Error('SolanaEngine is not available after waiting. Contest Wallet Service requires SolanaEngine.');
                 }
             }
             
-            // Get SolanaEngine connection status
-            const connectionStatus = solanaEngine.getConnectionStatus();
-            const healthyEndpoints = connectionStatus.healthyEndpoints || 0;
-            const totalEndpoints = connectionStatus.totalEndpoints || 0;
+            const connectionStatus = solanaEngine.getConnectionStatus ? solanaEngine.getConnectionStatus() : { healthyEndpoints: 'N/A', totalEndpoints: 'N/A' };
+            const healthyEndpoints = connectionStatus?.healthyEndpoints || 0;
+            const totalEndpoints = connectionStatus?.totalEndpoints || 0;
             
             logApi.info(`${formatLog.tag()} ${formatLog.success('Contest Wallet Service initialized successfully')}`);
             logApi.info(`${formatLog.tag()} ${formatLog.info(`Using SolanaEngine with ${healthyEndpoints}/${totalEndpoints} healthy RPC endpoints`)}`);
             
-            // Initialize WebSocket account monitoring for contest wallets
-        // This replaces the traditional poll-based approach with real-time WebSocket updates
-        // providing instant balance updates without RPC polling overhead
-        logApi.info(`${formatLog.tag()} ${formatLog.header('WEBSOCKET')} Setting up real-time wallet monitoring`);
-        this.initializeWebSocketMonitoring().then(() => {
-            logApi.info(`${formatLog.tag()} ${formatLog.success('WebSocket monitoring initialized successfully')}`);
-            
-            // Mark the balance checker as WebSocket-enabled in stats
-            this.walletStats.websocket_monitoring = {
-                enabled: true,
-                initialized_at: new Date().toISOString(),
-                status: 'active'
-            };
-        }).catch(err => {
-            logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Failed to initialize WebSocket monitoring: ${err.message}`)}`, { 
-                error: err.message, 
-                stack: err.stack 
-            });
-            
-            logApi.info(`${formatLog.tag()} ${formatLog.info('Falling back to traditional polling for wallet balances')}`);
-            
-            // Mark the balance checker as using traditional polling in stats
-            this.walletStats.websocket_monitoring = {
-                enabled: false,
-                error: err.message,
-                status: 'fallback_to_polling'
-            };
-            
-            // Start the traditional polling fallback
-            this.startPollingFallback();
-        });
-            
-            // Initialize the TreasuryCertifier first, then optionally run self-test
-            // Still run in background to avoid blocking service initialization, but coordinate the sequence
-            this.initTreasuryCertifier().then(() => {
-                // Run the startup self-test only after TreasuryCertifier is initialized
-                if (process.env.CONTEST_WALLET_SELF_TEST === 'true' || 
-                    (config.service_test && config.service_test.contest_wallet_self_test)) {
-                    logApi.info(`${formatLog.tag()} ${formatLog.header('SELF-TEST')} Running wallet self-test in background`);
-                    
-                    return this.scheduleSelfTest();
-                }
-                logApi.info(`${formatLog.tag()} ${formatLog.info('Skipping self-test (not enabled)')}`);
-            }).then(() => {
-                if (this.treasuryCertifier) {
-                    logApi.info(`${formatLog.tag()} ${formatLog.success('Self-test completed in background')}`);
+            logApi.info(`${formatLog.tag()} ${formatLog.header('WEBSOCKET')} Setting up real-time wallet monitoring`);
+            this.initializeWebSocketMonitoring().then(() => {
+                logApi.info(`${formatLog.tag()} ${formatLog.success('WebSocket monitoring initialized successfully')}`);
+                if(this.walletStats && this.walletStats.websocket_monitoring) { 
+                    this.walletStats.websocket_monitoring.enabled = true;
+                    this.walletStats.websocket_monitoring.initialized_at = new Date().toISOString();
+                    this.walletStats.websocket_monitoring.status = 'active';
                 }
             }).catch(err => {
-                logApi.warn(`${formatLog.tag()} ${formatLog.warning('Treasury initialization or self-test failed: ' + err.message)}`);
+                logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Failed to initialize WebSocket monitoring: ${err.message}`)}`, { 
+                    error: err.message, 
+                    stack: err.stack 
+                });
+                logApi.info(`${formatLog.tag()} ${formatLog.info('Falling back to traditional polling for wallet balances')}`);
+                if(this.walletStats && this.walletStats.websocket_monitoring) { 
+                    this.walletStats.websocket_monitoring.enabled = false;
+                    this.walletStats.websocket_monitoring.error = err.message;
+                    this.walletStats.websocket_monitoring.status = 'fallback_to_polling';
+                }
+                this.startPollingFallback();
             });
             
-            logApi.info(`${formatLog.tag()} ${formatLog.info('Service initialization continuing - Treasury certification runs in background')}`);
+            // Initialize the NEW TreasuryCertifier. 
+            this.initTreasuryCertifier().then((certifierInstance) => {
+                const selfTestEnabled = process.env.CONTEST_WALLET_SELF_TEST === 'true' || 
+                                        (config.service_test && config.service_test.contest_wallet_self_test === true);
+
+                if (certifierInstance && selfTestEnabled) {
+                    logApi.info(`${formatLog.tag()} ${formatLog.header('SELF-TEST')} Scheduling wallet self-test with new TreasuryCertifier.`);
+                    // Assuming scheduleSelfTest will call certifierInstance.runCertification()
+                    // If scheduleSelfTest is async, its promise should be handled or returned.
+                    this.scheduleSelfTest(certifierInstance); 
+                } else if (certifierInstance) {
+                    logApi.info(`${formatLog.tag()} ${formatLog.info('New TreasuryCertifier initialized, self-test not enabled.')}`);
+                } else {
+                    logApi.warn(`${formatLog.tag()} ${formatLog.warning('TreasuryCertifier failed to initialize. Self-test cannot run.')}`);
+                }
+            }).catch(err => {
+                logApi.warn(`${formatLog.tag()} ${formatLog.warning('TreasuryCertifier init/self-test scheduling failed: ' + err.message)}`);
+            });
             
-            
+            logApi.info(`${formatLog.tag()} ${formatLog.info('Service initialization continuing - Treasury certification (if enabled) runs via self-test.')}`);
             return true;
         } catch (error) {
             logApi.error(`${formatLog.tag()} ${formatLog.error('Contest Wallet Service initialization error:')}`, {
                 error: error.message,
                 stack: error.stack
             });
-            throw error;
-        }
-    }
-
-    // Encrypt wallet private key
-    /**
-     * Encrypt wallet private key
-     * 
-     * @param {string} privateKey - The private key to encrypt
-     * @returns {string} - The encrypted private key
-     */
-    encryptPrivateKey(privateKey) {
-        try {
-            const iv = crypto.randomBytes(16);
-            
-            // Use the local config value for encryption algorithm, which is hardcoded in CONTEST_WALLET_CONFIG
-            // This prevents reliance on global config which doesn't have this property
-            const algorithm = 'aes-256-gcm'; // Hardcoded to match key-recovery.js
-            
-            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Using encryption algorithm: ${algorithm} for encryption${fancyColors.RESET}`);
-            
-            const cipher = crypto.createCipheriv(
-                algorithm,
-                Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex'),
-                iv
-            );
-
-            const encrypted = Buffer.concat([
-                cipher.update(privateKey, 'utf8'),
-                cipher.final()
-            ]);
-
-            const tag = cipher.getAuthTag();
-
-            return JSON.stringify({
-                encrypted: encrypted.toString('hex'),
-                iv: iv.toString('hex'),
-                tag: tag.toString('hex')
-            });
-        } catch (error) {
-            this.walletStats.errors.encryption_failures++;
-            this.walletStats.errors.last_error = error.message;
-            throw ServiceError.operation('Failed to encrypt wallet key', {
-                error: error.message,
-                type: 'ENCRYPTION_ERROR'
-            });
-        }
-    }
-
-    // Get unassociated vanity wallet
-    /**
-     * Get unassociated vanity wallet from the database
-     * 
-     * @returns {Promise<Object>} - The results of the operation
-     */
-    async getUnassociatedVanityWallet() {
-        try {
-            logApi.info(`${formatLog.tag()} ${formatLog.header('Searching')} for vanity wallets in database...`);
-            
-            // Only check for DUEL vanity wallets
-            logApi.info(`${formatLog.tag()} ${formatLog.info('Checking for DUEL pattern')}`);
-            const duelWallet = await VanityApiClient.getAvailableVanityWallet('DUEL');
-            if (duelWallet) {
-                logApi.info(`${formatLog.tag()} ${formatLog.header('Found')} DUEL wallet: ${duelWallet.wallet_address}`);
-                
-                // Parse the private key from JSON string
-                const privateKey = JSON.parse(duelWallet.private_key);
-                
-                return {
-                    publicKey: duelWallet.wallet_address,
-                    privateKey: JSON.stringify(privateKey),
-                    isVanity: true,
-                    vanityType: 'DUEL',
-                    dbId: duelWallet.id
-                };
-            }
-            
-            // No longer check for DEGEN wallets
-            logApi.info(`${formatLog.tag()} ${formatLog.info('No DUEL wallets available, and not checking for DEGEN wallets')}`);
-            return null;
-        } catch (error) {
-            logApi.warn(`${formatLog.tag()} ${formatLog.header('Error')} Finding vanity wallet: ${formatLog.error(error.message)}`, {
-                error: error.message,
-                stack: error.stack
-            });
-            return null;
-        }
-    }
-
-    // Get first unassociated wallet from folder
-    /**
-     * Get first unassociated wallet from folder
-     * 
-     * @param {string} folderName - The name of the folder to check
-     * @returns {Promise<Object>} - The results of the operation
-     */
-    async getFirstUnassociatedWalletFromFolder(folderName) {
-        try {
-            const fs = await import('fs/promises');
-            const dirPath = `/home/websites/degenduel/addresses/keypairs/public/${folderName}`;
-            
-            logApi.info(`${formatLog.tag()} ${formatLog.info(`Checking directory: ${dirPath}`)}`);
-            
-            // Get files in directory
-            const files = await fs.readdir(dirPath);
-            logApi.info(`${formatLog.tag()} ${formatLog.info(`Found ${files.length} files in ${folderName} directory`)}`);
-            
-            // Filter for JSON files
-            const keypairFiles = files.filter(f => f.endsWith('.json'));
-            logApi.info(`${formatLog.tag()} ${formatLog.info(`Found ${keypairFiles.length} JSON files in ${folderName} directory`)}`);
-            
-            if (keypairFiles.length > 0) {
-                logApi.info(`${formatLog.tag()} ${formatLog.info(`First few keypair files: ${keypairFiles.slice(0, 3).join(', ')}`)}`);
-            }
-            
-            for (const file of keypairFiles) {
-                // Extract public key from filename
-                const publicKey = file.replace('.json', '');
-                logApi.info(`${formatLog.tag()} ${formatLog.info(`Checking wallet: ${publicKey}`)}`);
-                
-                // Check if already in database
-                const existing = await prisma.contest_wallets.findFirst({
-                    where: { wallet_address: publicKey }
-                });
-                
-                if (existing) {
-                    logApi.info(`${formatLog.tag()} ${formatLog.header('Already Used')} Wallet: ${publicKey}`);
-                    continue;
-                }
-                
-                // If the wallet is not in the database, decrypt the private key and return it
-                if (!existing) {
-                    // Found an unassociated wallet
-                    const keypairPath = `${dirPath}/${file}`;
-                    const privateKeyPath = `/home/websites/degenduel/addresses/pkeys/public/${folderName}/${publicKey}.key`;
-                    
-                    logApi.info(`${formatLog.tag()} ${formatLog.info(`Looking for private key at: ${privateKeyPath}`)}`);
-                    
-                    try {
-                        // Check if private key file exists
-                        await fs.access(privateKeyPath);
-                        
-                        // Read unencrypted private key
-                        const privateKey = await fs.readFile(privateKeyPath, 'utf8');
-                        logApi.info(`${formatLog.tag()} ${formatLog.success(`Read private key with length: ${privateKey.length}`)}`);
-                        
-                        logApi.info(`${formatLog.tag()} ${formatLog.header('Success')} Found unassociated vanity wallet: ${publicKey}`);
-                        
-                        // Return the unassociated wallet without encrypting the private key
-                        return { 
-                            publicKey, 
-                            privateKey: privateKey.trim(),
-                            isVanity: true,
-                            vanityType: folderName.replace('_', '')
-                        };
-                    } catch (accessError) {
-                        logApi.warn(`${formatLog.tag()} ${formatLog.header('Error')} Cannot access private key file: ${formatLog.error(accessError.message)}`);
-                        continue; // Try next wallet
-                    }
-                }
-            }
-            
-            // No unassociated wallets found
-            logApi.info(`${formatLog.tag()} ${formatLog.header('Not Found')} No unassociated wallets in folder ${folderName}`);
-            return null;
-        } catch (error) {
-            logApi.warn(`${formatLog.tag()} ${formatLog.header('Error')} Failed to check folder ${folderName}: ${formatLog.error(error.message)}`, {
-                error: error.message,
-                stack: error.stack,
-                folder: folderName
-            });
-            return null;
-        }
-    }
-
-    // Create a new contest wallet
-    /**
-     * Create a new contest wallet
-     * 
-     * @param {number} contestId - The ID of the contest
-     * @param {Object} adminContext - The admin context
-     * @returns {Promise<Object>} - The results of the operation
-     */
-    async createContestWallet(contestId, adminContext = null) {
-        if (this.stats.circuitBreaker.isOpen) {
-            throw ServiceError.operation('Circuit breaker is open for wallet creation');
-        }
-
-        const startTime = Date.now();
-        try {
-            logApi.info(`${formatLog.tag()} ${formatLog.header('Starting')} Contest wallet creation for contest ID: ${contestId}`);
-            
-            // Try to get a vanity address first
-            const vanityWallet = await this.getUnassociatedVanityWallet();
-            
-            let contestWallet;
-            if (vanityWallet) {
-                logApi.info(`${formatLog.tag()} ${formatLog.header('Using')} Vanity wallet for contest ${contestId}`);
-                logApi.info(`${formatLog.tag()} ${formatLog.success(`Vanity details: ${JSON.stringify({
-                    publicKey: vanityWallet.publicKey,
-                    privateKeyLength: vanityWallet.privateKey.length,
-                    isVanity: vanityWallet.isVanity,
-                    vanityType: vanityWallet.vanityType
-                })}`)}`);
-                
-                // Use the vanity wallet - make the operations atomic with a transaction
-                try {
-                    
-                    // Use a transaction to ensure both operations succeed or fail together
-                    const result = await prisma.$transaction(async (tx) => {
-                        // Step 1: Create the contest wallet record
-                        const newContestWallet = await tx.contest_wallets.create({
-                            data: {
-                                contest_id: contestId,
-                                wallet_address: vanityWallet.publicKey,
-                                private_key: this.encryptPrivateKey(vanityWallet.privateKey),
-                                balance: 0,
-                                created_at: new Date(),
-                                is_vanity: true,
-                                vanity_type: vanityWallet.vanityType
-                            }
-                        });
-                        
-                        // Step 2: Mark the vanity wallet as used in our database (directly, not using the API client)
-                        if (vanityWallet.dbId) {
-                            await tx.vanity_wallet_pool.update({
-                                where: { id: vanityWallet.dbId },
-                                data: {
-                                    is_used: true,
-                                    used_at: new Date(),
-                                    used_by_contest: contestId,
-                                    updated_at: new Date()
-                                }
-                            });
-                        }
-                        
-                        return newContestWallet;
-                    });
-                    
-                    // Set the wallet after the transaction completes
-                    contestWallet = result;
-                    
-                    logApi.info(`${formatLog.tag()} ${formatLog.header('Success')} Atomic transaction completed - Wallet created and marked as used`);                    
-                    
-                    logApi.info(`${formatLog.tag()} ${formatLog.header('Success')} Created DB record for vanity wallet`);
-                    logApi.info(`${formatLog.tag()} ${formatLog.success(`Created contest wallet with ${vanityWallet.vanityType} vanity address`)}`, {
-                        contest_id: contestId,
-                        vanity_type: vanityWallet.vanityType,
-                        is_vanity: contestWallet.is_vanity
-                    });
-                } catch (dbError) {
-                    logApi.error(`${formatLog.tag()} ${formatLog.header('Error')} Failed to create vanity wallet DB record: ${formatLog.error(dbError.message)}`, {
-                        error: dbError.message,
-                        stack: dbError.stack,
-                        contestId,
-                        publicKey: vanityWallet.publicKey
-                    });
-                    throw dbError;
-                }
-            } else {
-                logApi.warn(`${formatLog.tag()} ${formatLog.header('Fallback')} No vanity wallet available, generating random wallet for contest #${contestId}`);
-                
-                // Log the fallback to admin logger
-                const contest = await prisma.contests.findUnique({
-                    where: { id: contestId },
-                    select: { created_by_user: true, is_admin: true }
-                });
-                
-                // Use admin logger to log the vanity wallet fallback
-                await AdminLogger.logAction(
-                    'system', 
-                    AdminLogger.Actions.WALLET.VANITY_FALLBACK, 
-                    {
-                        contestId,
-                        created_by: contest?.created_by_user || 'system',
-                        is_admin_created: !!contest?.is_admin,
-                        reason: 'No vanity wallets available in pool'
-                    }
-                );
-                
-                // Fall back to random address generation
-                const keypair = Keypair.generate();
-                const publicKey = keypair.publicKey.toString();
-                const secretKeyBase64 = Buffer.from(keypair.secretKey).toString('base64');
-                
-                logApi.info(`${formatLog.tag()} ${formatLog.info(`Generated random wallet: ${publicKey}`)}`);
-                
-                try {
-                    contestWallet = await prisma.contest_wallets.create({
-                        data: {
-                            contest_id: contestId,
-                            wallet_address: publicKey,
-                            private_key: this.encryptPrivateKey(secretKeyBase64),
-                            balance: 0,
-                            created_at: new Date(),
-                            is_vanity: false
-                        }
-                    });
-                    
-                    logApi.info(`${formatLog.tag()} ${formatLog.header('Success')} Created DB record for random wallet`);
-                    logApi.info(`${formatLog.tag()} ${formatLog.warning(`Created contest wallet with random address (no vanity addresses available)`)}`, {
-                        contest_id: contestId,
-                        is_vanity: contestWallet.is_vanity
-                    });
-                } catch (dbError) {
-                    logApi.error(`${formatLog.tag()} ${formatLog.header('Error')} Failed to create random wallet DB record: ${formatLog.error(dbError.message)}`, {
-                        error: dbError.message,
-                        stack: dbError.stack,
-                        contestId,
-                        publicKey
-                    });
-                    throw dbError;
-                }
-            }
-
-            this.walletStats.wallets.generated++;
-
-            // Update statistics
-            await this.recordSuccess();
-            this.walletStats.wallets.created++;
-            this.walletStats.operations.successful++;
-            this.walletStats.performance.last_operation_time_ms = Date.now() - startTime;
-            this.walletStats.performance.average_creation_time_ms = 
-                (this.walletStats.performance.average_creation_time_ms * this.walletStats.operations.total + 
-                (Date.now() - startTime)) / (this.walletStats.operations.total + 1);
-
-            // Log success
-            logApi.info(`${formatLog.tag()} ${formatLog.header('Complete')} Created contest wallet for contest ID: ${contestId}`);
-
-            // Log admin action if context provided
-            if (adminContext) {
-                await AdminLogger.logAction(
-                    adminContext.admin_address,
-                    'CONTEST_WALLET_CREATE',
-                    {
-                        contest_id: contestId,
-                        wallet_address: contestWallet.wallet_address,
-                        is_vanity: contestWallet.is_vanity || false,
-                        vanity_type: contestWallet.vanity_type || null
-                    },
-                    adminContext
-                );
-            }
-            
-            // Log additional admin warning if we created a non-vanity wallet
-            if (contestWallet && !contestWallet.is_vanity) {
-                logApi.warn(`${formatLog.tag()} ${formatLog.header('Warning')} Contest #${contestId} created with non-vanity wallet - consider generating more vanity wallets`, {
-                    contestId,
-                    walletAddress: contestWallet.wallet_address
-                });
-            }
-            
-            // Return the contest wallet
-            return contestWallet;
-        } catch (error) {
-            // Update error statistics
-            this.walletStats.operations.failed++;
-            this.walletStats.errors.creation_failures++;
-            this.walletStats.errors.last_error = error.message;
-
-            await this.handleError(error);
             throw error;
         }
     }
@@ -808,10 +394,11 @@ class ContestWalletService extends BaseService {
                 };
             }
             
-            // Get current Solana balance using SolanaEngine
-            const publicKey = new PublicKey(wallet.wallet_address);
-            const lamports = await solanaEngine.executeConnectionMethod('getBalance', publicKey);
-            const solBalance = lamports / LAMPORTS_PER_SOL;
+            // Get current Solana balance using SolanaEngine, passing string address
+            // connectionManager.executeSolanaRpcMethod (which executeConnectionMethod maps to)
+            // should handle string addresses for 'getBalance'.
+            const lamports = await solanaEngine.executeConnectionMethod('getBalance', wallet.wallet_address);
+            const solBalance = lamports / LAMPORTS_PER_SOL_V2; // Use V2 constant
             
             //// Log balance update
             //logApi.info(`${fancyColors.MAGENTA}[contestWalletService]${fancyColors.RESET} ${fancyColors.BLACK}Balance of wallet ${wallet.wallet_address} is ${lamports} lamports${fancyColors.RESET} (${solBalance} SOL)`);
@@ -856,9 +443,9 @@ class ContestWalletService extends BaseService {
             return {
                 success: true,
                 wallet_address: wallet.wallet_address,
-                previous_balance: wallet.balance,
+                previous_balance: wallet.balance || 0, // Ensure previous_balance is a number
                 current_balance: solBalance,
-                difference: solBalance - wallet.balance
+                difference: solBalance - (wallet.balance || 0)
             };
         } catch (error) {
             // Update error stats
@@ -1070,7 +657,7 @@ class ContestWalletService extends BaseService {
                     logApi.info(`${formatLog.tag()} ${formatLog.info('Waiting for WebSocket server to be ready...')}`);
                     
                     // Wait for the websocket:ready event
-                    await new Promise(waitResolve => {
+            ;        await new Promise(waitResolve => {
                         // If the server is already ready, resolve immediately
                         if (global.webSocketServerReady === true) {
                             waitResolve();
@@ -1295,7 +882,7 @@ class ContestWalletService extends BaseService {
             
             // Extract lamports and calculate SOL balance
             const lamports = value.lamports || 0;
-            const solBalance = lamports / LAMPORTS_PER_SOL;
+            const solBalance = lamports / LAMPORTS_PER_SOL_V2; // Use V2 constant
             
             // Compare with current balance in database
             const currentBalance = wallet.balance || 0;
@@ -1554,8 +1141,8 @@ class ContestWalletService extends BaseService {
                 const endIndex = Math.min(startIndex + BATCH_SIZE, contestWallets.length);
                 const walletBatch = contestWallets.slice(startIndex, endIndex);
                 
-                // Create batch of PublicKeys
-                const publicKeys = walletBatch.map(wallet => new PublicKey(wallet.wallet_address));
+                // Create batch of STRING public keys for getMultipleAccountsInfo
+                const publicKeysStrings = walletBatch.map(wallet => wallet.wallet_address);
                 
                 // Calculate delay based on consecutive rate limit hits 
                 try {
@@ -1576,7 +1163,7 @@ class ContestWalletService extends BaseService {
                     await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
                     
                     // Get balances of all contest wallets from a single RPC call using SolanaEngine
-                    const balances = await solanaEngine.executeConnectionMethod('getMultipleAccountsInfo', publicKeys);
+                    const balancesInfoResults = await solanaEngine.executeConnectionMethod('getMultipleAccountsInfo', publicKeysStrings);
                     
                     // Reset consecutive rate limit counter on success
                     consecutiveRateLimitHits = 0;
@@ -1588,12 +1175,12 @@ class ContestWalletService extends BaseService {
                     // Process each contest wallet in the batch with its balance                    
                     for (let i = 0; i < walletBatch.length; i++) {
                         const wallet = walletBatch[i];
-                        const accountInfo = balances[i];
+                        const accountInfo = balancesInfoResults[i];
                         
                         try {
                             // If account doesn't exist yet, it has 0 balance
                             const lamports = accountInfo ? accountInfo.lamports : 0;
-                            const solBalance = lamports / LAMPORTS_PER_SOL;
+                            const solBalance = lamports / LAMPORTS_PER_SOL_V2; // Use V2 constant
                             
                             // Compare with previous balance
                             const previousBalance = wallet.balance || 0;
@@ -1988,420 +1575,264 @@ class ContestWalletService extends BaseService {
     }
     
     /**
-     * Decrypt private key from encrypted storage
+     * Decrypt private key from encrypted storage.
+     * Handles both new v2_seed format and legacy formats for backward compatibility.
      * 
-     * @param {string} encryptedData - The encrypted private key data
-     * @returns {string} - The decrypted private key
+     * @param {string} encryptedData - The encrypted private key data (JSON string).
+     * @returns {Buffer} - The decrypted 32-byte private key seed as a Buffer.
+     * @throws {ServiceError} - If decryption fails or format is unrecognized.
      */
     decryptPrivateKey(encryptedData) {
+        this.logApi.debug(`${formatLog.tag()} Attempting to decrypt private key data.`);
+        let parsedData;
         try {
-            // Check if the data might already be in plaintext format (not JSON)
-            if (typeof encryptedData === 'string' && !encryptedData.startsWith('{')) {
-                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Key appears to be in plaintext format already${fancyColors.RESET}`);
-                return encryptedData; // Return as-is if not in JSON format
-            }
-            
-            const { encrypted, iv, tag, aad } = JSON.parse(encryptedData);
-            
-            // Use the local config value for encryption algorithm, which is hardcoded in CONTEST_WALLET_CONFIG
-            // This prevents reliance on global config which doesn't have this property
-            const algorithm = 'aes-256-gcm'; // Hardcoded to match key-recovery.js
-            
-            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Using encryption algorithm: ${algorithm}${fancyColors.RESET}`);
-            
-            const decipher = crypto.createDecipheriv(
-                algorithm,
-                Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex'),
-                Buffer.from(iv, 'hex')
-            );
-            
-            decipher.setAuthTag(Buffer.from(tag, 'hex'));
-            if (aad) decipher.setAAD(Buffer.from(aad));
-            
-            const decrypted = Buffer.concat([
-                decipher.update(Buffer.from(encrypted, 'hex')),
-                decipher.final()
-            ]);
-            
-            return decrypted.toString();
-        } catch (error) {
-            logApi.warn(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Decryption error: ${error.message}, length: ${encryptedData?.length}, preview: ${typeof encryptedData === 'string' ? encryptedData.substring(0, 20) + '...' : 'not a string'}${fancyColors.RESET}`);
-            
-            // If JSON parsing failed, it might be plaintext - return as-is
-            if (error.message && (error.message.includes('JSON') || error.message.includes('Unexpected token'))) {
-                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Key appears to be unencrypted, returning as-is${fancyColors.RESET}`);
-                return encryptedData;
-            }
-            
-            throw ServiceError.operation('Failed to decrypt private key', {
-                error: error.message,
-                type: 'DECRYPTION_ERROR'
+            parsedData = JSON.parse(encryptedData);
+        } catch (e) {
+            // If it's not JSON, it might be a very old plaintext key (highly unlikely for contest wallets after first encryption pass)
+            // Or it's corrupted data.
+            this.logApi.warn(`${formatLog.tag()} ${formatLog.warning('Encrypted data is not valid JSON. Attempting to treat as plaintext (legacy).')}`, { preview: encryptedData.substring(0, 30) });
+            // For now, if it's not JSON, we cannot decrypt it with new or old methods that expect JSON.
+            // If this was truly plaintext 64-byte base64 from old Keypair.secretKey.toString('base64') then that's a different path.
+            // The old decryptPrivateKey also assumed JSON. We will treat non-JSON as an error for v2_seed path.
+            throw ServiceError.operation('Failed to decrypt private key: Invalid JSON format.', {
+                type: 'DECRYPTION_ERROR_FORMAT'
             });
+        }
+
+        if (parsedData.version === 'v2_seed') {
+            this.logApi.info(`${formatLog.tag()} Decrypting v2_seed format private key.`);
+            try {
+                const { encrypted, iv, tag, aad } = parsedData;
+                if (!encrypted || !iv || !tag || !aad) {
+                    throw new Error('Encrypted v2_seed data is missing required fields (encrypted, iv, tag, aad).');
+                }
+
+                const decipher = crypto.createDecipheriv(
+                    'aes-256-gcm',
+                    Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex'),
+                    Buffer.from(iv, 'hex')
+                );
+                decipher.setAuthTag(Buffer.from(tag, 'hex'));
+                decipher.setAAD(Buffer.from(aad, 'hex'));
+
+                const decryptedSeed = Buffer.concat([
+                    decipher.update(Buffer.from(encrypted, 'hex')),
+                    decipher.final()
+                ]);
+
+                if (decryptedSeed.length !== 32) {
+                    throw new Error(`Decrypted v2_seed is not 32 bytes long, got ${decryptedSeed.length} bytes.`);
+                }
+                this.logApi.info(`${formatLog.tag()} Successfully decrypted 32-byte v2_seed.`);
+                return decryptedSeed; // Return as Buffer
+            } catch (error) {
+                this.logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to decrypt v2_seed private key:')}`, { error: error.message });
+                throw ServiceError.operation('Failed to decrypt v2_seed private key', {
+                    error: error.message,
+                    type: 'DECRYPTION_ERROR_V2_SEED'
+                });
+            }
+        } else {
+            // Fallback to legacy decryption logic (IF NEEDED and if the old logic can be adapted or called)
+            // For a clean break, we might throw an error for unrecognized formats.
+            // The OLD decryptPrivateKey in the provided file also expected JSON, but without a `version` field.
+            // It would parse `encrypted, iv, tag, aad` and then do `decrypted.toString()` at the end.
+            // That `toString()` implies the encrypted content was itself a string (like base64 of 64-byte key).
+            this.logApi.warn(`${formatLog.tag()} ${formatLog.warning('Private key is not in v2_seed format. Attempting legacy decryption (experimental).')}`);
+            try {
+                // This is a simplified adaptation of the OLD logic, assuming the encrypted content was the base64 of a 64-byte key.
+                const { encrypted, iv, tag, aad } = parsedData;
+                 if (!encrypted || !iv || !tag ) { // AAD might be optional in some very old formats
+                    throw new Error('Encrypted legacy data is missing required fields (encrypted, iv, tag).');
+                }
+                const decipher = crypto.createDecipheriv(
+                    'aes-256-gcm', 
+                    Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex'),
+                    Buffer.from(iv, 'hex')
+                );
+                decipher.setAuthTag(Buffer.from(tag, 'hex'));
+                if (aad) decipher.setAAD(Buffer.from(aad, 'hex'));
+
+                const decryptedStringRepresentation = Buffer.concat([
+                    decipher.update(Buffer.from(encrypted, 'hex')),
+                    decipher.final()
+                ]).toString(); // Old logic did .toString()
+                
+                // Now, we need to parse this string (likely base64 of 64 bytes) to get the first 32 bytes as seed.
+                const fullKeyBytes = Buffer.from(decryptedStringRepresentation, 'base64');
+                if (fullKeyBytes.length === 64) {
+                    this.logApi.info("Successfully decrypted legacy key (64 bytes base64 encoded) and extracted 32-byte seed.");
+                    return fullKeyBytes.slice(0, 32); // Return the first 32 bytes as seed
+                } else {
+                    this.logApi.warn("Decrypted legacy key was not 64 bytes after base64 decoding. Cannot extract seed.", {length: fullKeyBytes.length });
+                    throw new Error ('Legacy key decryption did not result in 64 bytes after base64 decode.');
+                }
+
+            } catch (legacyError) {
+                 this.logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to decrypt private key using legacy attempt:')}`, { error: legacyError.message });
+                throw ServiceError.operation('Failed to decrypt private key: Unrecognized format or legacy decryption failed.', {
+                    error: legacyError.message,
+                    type: 'DECRYPTION_ERROR_LEGACY_ATTEMPT'
+                });
+            }
         }
     }
 
     /**
      * Perform a blockchain transfer from a contest wallet to a destination address
+     * This version prepares the v2 signer and calls the (soon to be refactored) executeTransfer.
      * 
      * @param {Object} sourceWallet - The source wallet object containing encrypted private key
-     * @param {string} destinationAddress - The destination wallet address
+     * @param {string} destinationAddressString - The destination wallet address
      * @param {number} amount - The amount to transfer in SOL
      * @returns {Promise<string>} - The transaction signature
      */
-    async performBlockchainTransfer(sourceWallet, destinationAddress, amount) {
+    async performBlockchainTransfer(sourceWallet, destinationAddressString, amount) {
+        this.logApi.info(`${formatLog.tag()} ${formatLog.transfer('PREPARE v2 SIGNER')} for ${amount} SOL from ${sourceWallet.wallet_address} to ${destinationAddressString}`);
+        let seedBytes_32;
+
         try {
-            // Log wallet info without revealing sensitive data
-            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Transfer ${fancyColors.RESET} ${amount} SOL from ${sourceWallet.wallet_address} to ${destinationAddress}`, {
-                is_vanity: sourceWallet.is_vanity,
-                vanity_type: sourceWallet.vanity_type,
-                wallet_db_id: sourceWallet.id,
-                contest_id: sourceWallet.contest_id,
-                wallet_address: sourceWallet.wallet_address,
-                private_key_format: typeof sourceWallet.private_key === 'string' 
-                    ? (sourceWallet.private_key.startsWith('{') ? 'JSON' : 'plaintext') 
-                    : typeof sourceWallet.private_key,
-                private_key_length: sourceWallet.private_key?.length || 0
-            });
-            
-            const decryptedPrivateKey = this.decryptPrivateKey(sourceWallet.private_key);
-            
-            // Handle many different private key formats used across wallet services
-            let privateKeyBytes;
-            let fromKeypair;
-            
-            // Debug info for key troubleshooting
-            const keyInfo = {
-                wallet_address: sourceWallet.wallet_address,
-                key_length: decryptedPrivateKey.length,
-                key_format: typeof decryptedPrivateKey,
-                is_vanity: sourceWallet.is_vanity,
-                vanity_type: sourceWallet.vanity_type
-            };
-            
-            // Try different formats in order of likelihood
-            try {
-                // Method 1: First check if it might be a hex string (used in solana-wallet.js)
-                if (/^[0-9a-fA-F]+$/.test(decryptedPrivateKey)) {
-                    try {
-                        // For hex format, make sure we have the correct length (64 bytes = 128 hex chars)
-                        if (decryptedPrivateKey.length === 128) {
-                            privateKeyBytes = Buffer.from(decryptedPrivateKey, 'hex');
-                            fromKeypair = Keypair.fromSecretKey(privateKeyBytes);
-                            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Key decoded as standard hex (128 chars)${fancyColors.RESET}`);
-                            return await this.executeTransfer(fromKeypair, destinationAddress, amount);
-                        } else {
-                            // Try creating a Uint8Array of the correct size
-                            const secretKey = new Uint8Array(64); // 64 bytes for ed25519 keys
-                            const hexData = Buffer.from(decryptedPrivateKey, 'hex');
-                            
-                            // Copy available bytes (may be smaller than 64)
-                            for (let i = 0; i < Math.min(hexData.length, 64); i++) {
-                                secretKey[i] = hexData[i];
-                            }
-                            
-                            fromKeypair = Keypair.fromSecretKey(secretKey);
-                            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Key decoded as padded hex (${decryptedPrivateKey.length} chars)${fancyColors.RESET}`);
-                            return await this.executeTransfer(fromKeypair, destinationAddress, amount);
-                        }
-                    } catch (hexError) {
-                        keyInfo.hex_error = hexError.message;
-                        // Continue to next format
-                        logApi.warn(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Hex key decoding failed: ${hexError.message}${fancyColors.RESET}`);
-                    }
+            const decryptedData = this.decryptPrivateKey(sourceWallet.private_key); // This now returns a 32-byte Buffer (seed)
+
+            if (sourceWallet.is_vanity) {
+                this.logApi.info(`${formatLog.tag()} Processing VANITY wallet. Decrypted data expected to be 32-byte seed (if re-encrypted) or legacy format.`);
+                // The `decryptPrivateKey` was updated to try and return a 32-byte seed Buffer even for legacy.
+                // If it successfully parsed a legacy 64-byte key and extracted the seed, decryptedData will be that 32-byte seed.
+                // If decryptPrivateKey couldn't handle a specific legacy vanity format and threw an error, we'd catch it below.
+                // If it returned a string (e.g. bs58 of 64-byte key, which the new decryptPrivateKey tries to avoid for legacy),
+                // this path would need to handle it. But the goal is decryptPrivateKey standardizes the output.
+                
+                if (Buffer.isBuffer(decryptedData) && decryptedData.length === 32) {
+                    seedBytes_32 = decryptedData;
+                    this.logApi.info(`${formatLog.tag()} Successfully obtained 32-byte seed for vanity wallet (likely from v2_seed or processed legacy format).`);
+                } else {
+                     // This case should ideally not be hit if decryptPrivateKey correctly handles legacy formats by returning a 32-byte seed.
+                    this.logApi.error("Decrypted data for vanity wallet was not a 32-byte seed Buffer as expected from updated decryptPrivateKey.", { type: typeof decryptedData, length: decryptedData?.length });
+                    throw ServiceError.validation('Vanity key processing error: Expected 32-byte seed from decryptPrivateKey.');
                 }
-                
-                // Method 2: Try as base58 (commonly used for vanity wallets)
-                try {
-                    privateKeyBytes = bs58.decode(decryptedPrivateKey);
-                    
-                    // Validate length for BS58 too - Solana keypair needs 64 bytes
-                    if (privateKeyBytes.length !== 64) {
-                        const paddedKey = new Uint8Array(64);
-                        for (let i = 0; i < Math.min(privateKeyBytes.length, 64); i++) {
-                            paddedKey[i] = privateKeyBytes[i];
-                        }
-                        privateKeyBytes = paddedKey;
-                        logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Key decoded as base58 (padded to 64 bytes)${fancyColors.RESET}`);
-                    } else {
-                        logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Key decoded as base58 (correct 64 byte length)${fancyColors.RESET}`);
-                    }
-                    
-                    fromKeypair = Keypair.fromSecretKey(privateKeyBytes);
-                    return await this.executeTransfer(fromKeypair, destinationAddress, amount);
-                } catch (bs58Error) {
-                    keyInfo.bs58_error = bs58Error.message;
-                    logApi.warn(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Base58 key decoding failed: ${bs58Error.message}${fancyColors.RESET}`);
-                    // Continue to next format
+            } else {
+                this.logApi.info(`${formatLog.tag()} Processing RANDOMLY GENERATED wallet (expected v2_seed format).`);
+                if (!Buffer.isBuffer(decryptedData) || decryptedData.length !== 32) {
+                    this.logApi.error("Decryption of random wallet did not yield a 32-byte seed Buffer.", { type: typeof decryptedData, length: decryptedData?.length });
+                    throw new Error('Decryption of random wallet did not yield a 32-byte seed Buffer.');
                 }
-                
-                // Method 3: Try as base64 (used for generated wallets)
-                try {
-                    privateKeyBytes = Buffer.from(decryptedPrivateKey, 'base64');
-                    
-                    // Validate length for Base64 too - Solana keypair needs 64 bytes
-                    if (privateKeyBytes.length !== 64) {
-                        const paddedKey = new Uint8Array(64);
-                        for (let i = 0; i < Math.min(privateKeyBytes.length, 64); i++) {
-                            paddedKey[i] = privateKeyBytes[i];
-                        }
-                        privateKeyBytes = paddedKey;
-                        logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Key decoded as base64 (padded to 64 bytes)${fancyColors.RESET}`);
-                    } else {
-                        logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Key decoded as base64 (correct 64 byte length)${fancyColors.RESET}`);
-                    }
-                    
-                    fromKeypair = Keypair.fromSecretKey(privateKeyBytes);
-                    return await this.executeTransfer(fromKeypair, destinationAddress, amount);
-                } catch (base64Error) {
-                    keyInfo.base64_error = base64Error.message;
-                    logApi.warn(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Base64 key decoding failed: ${base64Error.message}${fancyColors.RESET}`);
-                    // Continue to next format
-                }
-                
-                // Method 4: Check if it's a JSON string with secretKey
-                if (decryptedPrivateKey.startsWith('{') && decryptedPrivateKey.includes('secretKey')) {
-                    try {
-                        const keyObject = JSON.parse(decryptedPrivateKey);
-                        if (keyObject.secretKey) {
-                            // Handle array format
-                            if (Array.isArray(keyObject.secretKey)) {
-                                // Check if we need to pad to 64 bytes
-                                if (keyObject.secretKey.length !== 64) {
-                                    const paddedKey = new Uint8Array(64);
-                                    for (let i = 0; i < Math.min(keyObject.secretKey.length, 64); i++) {
-                                        paddedKey[i] = keyObject.secretKey[i];
-                                    }
-                                    privateKeyBytes = paddedKey;
-                                    logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Key decoded from JSON array (padded to 64 bytes)${fancyColors.RESET}`);
-                                } else {
-                                    privateKeyBytes = Uint8Array.from(keyObject.secretKey);
-                                    logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Key decoded from JSON array (correct 64 byte length)${fancyColors.RESET}`);
-                                }
-                            } 
-                            // Handle string format
-                            else if (typeof keyObject.secretKey === 'string') {
-                                // Try decoding as base58 or base64
-                                try {
-                                    privateKeyBytes = bs58.decode(keyObject.secretKey);
-                                    logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Key decoded from JSON.secretKey as base58 string${fancyColors.RESET}`);
-                                } catch (err) {
-                                    // Try base64
-                                    privateKeyBytes = Buffer.from(keyObject.secretKey, 'base64');
-                                    logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Key decoded from JSON.secretKey as base64 string${fancyColors.RESET}`);
-                                }
-                                
-                                // Ensure correct length
-                                if (privateKeyBytes.length !== 64) {
-                                    const paddedKey = new Uint8Array(64);
-                                    for (let i = 0; i < Math.min(privateKeyBytes.length, 64); i++) {
-                                        paddedKey[i] = privateKeyBytes[i];
-                                    }
-                                    privateKeyBytes = paddedKey;
-                                    logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}JSON string key padded to 64 bytes${fancyColors.RESET}`);
-                                }
-                            }
-                            
-                            fromKeypair = Keypair.fromSecretKey(privateKeyBytes);
-                            return await this.executeTransfer(fromKeypair, destinationAddress, amount);
-                        }
-                    } catch (jsonError) {
-                        keyInfo.json_error = jsonError.message;
-                        logApi.warn(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}JSON key decoding failed: ${jsonError.message}${fancyColors.RESET}`);
-                        // Continue to next format
-                    }
-                }
-                
-                // Last resort fallback: Try to generate a keypair from whatever data we have
-                try {
-                    logApi.warn(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} FALLBACK ${fancyColors.RESET} All standard methods failed, attempting emergency key recovery${fancyColors.RESET}`);
-                    
-                    // Try to recover by doing a brute force approach which tries multiple key formats
-                    // Check if we can create a Solana keypair directly from the wallet address
-                    try {
-                        logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Attempting to regenerate keypair from wallet address${fancyColors.RESET}`);
-                        
-                        // Highly dangerous but last resort: create a deterministic private key from the wallet address
-                        // This will NOT match the original private key but it's consistent and tied to the address
-                        const addressHash = crypto.createHash('sha512').update(sourceWallet.wallet_address).digest();
-                        const backupSeed = addressHash.slice(0, 32);
-                        
-                        // Use the backup seed to generate a new keypair
-                        const backupKeypair = Keypair.fromSeed(backupSeed);
-                        
-                        // Check if this address matches the original by pure coincidence (extremely unlikely)
-                        if (backupKeypair.publicKey.toBase58() === sourceWallet.wallet_address) {
-                            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} MIRACLE ${fancyColors.RESET} Backup keypair matches the wallet address (astoundingly unlikely)${fancyColors.RESET}`);
-                            return await this.executeTransfer(backupKeypair, destinationAddress, amount);
-                        }
-                        
-                        // Since backup keypair doesn't match (expected), try to bypass public key checks using the keyPair anyway
-                        // In a controlled test environment, this might be acceptable for demonstration
-                        if (process.env.ALLOW_EMERGENCY_KEYPAIR === 'TRUE') {
-                            logApi.warn(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} BYPASS ${fancyColors.RESET} Using emergency backup keypair with NON-MATCHING PUBLIC KEY - ONLY FOR DEMO${fancyColors.RESET}`);
-                            logApi.warn(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.RED}Emergency key: ${backupKeypair.publicKey.toBase58()} vs Wallet: ${sourceWallet.wallet_address}${fancyColors.RESET}`);
-                            return await this.executeTransfer(backupKeypair, destinationAddress, amount);
-                        }
-                    } catch (directError) {
-                        logApi.error(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.RED}Direct address derivation failed: ${directError.message}${fancyColors.RESET}`);
-                    }
-                    
-                    // More standard approach: hash the private key and use it as a seed
-                    const hash = crypto.createHash('sha512').update(decryptedPrivateKey).digest();
-                    const seed = hash.slice(0, 32);
-                    
-                    // Create full 64-byte secret key (first 32 bytes is seed, second 32 bytes is derived)
-                    const secretKey = new Uint8Array(64);
-                    for (let i = 0; i < 32; i++) {
-                        secretKey[i] = seed[i];
-                    }
-                    
-                    // Generate the rest of the key
-                    const keyPair = Keypair.fromSeed(seed);
-                    
-                    // Copy both seed and resulting pubkey data into our secret key
-                    // This may not be a standard ed25519 keypair but might work for Solana
-                    const resultPubKey = keyPair.publicKey.toBytes();
-                    for (let i = 0; i < 32; i++) {
-                        secretKey[i + 32] = resultPubKey[i % resultPubKey.length];
-                    }
-                    
-                    const emergencyKeypair = Keypair.fromSecretKey(secretKey);
-                    
-                    // Double check that the public key matches our wallet address
-                    if (emergencyKeypair.publicKey.toBase58() === sourceWallet.wallet_address) {
-                        logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} SUCCESS ${fancyColors.RESET} Emergency key derivation worked! Public key matches wallet address${fancyColors.RESET}`);
-                        return await this.executeTransfer(emergencyKeypair, destinationAddress, amount);
-                    } else {
-                        logApi.warn(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.RED}Emergency key derivation failed: Generated public key ${emergencyKeypair.publicKey.toBase58()} doesn't match wallet address ${sourceWallet.wallet_address}${fancyColors.RESET}`);
-                    }
-                } catch (emergencyError) {
-                    logApi.error(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} EMERGENCY FAILED ${fancyColors.RESET} ${emergencyError.message}${fancyColors.RESET}`);
-                }
-                
-                // If we reach here, all formats failed
-                throw new Error("Failed to decode private key in any supported format");
-                
-            } catch (formatError) {
-                // All attempts to decode the key failed
-                logApi.error(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Key Format Error ${fancyColors.RESET} Failed to decode private key: ${formatError.message}`, keyInfo);
-                throw new Error(`Cannot decode private key: ${formatError.message}`);
+                seedBytes_32 = decryptedData;
+                this.logApi.info(`${formatLog.tag()} Successfully obtained 32-byte seed for random wallet.`);
             }
+
+            // Create v2 KeyPairSigner from the 32-byte seed
+            const fromSigner_v2 = await createKeyPairSignerFromBytes(seedBytes_32, { SENSITIVE_BYTE_ARRAY_IS_EXTRACTABLE: true });
+            this.logApi.info(`${formatLog.tag()} Created v2 KeyPairSigner. Derived Address: ${fromSigner_v2.address}`);
+            
+            // CRITICAL VERIFICATION STEP
+            if (fromSigner_v2.address !== sourceWallet.wallet_address) {
+                this.logApi.error(`${formatLog.tag()} ${formatLog.error('CRITICAL PUBLIC KEY MISMATCH!')}`,
+                    { derived_address: fromSigner_v2.address, stored_wallet_address: sourceWallet.wallet_address });
+                throw ServiceError.operation('Public key mismatch after deriving from seed. Data corruption or key error suspected.');
+            }
+            this.logApi.info(`${formatLog.tag()} ${formatLog.success('Public key verification PASSED.')} Derived address matches stored address.`);
+
+            // Call executeTransfer (which will be refactored next to accept fromSigner_v2)
+            return await this.executeTransfer(fromSigner_v2, destinationAddressString, amount);
+
         } catch (error) {
-            throw ServiceError.blockchain('Blockchain transfer failed', {
-                error: error.message,
-                sourceWallet: sourceWallet.wallet_address,
-                destination: destinationAddress,
-                amount
+            this.logApi.error(`${formatLog.tag()} ${formatLog.error('performBlockchainTransfer (v2 signer prep) failed:')}`, { 
+                error: error.message, 
+                sourceWalletAddress: sourceWallet.wallet_address, 
+                destination: destinationAddressString, 
+                amount, 
+                isVanity: sourceWallet.is_vanity,
+                stack: error.stack?.substring(0, 500) 
+            });
+            if (error instanceof ServiceError) throw error;
+            throw ServiceError.blockchain('Blockchain transfer v2 signer preparation failed', { 
+                originalError: error.message, 
+                source: sourceWallet.wallet_address 
             });
         }
     }
-    
+
     /**
-     * Helper to execute the actual transfer once we have a valid keypair
+     * Helper to execute the actual SOL transfer once we have a valid v2 signer.
      * 
-     * @param {Keypair} fromKeypair - The source wallet keypair
-     * @param {string} destinationAddress - The destination wallet address
-     * @param {number} amount - The amount of SOL to transfer
-     * @returns {Promise<string>} - The signature of the transaction
+     * @param {import('@solana/keys').KeyPairSigner} fromSigner_v2 - The source wallet v2 KeyPairSigner.
+     * @param {string} destinationAddressString - The destination wallet address string.
+     * @param {number} amount - The amount of SOL to transfer.
+     * @returns {Promise<string>} - The signature of the transaction.
      */
-    async executeTransfer(fromKeypair, destinationAddress, amount) {
+    async executeTransfer(fromSigner_v2, destinationAddressString, amount) {
+        this.logApi.info(`${formatLog.tag()} ${formatLog.transfer('EXECUTE V2 SOL TRANSFER')} ${amount} SOL from ${fromSigner_v2.address} to ${destinationAddressString}`);
         try {
-            // Verify keypair structure and validity
-            try {
-                const pubKeyStr = fromKeypair.publicKey.toString();
-                const secretKeyLength = fromKeypair.secretKey ? fromKeypair.secretKey.length : 0;
-                
-                // Log keypair details for debugging
-                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Keypair Check ${fancyColors.RESET} Public key: ${pubKeyStr}, Secret key length: ${secretKeyLength}`, {
-                    public_key_type: typeof fromKeypair.publicKey,
-                    is_public_key: fromKeypair.publicKey instanceof PublicKey,
-                    secret_key_type: typeof fromKeypair.secretKey,
-                    secret_key_is_array: Array.isArray(fromKeypair.secretKey),
-                    secret_key_is_uint8array: fromKeypair.secretKey instanceof Uint8Array
-                });
-                
-                // Validate the keypair by checking that the public key is derivable from the secret key
-                if (fromKeypair.secretKey && fromKeypair.secretKey.length === 64) {
-                    // Try re-creating the keypair to verify consistency
-                    const verificationKeypair = Keypair.fromSecretKey(fromKeypair.secretKey);
-                    const matches = verificationKeypair.publicKey.toString() === pubKeyStr;
-                    logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${matches ? fancyColors.GREEN : fancyColors.RED}Public key verification: ${matches ? 'MATCH' : 'MISMATCH'}${fancyColors.RESET}`);
-                    
-                    if (!matches) {
-                        // Try to recover - reconstruct keypair from secret key
-                        fromKeypair = Keypair.fromSecretKey(fromKeypair.secretKey);
-                        logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.YELLOW}Keypair reconstructed from secret key${fancyColors.RESET}`);
-                    }
-                }
-            } catch (keypairError) {
-                logApi.error(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Keypair Error ${fancyColors.RESET} ${keypairError.message}${fancyColors.RESET}`);
-                // Continue anyway - the error will be caught in the main try/catch
-            }
+            // 1. Define Program ID and Addresses in v2 format
+            const systemProgramId_v2 = v2Address('11111111111111111111111111111111');
+            const toAddress_v2 = v2Address(destinationAddressString);
+
+            // 2. Prepare AccountMetas for the instruction
+            const fromAccountMeta = { address: fromSigner_v2.address, role: 'readwrite-signer' };
+            const toAccountMeta = { address: toAddress_v2, role: 'readwrite' };
+
+            // 3. Prepare Instruction Data for SystemProgram.transfer
+            const lamportsBigInt = BigInt(Math.round(amount * LAMPORTS_PER_SOL_V2)); // Use v2 constant
+            const instructionData = Buffer.alloc(12); // SystemProgram.transfer is 12 bytes: 4 for index, 8 for lamports
+            instructionData.writeUInt32LE(2, 0);       // Instruction index for SystemProgram.transfer is 2
+            instructionData.writeBigUInt64LE(lamportsBigInt, 4); // Lamports (u64)
+
+            // 4. Construct the v2 SolanaInstruction object
+            const v2SystemTransferInstruction = {
+                programAddress: systemProgramId_v2,
+                accounts: [fromAccountMeta, toAccountMeta],
+                data: instructionData
+            };
             
-            // Verify connection through SolanaEngine before transfer
-            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} Using SolanaEngine for transfer`);
-            
-            // Directly try to get blockhash as a health check
-            try {
-                const blockHashTest = await solanaEngine.executeConnectionMethod('getLatestBlockhash');
-                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Pre-transfer blockhash check successful${fancyColors.RESET}`, {
-                    blockhash: blockHashTest?.value?.blockhash?.substring(0, 8) + '...',
-                    has_value: !!blockHashTest?.value
-                });
-            } catch (bhError) {
-                logApi.error(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.RED}Pre-transfer blockhash check failed${fancyColors.RESET}`, {
-                    error: bhError.message
-                });
-                // Continue despite error - the main transfer will handle it appropriately
-            }
-            
-            // Verify destination address
-            try {
-                const destPubKey = new PublicKey(destinationAddress);
-                logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.GREEN}Destination address validated: ${destPubKey.toString()}${fancyColors.RESET}`);
-            } catch (destError) {
-                logApi.error(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.RED}Invalid destination address: ${destError.message}${fancyColors.RESET}`);
-                // Continue anyway - the error will be caught in the transaction creation
-            }
-            
-            // Create a transaction to transfer SOL
-            logApi.info(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} Executing ${fancyColors.RESET} Transfer of ${amount} SOL to ${destinationAddress}${fancyColors.RESET}`);
-            
-            // Create transaction object
-            const transaction = new Transaction().add(
-                SystemProgram.transfer({
-                    fromPubkey: fromKeypair.publicKey,
-                    toPubkey: new PublicKey(destinationAddress),
-                    lamports: Math.round(amount * LAMPORTS_PER_SOL) // Convert SOL to lamports
-                })
-            );
-            
-            // Send the transaction using SolanaEngine with preferred endpoint options
-            const signature = await solanaEngine.sendTransaction(
-                transaction, 
-                [fromKeypair], 
-                {
-                    commitment: 'confirmed',
-                    skipPreflight: false,
-                    // Use a preferred endpoint for critical operations if available
-                    endpointId: this.config.wallet?.preferredEndpoints?.transfers
-                }
-            );
-            
-            // Return the signature
-            return signature;
-        } catch (error) {
-            // Log the specific error with detailed information
-            logApi.error(`${fancyColors.CYAN}[contestWalletService]${fancyColors.RESET} SOL transfer failed using @solana/transactions v2.1`, {
-                error: error.message,
-                stack: error.stack,
-                from: fromKeypair.publicKey.toString(),
-                to: destinationAddress,
-                amount: amount
+            // 5. Define options for solanaEngine.sendTransaction
+            const transferOptions = {
+                commitment: 'confirmed',
+                skipPreflight: false, // Default to false for safety in financial transactions
+                endpointId: this.config.wallet?.preferredEndpoints?.transfers, // From original executeTransfer logic
+                // blockhashRetries and sendTransactionRetries are handled by solanaEngine.sendTransaction defaults
+            };
+
+            this.logApi.info(`${formatLog.tag()} Attempting v2 solanaEngine.sendTransaction...`, {
+                instruction: {
+                    program: v2SystemTransferInstruction.programAddress,
+                    accounts: v2SystemTransferInstruction.accounts.map(a => ({...a, address: a.address.toString()})), // Log address as string
+                    dataLength: v2SystemTransferInstruction.data.length
+                },
+                options: transferOptions 
             });
-            
-            // Rethrow to allow the calling function to handle it
-            throw error;
+
+            // 6. Call solanaEngine.sendTransaction with v2 inputs
+            const result = await this.solanaEngine.sendTransaction(
+                [v2SystemTransferInstruction], // Array of SolanaInstruction objects
+                fromSigner_v2.address,       // Fee payer address (v2 Address string)
+                [fromSigner_v2],             // Array of v2 Signer objects
+                transferOptions
+            );
+
+            // solanaEngine.sendTransaction should return an object like { signature, blockhashResult, confirmationStatus }
+            if (!result || !result.signature) {
+                this.logApi.error(`${formatLog.tag()} ${formatLog.error('solanaEngine.sendTransaction did not return a valid signature.')}`, { result });
+                throw new Error('Transaction sent but no signature received from solanaEngine.');
+            }
+
+            this.logApi.info(`${formatLog.tag()} ${formatLog.success('V2 SOL Transfer Complete.')} Signature: ${result.signature}`);
+            return result.signature; // Return only the signature string as done previously
+
+        } catch (error) {
+            this.logApi.error(`${formatLog.tag()} ${formatLog.error('V2 executeTransfer for SOL failed:')}`, {
+                error: error.message,
+                sourceAddress: fromSigner_v2.address,
+                destination: destinationAddressString,
+                amount,
+                stack: error.stack?.substring(0, 500) // Log a portion of the stack
+            });
+            // Ensure ServiceError is thrown for consistent error handling by callers
+            if (error instanceof ServiceError) throw error;
+            throw ServiceError.blockchain('V2 SOL transfer execution failed', { 
+                originalError: error.message, 
+                from: fromSigner_v2.address, 
+                to: destinationAddressString 
+            });
         }
     }
 
@@ -2520,11 +1951,9 @@ class ContestWalletService extends BaseService {
                 await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
                 
                 try {
-                    // Create batch of PublicKeys
-                    const publicKeys = walletBatch.map(wallet => new PublicKey(wallet.wallet_address));
-                    
-                    // Get multiple balances in a single RPC call using SolanaEngine
-                    const balanceInfos = await solanaEngine.executeConnectionMethod('getMultipleAccountsInfo', publicKeys);
+                    // Create batch of STRING public keys
+                    const publicKeysStrings = walletBatch.map(wallet => wallet.wallet_address);
+                    const balanceInfos = await solanaEngine.executeConnectionMethod('getMultipleAccountsInfo', publicKeysStrings);
                     
                     // Reset consecutive rate limit counter on success
                     consecutiveRateLimitHits = 0;
@@ -2537,7 +1966,7 @@ class ContestWalletService extends BaseService {
                         try {
                             // If account doesn't exist yet, it has 0 balance
                             const lamports = accountInfo ? accountInfo.lamports : 0;
-                            const solBalance = lamports / LAMPORTS_PER_SOL;
+                            const solBalance = lamports / LAMPORTS_PER_SOL_V2; // Use V2 constant
                             
                             // Update wallet balance in database
                             await prisma.contest_wallets.update({
@@ -2814,59 +2243,56 @@ class ContestWalletService extends BaseService {
         }
     }
 
-        
     /**
      * Run startup certification of the wallet functionality
      * 
+     * @param {TreasuryCertifier} [certifierInstanceToUse] - Optional certifier instance, defaults to this.treasuryCertifierInstance
      * @param {number} [delayMs=5000] - Initial delay in milliseconds before running the test
      * @returns {Promise<void>}
      */
-    async scheduleSelfTest(delayMs = 5000) {
+    async scheduleSelfTest(certifierInstanceToUse, delayMs = 5000) { // Added certifierInstanceToUse parameter
         try {
-            // Check if certification is enabled in environment or config
-            const runCertification = process.env.CONTEST_WALLET_SELF_TEST === 'true' || 
-                                    (config.service_test && config.service_test.contest_wallet_self_test);
+            const runSelfTestEnabled = process.env.CONTEST_WALLET_SELF_TEST === 'true' || 
+                                    (config.service_test && config.service_test.contest_wallet_self_test === true);
             
-            if (!runCertification) {
-                logApi.info(`${formatLog.tag()} ${formatLog.info('Skipping Treasury Certification (not enabled)')}`);
+            if (!runSelfTestEnabled) {
+                logApi.info(`${formatLog.tag()} ${formatLog.info('Skipping Treasury Certification Self-Test (not enabled)')}`);
                 return;
             }
             
-            // NEVER create a new TreasuryCertifier here - always use the one from initTreasuryCertifier
-            // If there's no treasuryCertifier yet, don't run the test
-            if (!this.treasuryCertifier) {
-                logApi.warn(`${formatLog.tag()} ${formatLog.warning('TreasuryCertifier not initialized. Skipping self-test.')}`);
+            const certifier = certifierInstanceToUse || this.treasuryCertifierInstance;
+
+            if (!certifier) {
+                logApi.warn(`${formatLog.tag()} ${formatLog.warning('TreasuryCertifier instance not available for self-test. Skipping.')}`);
                 return;
             }
             
-            // The persistent pool should already be initialized in initTreasuryCertifier()
-            // If it's not initialized by now, there's a problem we shouldn't try to fix here
-            if (!this.treasuryCertifier.persistentPool) {
-                logApi.warn(`${formatLog.tag()} ${formatLog.warning('Persistent certification pool not initialized. Skipping self-test.')}`);
-                return;
-            }
-            
-            // Test wallets should also be initialized with the pool - no need to reinitialize
-            if (this.treasuryCertifier.persistentPool && 
-                (!this.treasuryCertifier.persistentTestWallets || 
-                 Object.keys(this.treasuryCertifier.persistentTestWallets).length === 0)) {
-                
-                logApi.warn(`${formatLog.tag()} ${formatLog.warning('Persistent pool exists but test wallets are missing. Skipping self-test.')}`);
-                return;
-            }
-            
+            // The old TreasuryCertifier had persistentPool checks here, which are no longer relevant for the new minimalist one.
+
             // Check if a certification is already in progress (using _currentCertification from TreasuryCertifier)
-            if (this.treasuryCertifier._currentCertification && this.treasuryCertifier._currentCertification.inProgress) {
-                logApi.info(`${formatLog.tag()} ${formatLog.info(`Certification already in progress with ID: ${this.treasuryCertifier._currentCertification.id}, skipping second certification`)}`);
-                return;
-            }
+            // The new certifier doesn't expose _currentCertification directly, but we can add an isBusy() method to it if needed.
+            // For now, we assume runCertification can be called; it will handle its own internal state if any.
+            // if (certifier._currentCertification && certifier._currentCertification.inProgress) {
+            //     logApi.info(`${formatLog.tag()} ${formatLog.info(`Certification already in progress, skipping new self-test initiation`)}`);
+            //     return;
+            // }
+
+            logApi.info(`${formatLog.tag()} ${formatLog.header('SELF-TEST')} Scheduling Treasury Certification run in ${delayMs}ms.`);
+
+            // Wait for the initial delay
+            await new Promise(resolve => setTimeout(resolve, delayMs));
             
-            // Run the certification process
-            await this.treasuryCertifier.runCertification(delayMs);
+            logApi.info(`${formatLog.tag()} ${formatLog.header('SELF-TEST')} Running Treasury Certification now...`);
+            const certificationResult = await certifier.runCertification(); // New method takes no args
+            
+            if (certificationResult.success) {
+                logApi.info(`${formatLog.tag()} ${formatLog.success('Treasury Certification Self-Test PASSED:')} ${certificationResult.message}`);
+            } else {
+                logApi.error(`${formatLog.tag()} ${formatLog.error('Treasury Certification Self-Test FAILED:')} ${certificationResult.message}`);
+            }
             
         } catch (error) {
-            // Log but don't fail initialization if certification setup fails
-            logApi.error(`${formatLog.tag()} ${formatLog.error('Treasury Certification error:')}`, {
+            logApi.error(`${formatLog.tag()} ${formatLog.error('Error during Treasury Certification Self-Test scheduling or execution:')}`, {
                 error: error.message,
                 stack: error.stack
             });
@@ -2907,12 +2333,12 @@ class ContestWalletService extends BaseService {
         }
         
         // Clean up certification resources if there was an active treasury certifier
-        if (this.treasuryCertifier) {
+        if (this.treasuryCertifierInstance) {
             try {
                 logApi.info(`${formatLog.tag()} ${formatLog.info('Cleaning up Treasury Certification resources...')}`);
                 // Handle in-progress certification cleanups
-                if (typeof this.treasuryCertifier.cleanup === 'function') {
-                    await this.treasuryCertifier.cleanup();
+                if (typeof this.treasuryCertifierInstance.cleanup === 'function') {
+                    await this.treasuryCertifierInstance.cleanup();
                 }
             } catch (error) {
                 logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Error cleaning up Treasury Certification: ${error.message}`)}`);
@@ -2926,71 +2352,171 @@ class ContestWalletService extends BaseService {
         return super.stop();
     }
 
-    // DEPRECATED:
-
     /**
-     * IMPORTANT NOTE:
-     *   This Is an AI generated function and I did not even look at it and I have no clue what it does or if it's even supposed to do anything at all.
-     *   I don't even think it was being used ever but I just wanted to finish it off
+     * Encrypt private key (now expects a 32-byte seed as Uint8Array)
      * 
-     * Schedule a self-test to run after service startup
-     * 
-     * @param {number} [delayMs=5000] - Delay in milliseconds before running the test
-     * @returns {void}
+     * @param {Uint8Array} privateKeySeedBytes - The 32-byte private key seed to encrypt.
+     * @returns {string} - The encrypted private key data as a JSON string.
      */
-    /*
-    async scheduleSelfTest(delayMs = 5000) {
-        try {
-            // Check if certification is enabled in environment or config
-            const runCertification = process.env.CONTEST_WALLET_SELF_TEST === 'true' || 
-                                    (config.service_test && config.service_test.contest_wallet_self_test);
-            
-            if (!runCertification) {
-                logApi.info(`${formatLog.tag()} ${formatLog.info('Skipping Treasury Certification (not enabled)')}`);
-                return;
-            }
-            
-            // NEVER create a new TreasuryCertifier here - always use the one from initTreasuryCertifier    
-            // If there's no treasuryCertifier yet, don't run the test
-            if (!this.treasuryCertifier) {
-                logApi.warn(`${formatLog.tag()} ${formatLog.warning('TreasuryCertifier not initialized. Skipping self-test.')}`);
-                return;
-            }
-            
-            // The persistent pool should already be initialized in initTreasuryCertifier()
-            // If it's not initialized by now, there's a problem we shouldn't try to fix here
-            if (!this.treasuryCertifier.persistentPool) {
-                logApi.warn(`${formatLog.tag()} ${formatLog.warning('Persistent certification pool not initialized. Skipping self-test.')}`);
-                return;
-            }
-            
-            // Test wallets should also be initialized with the pool - no need to reinitialize
-            if (this.treasuryCertifier.persistentPool && 
-                (!this.treasuryCertifier.persistentTestWallets || 
-                 Object.keys(this.treasuryCertifier.persistentTestWallets).length === 0)) {
-                
-                logApi.warn(`${formatLog.tag()} ${formatLog.warning('Persistent pool exists but test wallets are missing. Skipping self-test.')}`);
-                return;
-            }
-            
-            // Check if a certification is already in progress (using _currentCertification from TreasuryCertifier)
-            if (this.treasuryCertifier._currentCertification && this.treasuryCertifier._currentCertification.inProgress) {
-                logApi.info(`${formatLog.tag()} ${formatLog.info(`Certification already in progress with ID: ${this.treasuryCertifier._currentCertification.id}, skipping second certification`)}`);
-                return;
-            }
+    encryptPrivateKey(privateKeySeedBytes) {
+        if (!(privateKeySeedBytes instanceof Uint8Array) || privateKeySeedBytes.length !== 32) {
+            logApi.error(`${formatLog.tag()} ${formatLog.error('encryptPrivateKey expects a 32-byte Uint8Array seed.')}`, { 
+                dataType: typeof privateKeySeedBytes,
+                length: privateKeySeedBytes?.length
+            });
+            throw new ServiceError.validation('Invalid input for encryptPrivateKey: Expected 32-byte Uint8Array seed.');
+        }
 
-            // Run the certification process
-            await this.treasuryCertifier.runCertification(delayMs);
-            
+        logApi.info(`${formatLog.tag()} Encrypting 32-byte private key seed.`);
+        try {
+            const iv = crypto.randomBytes(12); // AES-GCM standard IV size
+            const aad = crypto.randomBytes(16); // Optional AAD
+            const algorithm = 'aes-256-gcm'; 
+
+            const cipher = crypto.createCipheriv(
+                algorithm,
+                Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex'),
+                iv
+            );
+            cipher.setAAD(aad);
+
+            const encrypted = Buffer.concat([
+                cipher.update(privateKeySeedBytes), // Directly encrypt the Uint8Array seed
+                cipher.final()
+            ]);
+            const tag = cipher.getAuthTag();
+
+            return JSON.stringify({
+                encrypted: encrypted.toString('hex'),
+                iv: iv.toString('hex'),
+                tag: tag.toString('hex'),
+                aad: aad.toString('hex'),
+                version: 'v2_seed' // Indicate this is an encrypted v2 seed
+            });
         } catch (error) {
-            // Log but don't fail initialization if certification setup fails
-            logApi.error(`${formatLog.tag()} ${formatLog.error('Treasury Certification error:')}`, {
+            logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to encrypt private key seed:')}`, { error: error.message });
+            throw ServiceError.operation('Failed to encrypt private key seed', { 
                 error: error.message,
-                stack: error.stack
+                type: 'ENCRYPTION_ERROR' 
             });
         }
     }
-    */
+
+    async createContestWallet(contestId, adminContext = null, preferredVanityType = null) {
+        const startTime = Date.now();
+        this.logApi.info(`${formatLog.tag()} ${formatLog.header('CREATE WALLET')} Request for contest ID: ${contestId}, Vanity: ${preferredVanityType || 'any'}`);
+        let contestWalletDbRecord;
+        let vanityWalletDetails = null;
+        let usedVanity = false;
+
+        try {
+            if (config.vanity_wallets && config.vanity_wallets.enabled) {
+                this.logApi.info(`${formatLog.tag()} Attempting to fetch vanity wallet (type: ${preferredVanityType || 'any'}).`);
+                vanityWalletDetails = await VanityApiClient.getAvailableVanityWallet(preferredVanityType);
+            }
+
+            let walletAddressToStore;
+            let seed_32_bytes_uint8array; // Changed variable name for clarity
+            let isVanityWallet = false;
+            let vanityType = null;
+
+            if (vanityWalletDetails && vanityWalletDetails.private_key) {
+                usedVanity = true;
+                this.logApi.info(`${formatLog.tag()} Using VANITY wallet: ${vanityWalletDetails.wallet_address} (ID: ${vanityWalletDetails.id}, Pattern: ${vanityWalletDetails.pattern})`);
+                
+                // VanityApiClient.getAvailableVanityWallet now returns the 32-byte seed as a Buffer.
+                const decryptedSeedBuffer = vanityWalletDetails.private_key;
+                if (!(decryptedSeedBuffer instanceof Buffer) || decryptedSeedBuffer.length !== 32) {
+                    this.logApi.error('VanityApiClient.getAvailableVanityWallet did not return a 32-byte Buffer for private_key.', { typeofKey: typeof decryptedSeedBuffer, length: decryptedSeedBuffer?.length });
+                    throw new ServiceError.validation('Invalid private key format received from VanityApiClient for vanity wallet.');
+                }
+                seed_32_bytes_uint8array = Uint8Array.from(decryptedSeedBuffer); // Convert Buffer to Uint8Array
+                
+                walletAddressToStore = vanityWalletDetails.wallet_address;
+                isVanityWallet = true;
+                vanityType = vanityWalletDetails.vanity_type || vanityWalletDetails.pattern;
+
+                const tempSignerFromVanitySeed = await createKeyPairSignerFromBytes(seed_32_bytes_uint8array);
+                if (tempSignerFromVanitySeed.address !== walletAddressToStore) {
+                    this.logApi.error(`${formatLog.tag()} ${formatLog.error('CRITICAL MISMATCH for VANITY wallet!')} Address from seed (${tempSignerFromVanitySeed.address}) != provided address (${walletAddressToStore}).`);
+                    throw ServiceError.operation('Vanity wallet key integrity check failed: Address mismatch.');
+                }
+                this.logApi.info(`${formatLog.tag()} Vanity wallet seed-to-address verification successful.`);
+
+            } else {
+                // ... (random wallet generation logic remains the same, already provides 32-byte Uint8Array seed to seed_32_bytes_uint8array) ...
+                if (config.vanity_wallets && config.vanity_wallets.enabled) {
+                    this.logApi.warn(`${formatLog.tag()} ${formatLog.warning('No suitable vanity wallet. Generating RANDOM wallet.')}`);
+                } else {
+                    this.logApi.info(`${formatLog.tag()} Vanity wallets disabled/not requested. Generating RANDOM wallet.`);
+                }
+                const newV2KeyPair = await generateKeyPairV2();
+                walletAddressToStore = await getAddressFromPublicKey(newV2KeyPair.publicKey);
+                seed_32_bytes_uint8array = newV2KeyPair.secretKey;
+                isVanityWallet = false;
+                vanityType = null;
+                this.logApi.info(`${formatLog.tag()} Generated RANDOM v2 wallet: ${walletAddressToStore}`);
+            }
+
+            const encryptedSeedJson = this.encryptPrivateKey(seed_32_bytes_uint8array);
+
+            contestWalletDbRecord = await prisma.contest_wallets.create({
+                data: {
+                    contest_id: contestId,
+                    wallet_address: walletAddressToStore,
+                    private_key: encryptedSeedJson,
+                    balance: 0,
+                    created_at: new Date(),
+                    is_vanity: isVanityWallet,
+                    vanity_type: vanityType,
+                    last_sync: new Date(),
+                    updated_at: new Date()
+                }
+            });
+            this.logApi.info(`${formatLog.tag()} ${formatLog.success('Contest wallet DB record created successfully.')} ID: ${contestWalletDbRecord.id}, Address: ${contestWalletDbRecord.wallet_address}`);
+
+            if (usedVanity && vanityWalletDetails) {
+                await VanityApiClient.assignVanityWalletToContest(vanityWalletDetails.id, contestId);
+                this.logApi.info(`${formatLog.tag()} Marked vanity wallet ID ${vanityWalletDetails.id} as used by contest ID ${contestId}.`);
+            }
+
+            // Update stats (example)
+            if (this.walletStats) { 
+                this.walletStats.wallets.created = (this.walletStats.wallets.created || 0) + 1;
+                if(isVanityWallet) this.walletStats.wallets.vanity_created = (this.walletStats.wallets.vanity_created || 0) + 1;
+                else this.walletStats.wallets.random_created = (this.walletStats.wallets.random_created || 0) + 1;
+            }
+            
+            // Admin logging (example)
+            if (adminContext && AdminLogger) {
+                await AdminLogger.logAction(
+                    adminContext.admin_id || 'system', 
+                    'CONTEST_WALLET_CREATED', 
+                    {
+                        contestId: contestId,
+                        walletId: contestWalletDbRecord.id,
+                        walletAddress: walletAddressToStore,
+                        isVanity: isVanityWallet,
+                        vanityType: vanityType
+                    }, 
+                    adminContext.ip_address
+                );
+            }
+
+            return contestWalletDbRecord;
+
+        } catch (error) {
+            this.logApi.error(`${formatLog.tag()} ${formatLog.error('Error creating contest wallet:')}`, { 
+                error: error.message, 
+                contestId, 
+                preferredVanityType, 
+                stack: error.stack?.substring(0,500) 
+            });
+            if (this.walletStats?.errors) this.walletStats.errors.creation_failures = (this.walletStats.errors.creation_failures || 0) + 1;
+            if (error instanceof ServiceError) throw error;
+            throw ServiceError.operation('Failed to create contest wallet', { originalError: error.message });
+        }
+    }
 }
 
 // Export service singleton

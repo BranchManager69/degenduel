@@ -30,7 +30,7 @@ import jwt from 'jsonwebtoken';
 import prisma from '../../config/prisma.js';
 import { getTokenAddress } from '../../utils/token-config-util.js';
 import marketDataService from '../../services/market-data/marketDataService.js';
-import serviceEvents from '../../utils/service-suite/service-events.js';
+import serviceEvents, { SERVICE_EVENTS } from '../../utils/service-suite/service-events.js';
 import tokenBalanceModule from './token-balance-module.js';
 import solanaBalanceModule from './solana-balance-module.js';
 // Initialize both balance modules when unified WebSocket is created
@@ -244,7 +244,25 @@ class UnifiedWebSocketServer {
       SERVICE_EVENTS.LAUNCH_EVENT_ADDRESS_REVEALED,
       (payload) => {
         logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} Broadcasting ADDRESS_REVEALED to LAUNCH_EVENTS topic.`);
-        this.broadcastToTopic(TOPICS.LAUNCH_EVENTS, payload); // The payload is already structured correctly by the service
+        this.broadcastToTopic(TOPICS.LAUNCH_EVENTS, payload);
+      }
+    );
+
+    // Maintenance Mode Update handler
+    this.registerEventHandler(
+      SERVICE_EVENTS.MAINTENANCE_MODE_UPDATED,
+      (eventData) => {
+        logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} Broadcasting MAINTENANCE_MODE_UPDATE to SYSTEM topic. Enabled: ${eventData.enabled}`);
+        const payload = {
+            type: 'EVENT', // Using EVENT type as discussed
+            topic: TOPICS.SYSTEM,
+            action: 'MAINTENANCE_MODE_UPDATE', // Matches frontend expectation
+            data: {
+                enabled: eventData.enabled,
+            },
+            timestamp: new Date().toISOString()
+        };
+        this.broadcastToTopic(TOPICS.SYSTEM, payload);
       }
     );
     

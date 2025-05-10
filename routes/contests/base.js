@@ -13,7 +13,7 @@ import { requireAuth, requireAdmin, requireSuperAdmin } from '../../middleware/a
 import { logApi } from '../../utils/logger-suite/logger.js';
 import prisma from '../../config/prisma.js';
 import { Prisma } from '@prisma/client';
-import { createContestWallet } from '../../utils/solana-suite/solana-wallet.js';
+import ContestWalletService from '../../services/contest-wallet/contestWalletService.js';
 import contestImageService from '../../services/contestImageService.js';
 import { 
   validateContestParams,
@@ -200,73 +200,84 @@ router.post('/', requireAuth, async (req, res) => {
       });
     }
 
-    // Create a Solana wallet for the contest
-    let contestWallet;
-    try {
-      contestWallet = await createContestWallet();
-      if (!contestWallet || !contestWallet.publicKey) {
-        throw new Error('Failed to create contest wallet');
-      }
-    } catch (walletError) {
-      contestLogger.error('Failed to create contest wallet', walletError);
-      return res.status(500).json({
-        error: 'wallet_creation_failed',
-        message: 'Failed to create contest wallet'
-      });
-    }
-
-    // Create the contest in a transaction to ensure atomicity
-    const result = await prisma.$transaction(async (tx) => {
-      // Create contest
+    // Create the contest and its wallet in a transaction
+    const createdContestResult = await prisma.$transaction(async (tx) => {
+      // Step 1: Create the main contest record (without inline wallet creation)
       const newContest = await tx.contests.create({
         data: {
           ...sanitizedData,
-          created_by: user.wallet_address,
-          prize_pool: sanitizedData.entry_fee, // Initially set to match entry fee, updated as people join
-          contest_wallets: {
-            create: {
-              wallet_address: contestWallet.publicKey,
-              wallet_type: 'contest',
-              keypair_encrypted: contestWallet.encryptedKeyPair,
-              created_by: user.wallet_address
-            }
-          }
+          created_by_user: user.wallet_address, // Corrected field name from created_by
+          prize_pool: sanitizedData.entry_fee, 
+          // contest_wallets relation will be handled by ContestWalletService
         }
       });
 
-      // If regular user, mark contest creation credit as used
-      if (!isAdmin) {
-        await tx.contest_creation_credits.updateMany({
-          where: { 
-            wallet_address: user.wallet_address, 
-            used: false 
-          },
-          data: { 
-            used: true, 
-            used_at: new Date(),
-            contest_id: newContest.id
-          },
-          take: 1
-        });
+      // Step 2: Call ContestWalletService to create and associate the wallet
+      // ContestWalletService.createContestWallet handles its own Prisma write to `contest_wallets`.
+      // It needs the contestId.
+      // Pass adminContext as null if not specifically built for this call, or construct if needed by CWS.
+      const contestWalletRecord = await ContestWalletService.createContestWallet(newContest.id, null /* adminContext */);
+      
+      if (!contestWalletRecord || !contestWalletRecord.wallet_address) {
+           throw new Error('Failed to create and associate contest wallet via ContestWalletService.');
       }
 
-      return newContest;
+      // If regular user, mark contest creation credit as used (as before)
+      if (!isAdmin) {
+        const userCredits = await tx.contest_creation_credits.findFirst({ 
+            where: { wallet_address: user.wallet_address, used: false, type: 'CONTEST_CREATE' } // Ensure credit type
+        });
+        if(userCredits){
+            await tx.contest_creation_credits.update({
+                where: { id: userCredits.id },
+                data: { 
+                    used: true, 
+                    used_at: new Date(),
+                    contest_id: newContest.id
+                },
+            });
+        } else {
+            // This case should ideally be caught before starting the transaction
+            // but as a safeguard if credit check logic was only outside.
+            throw new Error('User credit was not available to be consumed (transaction rollback).');
+        }
+      }
+      
+      // Return the contest and include the wallet address from the record CWS created
+      // Also ensure all fields needed by the response are included.
+      return { 
+          ...newContest, 
+          wallet_address: contestWalletRecord.wallet_address,
+          // Add other fields from newContest explicitly if spread doesn't cover all needed for response
+          // For example, if the response structure expects `id`, `name`, `contest_code`, etc.
+          // directly from the top level of the returned object.
+          id: newContest.id,
+          name: newContest.name,
+          contest_code: newContest.contest_code,
+          description: newContest.description,
+          entry_fee: newContest.entry_fee,
+          start_time: newContest.start_time,
+          end_time: newContest.end_time,
+          min_participants: newContest.min_participants,
+          max_participants: newContest.max_participants,
+          allowed_buckets: newContest.allowed_buckets,
+          status: newContest.status,
+          visibility: newContest.visibility,
+          created_by: newContest.created_by_user // Match response field if it expects 'created_by'
+        };
     });
 
     // Generate contest image in the background (don't wait for it)
-    contestImageService.generateContestImage(result.id)
+    contestImageService.generateContestImage(createdContestResult.id)
       .catch(error => {
         contestLogger.error('Error generating contest image:', {
           error: error.message,
-          contestId: result.id
+          contestId: createdContestResult.id
         });
       });
 
     // Return the newly created contest
-    res.status(201).json({
-      ...result,
-      wallet_address: contestWallet.publicKey
-    });
+    res.status(201).json(createdContestResult); // Pass the result from the transaction
   } catch (error) {
     contestLogger.error('Failed to create contest:', error);
     

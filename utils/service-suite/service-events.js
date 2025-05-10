@@ -21,6 +21,7 @@ export const SERVICE_EVENTS = {
     CONTEST_COMPLETED: 'contest:completed', // New event for contest completion with winners
     CONTEST_EVALUATED: 'contest_evaluated',
     LAUNCH_EVENT_ADDRESS_REVEALED: 'launch_event_address_revealed',
+    MAINTENANCE_MODE_UPDATED: 'maintenance_mode_updated',
     
     // User events
     USER_ACHIEVEMENT: 'user:achievement',

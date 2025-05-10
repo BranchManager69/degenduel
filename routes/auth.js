@@ -23,6 +23,7 @@ import discordAuthRoutes from './auth-discord.js';
 import devAuthRoutes from './auth-dev.js';
 import biometricAuthRoutes from './auth-biometric.js';
 import statusAuthRoutes from './auth-status.js';
+import qrAuthRoutes from './auth-qr.js';
 
 const router = express.Router();
 
@@ -49,6 +50,9 @@ router.use('/discord', discordAuthRoutes);
 
 // Mount the biometric authentication routes
 router.use('/biometric', biometricAuthRoutes);
+
+// Mount the QR code authentication routes
+router.use('/qr', qrAuthRoutes);
 
 // Mount the development-only authentication routes
 router.use('/', devAuthRoutes);

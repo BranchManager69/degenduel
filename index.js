@@ -43,7 +43,8 @@ import { displayStartupBanner } from './utils/startup-banner.js';
 import { closeDatabase, initDatabase } from "./config/database.js"; // SQLite for leaderboard
 import { closePgDatabase, initPgDatabase } from "./config/pg-database.js";
 import { SERVICE_NAMES } from "./utils/service-suite/service-constants.js";
-import SolanaServiceManager from "./utils/solana-suite/solana-service-manager.js"; // why is this not being used?
+// Comment out or remove the SolanaServiceManager import
+// import SolanaServiceManager from "./utils/solana-suite/solana-service-manager.js"; // why is this not being used?
 import referralScheduler from './scripts/referral-scheduler.js'; // why is this not being used?
 import { fancyColors } from './utils/colors.js';
 // Service-related routes

@@ -17,6 +17,7 @@ import { jupiterConfig } from '../../config/external-api/jupiter-config.js';
 import serviceManager from '../../utils/service-suite/service-manager.js';
 import serviceEvents from '../../utils/service-suite/service-events.js';
 import { SERVICE_NAMES } from '../../utils/service-suite/service-constants.js';
+import { createBatchProgress } from '../../utils/logger-suite/batch-progress.js';
 import { 
   safe, 
   inc, 
@@ -25,6 +26,9 @@ import {
   isCircuitOpen,
   safeStats 
 } from '../../utils/service-suite/safe-service.js';
+
+// Debug flags
+const DEBUG_SHOW_BATCH_SAMPLE_TOKENS = false;
 
 // Formatting helpers for consistent logging
 const formatLog = {
@@ -441,62 +445,219 @@ class PriceService extends JupiterBase {
       // Define a throttle function to control concurrency
       const throttleBatches = async (batches) => {
         const results = {};
+        // Read backoff parameters from config
+        const MAX_RETRIES = safe(this.config, 'rateLimit.maxRetries', 5);
+        const INITIAL_BACKOFF_MS = safe(this.config, 'rateLimit.initialBackoffMs', 1000);
+        const MAX_BACKOFF_MS = safe(this.config, 'rateLimit.maxBackoffMs', 30000);
         
+        // Initialize progress tracker
+        const progress = createBatchProgress({
+          name: 'Jupiter Token Batches',
+          total: batches.length,
+          service: SERVICE_NAMES.JUPITER_CLIENT,
+          batchSize: 1, // Each batch is 1 unit for this tracker
+          throttleMs: 500, // Update at most every 500ms
+          logLevel: 'info',
+          operation: 'jupiter_price_batches',
+          category: 'api_requests',
+          metadata: {
+            total_tokens: mintAddresses.length,
+            effective_batch_size: effectiveBatchSize,
+            max_concurrent_requests: MAX_CONCURRENT_REQUESTS,
+            max_retries: MAX_RETRIES,
+            endpoint: this.config.endpoints.price.getPrices,
+            api_type: 'jupiter'
+          }
+        });
+        
+        progress.start();
+
         // Process batches in chunks of MAX_CONCURRENT_REQUESTS
         for (let i = 0; i < batches.length; i += MAX_CONCURRENT_REQUESTS) {
           const batchChunk = batches.slice(i, i + MAX_CONCURRENT_REQUESTS);
-          
+
           // Process this chunk of batches in parallel
           const chunkPromises = batchChunk.map(({ batch, queryString, batchIndex }) => {
             const batchNum = batchIndex + 1;  // Batch numbers start from 1
-            
-            // Return a promise that resolves to the batch results
+
             return (async () => {
-              try {
-                logApi.info(`${formatLog.tag()} ${formatLog.info(`[${new Date().toLocaleTimeString()}] Processing batch ${batchNum}/${totalBatches} (${batch.length} tokens)`)}`);
-                
-                const response = await this.makeRequest('GET', this.config.endpoints.price.getPrices, null, { ids: queryString });
-                
-                if (response && response.data) {
-                  // Merge into results
-                  Object.assign(results, response.data);
+              let retries = 0;
+              let currentExponentialBackoffMs = INITIAL_BACKOFF_MS;
+              let lastError = null;
+
+              while (retries < MAX_RETRIES) {
+                try {
+                  if (retries > 0 && lastError) {
+                    let delayForThisRetry = currentExponentialBackoffMs;
+                    const statusCode = safe(lastError, 'response.status');
+
+                    if (statusCode === 429 && lastError.response && lastError.response.headers && lastError.response.headers['retry-after']) {
+                      const retryAfterValue = lastError.response.headers['retry-after'];
+                      const retryAfterSeconds = parseInt(retryAfterValue, 10);
+                      let specificDelayFromHeader = -1;
+
+                      if (!isNaN(retryAfterSeconds)) {
+                        specificDelayFromHeader = retryAfterSeconds * 1000;
+                      } else {
+                        const retryAfterDate = new Date(retryAfterValue);
+                        if (!isNaN(retryAfterDate.getTime())) {
+                          const delayFromDate = retryAfterDate.getTime() - Date.now();
+                          if (delayFromDate > 0) {
+                            specificDelayFromHeader = delayFromDate;
+                          }
+                        }
+                      }
+                      if (specificDelayFromHeader > 0) {
+                        delayForThisRetry = specificDelayFromHeader; // Override with Retry-After
+                        logApi.info(`${formatLog.tag()} ${formatLog.info(`Batch ${batchNum}: Honoring Retry-After header. Delaying for ${delayForThisRetry.toFixed(0)}ms.`)}`);
+                      }
+                    }
+                    
+                    delayForThisRetry = Math.min(delayForThisRetry, MAX_BACKOFF_MS); // Cap delay
+                    const jitter = Math.random() * 500; // Add jitter up to 500ms
+                    delayForThisRetry += jitter;
+
+                    logApi.info(`${formatLog.tag()} ${formatLog.warning(`Retrying batch ${batchNum}/${totalBatches} (attempt ${retries + 1}/${MAX_RETRIES}) after ${delayForThisRetry.toFixed(0)}ms delay.`)}`);
+                    await new Promise(resolve => setTimeout(resolve, delayForThisRetry));
+                    
+                    // Only double exponential backoff if we didn't use a specific Retry-After for the *base* of this delay
+                    if (!(statusCode === 429 && specificDelayFromHeader > 0)) {
+                         currentExponentialBackoffMs *= 2;
+                    }
+                  }
+
+                  // Update progress with current batch info
+                  progress.update(0, [`Processing ${batchNum}/${totalBatches} (${batch.length} tokens)${retries > 0 ? ` retry ${retries + 1}` : ''}`]);
+                  
+                  const batchStartTime = Date.now();
+                  const response = await this.makeRequest('GET', this.config.endpoints.price.getPrices, null, { ids: queryString });
+                  const batchDuration = Date.now() - batchStartTime;
+                  
+                  lastError = null; // Clear last error on success
+
+                  if (response && response.data) {
+                    Object.assign(results, response.data);
+                  }
+                  
+                  // Mark batch as completed in progress tracker with timing data
+                  progress.completeBatch(batchNum, batch.length, [], batchDuration);
+                  return { success: true, batchNum };
+                } catch (error) {
+                  retries++;
+                  lastError = error; // Store error for the next iteration's delay calculation
+                  const statusCode = safe(error, 'response.status');
+                  
+                  if (statusCode === 429 || (statusCode >= 500 && statusCode <= 599)) {
+                    if (retries >= MAX_RETRIES) {
+                      // Track the error in progress tracker with detailed info
+                      progress.trackError(
+                        batchNum, 
+                        error, 
+                        true, // Mark as fatal since we've exhausted retries
+                        statusCode,
+                        statusCode === 429 ? 'RateLimit' : 'RequestFailed'
+                      );
+                      return { success: false, error, batchNum, batch, queryString, finalAttempt: true };
+                    }
+                    
+                    // Track as warning since we'll retry
+                    progress.trackWarning(batchNum, `Attempt ${retries} failed with status ${statusCode}`);
+                  } else {
+                    // Non-retryable error with detailed tracking
+                    progress.trackError(
+                      batchNum,
+                      error,
+                      true, // Fatal since we won't retry
+                      statusCode,
+                      'NonRetryableError'
+                    );
+                    return { success: false, error, batchNum, batch, queryString, finalAttempt: true };
+                  }
                 }
-                
-                return { success: true };
-              } catch (error) {
-                return { 
-                  success: false, 
-                  error, 
-                  batchNum, 
-                  batchIndex,
-                  batch, 
-                  queryString 
-                };
               }
+              // This part is reached if all retries fail
+              const statusCode = safe(lastError, 'response.status', 'Unknown');
+              const statusMessage = statusCode === 429 ? "Rate limit exceeded" : "Permanent failure";
+              
+              // Track the final failure in progress tracker with detailed info
+              progress.trackError(
+                batchNum,
+                lastError || new Error(`${statusMessage} after ${MAX_RETRIES} retries`),
+                true, // Fatal error
+                statusCode,
+                statusCode === 429 ? 'RateLimitExhausted' : 'MaxRetriesExceeded'
+              );
+              
+              return { success: false, error: lastError || new Error('Max retries exceeded'), batchNum, batch, queryString, finalAttempt: true };
             })();
           });
-          
+
           // Wait for all promises in this chunk to resolve
           const chunkResults = await Promise.all(chunkPromises);
-          
+
           // Handle failures if needed
           const failures = chunkResults.filter(result => !result.success);
           if (failures.length > 0) {
-            // Log failures but continue with next chunk
-            logApi.warn(`${formatLog.tag()} ${formatLog.warning(`${failures.length} batch failures in current chunk`)}`);
+            logApi.warn(`${formatLog.tag()} ${formatLog.warning(`${failures.length} batch failures in current chunk after retries.`)}`);
+            failures.forEach(f => {
+              if (f.finalAttempt) { // Log only if it was the final attempt for that batch
+                // Calculate progress metrics
+                const batchSize = f.batch ? f.batch.length : 0;
+                const tokenStart = (f.batchNum - 1) * effectiveBatchSize + 1;
+                const tokenEnd = tokenStart + batchSize - 1;
+                const statusCode = safe(f.error, 'response.status', 'Unknown');
+                const errorMessage = safe(f.error, 'message', 'Unknown error');
+                
+                // Create more concise error message with appropriate failure type
+                const statusMessage = statusCode === 429 ? "Rate limit exceeded" : errorMessage;
+                logApi.error(`${formatLog.tag()} ${formatLog.error(`[Batch ${f.batchNum}/${totalBatches}][Tokens ${tokenStart}-${tokenEnd}/${mintAddresses.length}] ${statusMessage} (${statusCode})`)}`);
+                
+                // Optionally log sample tokens if debug flag is enabled
+                if (DEBUG_SHOW_BATCH_SAMPLE_TOKENS && f.batch && f.batch.length > 0) {
+                  const sampleSize = Math.min(3, f.batch.length);
+                  const samples = f.batch.slice(0, sampleSize).map(token => {
+                    if (token && token.length >= 8) {
+                      return `${token.substring(0, 4)}...${token.substring(token.length - 4)}`;
+                    }
+                    return token;
+                  });
+                  const remaining = f.batch.length - sampleSize;
+                  logApi.error(`${formatLog.tag()} ${formatLog.error(`${samples.join(', ')}${remaining > 0 ? ` and ${remaining} more` : ''}`)}`);
+                }
+              }
+            });
             
-            // If we're hitting rate limits, add a small delay before the next chunk
-            const hasRateLimitErrors = failures.some(f => safe(f, 'error.response.status') === 429);
-            if (hasRateLimitErrors) {
-              logApi.warn(`${formatLog.tag()} ${formatLog.warning('Rate limit detected, adding delay before next chunk')}`);
-              await new Promise(resolve => setTimeout(resolve, 1000));
+            // If we're still hitting rate limits persistently across multiple batches in a chunk,
+            // it might be good to introduce a longer pause before the *next* chunk of batches.
+            const rateLimitErrors = failures.filter(f => safe(f.error, 'response.status') === 429 && f.finalAttempt);
+            const persistentRateLimitError = rateLimitErrors.length > 0;
+            
+            if (persistentRateLimitError) {
+              const longerDelay = Math.min(INITIAL_BACKOFF_MS * (rateLimitErrors.length + 1), MAX_BACKOFF_MS); // Increase delay based on number of rate limit failures
+              
+              // Calculate the total tokens affected by rate limiting
+              const tokenCount = rateLimitErrors.reduce((sum, f) => sum + (f.batch ? f.batch.length : 0), 0);
+              
+              // Update progress bar with rate limit warning
+              progress.update(0, [`Rate limited (${rateLimitErrors.length} batches, ${tokenCount} tokens). Pausing ${longerDelay}ms`]);
+              await new Promise(resolve => setTimeout(resolve, longerDelay));
             }
           }
-          
-          // Add a small delay between chunks to ensure we don't exceed rate limits
+
+          // Add a small base delay between chunks to ensure we don't exceed rate limits
+          // This can be adjusted or made dynamic based on API feedback too
           if (i + MAX_CONCURRENT_REQUESTS < batches.length) {
-            await new Promise(resolve => setTimeout(resolve, 200)); // 200ms between chunks
+            await new Promise(resolve => setTimeout(resolve, 250)); // Base 250ms between chunks
           }
+        }
+        
+        // Complete the progress tracker
+        const stats = progress.finish({
+          message: `Jupiter token batch processing complete: ${batches.length} batches (${mintAddresses.length} tokens)`
+        });
+        
+        if (stats.errors > 0) {
+          logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Completed with ${stats.errors} errors. Some token data may be incomplete.`)}`);
         }
         
         // Return the results

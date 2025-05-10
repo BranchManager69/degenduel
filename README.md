@@ -105,3 +105,123 @@ DegenDuel's architecture is built on five key pillars:
   <p><b>© Branch Manager Productions.</b> All rights reserved.</p>
   <img src="https://img.shields.io/badge/WINTER-IS%20COMING-blue?style=for-the-badge" alt="Winter is Coming" />
 </div>
+
+<details>
+<summary>High-Level Service Interaction Diagram (Click to Expand)</summary>
+
+```mermaid
+graph TD
+    subgraph ExternalAPIs [External APIs]
+        JupiterAPI[Jupiter API]
+        HeliusAPI[Helius API]
+        DexScreenerAPI[DexScreener API]
+        DiscordAPI[Discord API]
+        SolanaRPC[Solana RPC]
+    end
+
+    subgraph DataLayer [Data Layer]
+        style DataLayer fill:#D1E8FF,stroke:#87CEEB
+        TDS[TokenDetectionService]
+        TES[TokenEnrichmentService]
+        MDS[MarketDataService]
+        TDDS[TokenDEXDataService]
+        PDM[PoolDataManager]
+        TMS[TokenMonitorService]
+        TRS[TokenRefreshScheduler]
+    end
+
+    subgraph ContestLayer [Contest Layer]
+        style ContestLayer fill:#FFE8D1,stroke:#FFB347
+        CSS[ContestSchedulerService]
+        CES[ContestEvaluationService]
+        AS[AchievementService]
+        RS[ReferralService]
+        LSvc[LevelingService]
+    end
+
+    subgraph WalletLayer [Wallet Layer]
+        style WalletLayer fill:#E8D1FF,stroke:#C387EB
+        CWS[ContestWalletService]
+        VWS[VanityWalletService]
+        UBTS[UserBalanceTrackingService]
+        AWS[AdminWalletService]
+    end
+
+    subgraph InfraAppLayer [Infrastructure & App Layer]
+        style InfraAppLayer fill:#D1FFD1,stroke:#90EE90
+        SE[SolanaEngine]
+        DNS[DiscordNotificationService]
+        LES[LaunchEventService]
+        WGS[WalletGeneratorService]
+        CIS[ContestImageService]
+        AIS[AIService]
+        WSS[UnifiedWebSocketServer]
+        LS[LiquidityService]
+        LSS[LiquiditySimService]
+    end
+
+    JupiterAPI --> TDS;
+    TDS -. "event: TOKEN_DETECTED" .-> TES;
+    TES --> JupiterAPI;
+    TES --> HeliusAPI;
+    TES --> DexScreenerAPI;
+    TES --> MDS;
+    TES -. "event: TOKEN_ENRICHED" .-> MDS;
+    MDS --> SE;
+    MDS --> TES;
+    MDS --> TDDS;
+
+    TRS --> MDS;
+    TRS --> SE;
+    TRS -. "event: token.refresh" .-> TDDS;
+    TRS -. "event: token.batch.refresh" .-> TDDS;
+    TDDS --> SE;
+    PDM --> SE;
+    PDM -. "event: pool:data_updated" .-> OtherServices([Other Services?]);
+    TMS --> SE;
+    TMS -. "event: TOKEN_PURCHASE/SALE/PRICE_UPDATE" .-> OtherServices;
+
+    CSS --> WGS;
+    CSS --> CWS;
+    CSS --> CIS;
+    CSS -. "event: CONTEST_CREATED" .-> DNS & CES;
+    CES --> MDS;
+    CES --> CWS;
+    CES --> AS;
+    CES --> RS;
+    CES --> LSvc;
+    CES -. "event: CONTEST_EVALUATED" .-> DNS & CWS;
+
+    CWS --> SE;
+    CWS --> VWS;
+    UBTS --> SE;
+    AWS --> CWS;
+
+    LS --> WGS;
+    LS --> SolanaRPC;
+    LSS -. "event: liquidity:broadcast" .-> WSS;
+
+    DNS --> DiscordAPI;
+    DNS -. "Listens to Events" .-> CES & CSS;
+
+    LES -. "event: LAUNCH_EVENT_ADDRESS_REVEALED" .-> WSS;
+    InfraAppLayer -. "event: MAINTENANCE_MODE_UPDATED" .-> WSS;
+
+    MDS -. "event: MARKET_DATA_BROADCAST" .-> WSS;
+    WSS -- "Broadcasts MARKET_DATA" --> Client([Client App]);
+    WSS -- "Broadcasts LAUNCH_EVENTS" --> Client;
+    WSS -- "Broadcasts SYSTEM (Maintenance)" --> Client;
+    WSS -- "Broadcasts TOKEN_UPDATES (Implied)" --> Client;
+    WSS -- "Broadcasts LIQUIDITY_SIM" --> Client;
+    WSS -- "Listens for pool:data_updated (Maybe)" .-> PDM;
+
+    style Client fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef service fill:#fff,stroke:#555,stroke-width:1px;
+    class TDS,TES,MDS,TDDS,PDM,TMS,TRS service;
+    class CSS,CES,AS,RS,LSvc service;
+    class CWS,VWS,UBTS,AWS service;
+    class SE,DNS,LES,WGS,CIS,AIS,WSS,LS,LSS service;
+    class OtherServices fill:#eee,stroke:#999,stroke-width:1px,stroke-dasharray: 5 5;
+```
+
+</details>

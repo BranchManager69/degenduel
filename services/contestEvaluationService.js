@@ -23,8 +23,9 @@ import { fancyColors, serviceSpecificColors } from '../utils/colors.js';
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 // Solana
-import { Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
-import bs58 from 'bs58';
+import { createKeyPairSignerFromBytes } from '@solana/keys';
+import { address as v2Address, getAddressFromPublicKey } from '@solana/addresses';
+import { Buffer } from 'node:buffer';
 import crypto from 'crypto';
 // Import SolanaEngine (for centralized connection management)
 import { solanaEngine } from './solana-engine/index.js';
@@ -32,6 +33,7 @@ import { solanaEngine } from './solana-engine/index.js';
 import { Decimal } from '@prisma/client/runtime/library';
 //import marketDataService from './marketDataService.js';
 import levelingService from './levelingService.js';
+import { createSystemTransferInstruction } from '@solana/pay'; // For v2 SOL transfer instruction
 
 const VERBOSE_CONTEST_EVALUATION_INIT = false;
 
@@ -94,6 +96,8 @@ const CONTEST_EVALUATION_CONFIG = {
             config.service_thresholds.contest_evaluation_retry_delay * 1000, // seconds
     }
 };
+
+const LAMPORTS_PER_SOL_V2 = 1_000_000_000;
 
 // Contest Evaluation Service
 /**
@@ -320,6 +324,12 @@ class ContestEvaluationService extends BaseService {
                 });
             }
 
+            // Remove old logic related to fetching liquidity wallets or their balances here.
+            // This service focuses on evaluating existing contests.
+            // The connection test via getLatestBlockhash is good if desired.
+            await solanaEngine.executeConnectionMethod('getLatestBlockhash');
+            logApi.info('[ContestEvalService] SolanaEngine connection confirmed via getLatestBlockhash.');
+
             return true;
         } catch (error) {
             logApi.error(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.RED}Contest Evaluation Service initialization error:${fancyColors.RESET}`, {
@@ -384,88 +394,100 @@ class ContestEvaluationService extends BaseService {
 
     // Utility functions
     /**
-     * Decrypts a private key
-     * @param {string} encryptedData - The encrypted data
-     * @returns {string} - The decrypted private key
+     * Decrypts a private key stored by ContestWalletService (expected v2_seed format).
+     * @param {string} encryptedDataJson - The encrypted private key data (JSON string from DB).
+     * @returns {Buffer} - The decrypted 32-byte private key seed as a Buffer.
      */
-    decryptPrivateKey(encryptedData) {
+    decryptPrivateKey(encryptedDataJson) {
+        let parsedData;
         try {
-            const { encrypted, iv, tag, aad } = JSON.parse(encryptedData);
-            const decipher = crypto.createDecipheriv(
-                'aes-256-gcm',
-                Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex'),
-                Buffer.from(iv, 'hex')
-            );
-            
-            decipher.setAuthTag(Buffer.from(tag, 'hex'));
-            if (aad) decipher.setAAD(Buffer.from(aad));
-            
-            const decrypted = Buffer.concat([
-                decipher.update(Buffer.from(encrypted, 'hex')),
-                decipher.final()
-            ]);
-            
-            return decrypted.toString();
-        } catch (error) {
-            throw ServiceError.operation('Failed to decrypt private key', {
-                error: error.message,
-                type: 'DECRYPTION_ERROR'
+            parsedData = JSON.parse(encryptedDataJson);
+        } catch (e) {
+            logApi.error('[ContestEvalService] Failed to parse encryptedDataJson for contest wallet', { data: encryptedDataJson, error: e.message });
+            throw ServiceError.operation('Failed to decrypt contest wallet key: Invalid JSON format.', { type: 'DECRYPTION_ERROR_JSON_PARSE' });
+        }
+
+        if (parsedData.version && (parsedData.version === 'v2_seed' || parsedData.version.startsWith('v2_seed'))) {
+            try {
+                const { encrypted, iv, tag, aad } = parsedData;
+                if (!encrypted || !iv || !tag || !aad) {
+                    throw new Error(`Encrypted key (version: ${parsedData.version}) is missing required fields.`);
+                }
+                const decipher = crypto.createDecipheriv(
+                    'aes-256-gcm',
+                    Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex'),
+                    Buffer.from(iv, 'hex')
+                );
+                decipher.setAuthTag(Buffer.from(tag, 'hex'));
+                decipher.setAAD(Buffer.from(aad, 'hex'));
+                let decryptedSeed = decipher.update(Buffer.from(encrypted, 'hex'));
+                decryptedSeed = Buffer.concat([decryptedSeed, decipher.final()]);
+                if (decryptedSeed.length !== 32) {
+                    throw new Error(`Decrypted seed (version: ${parsedData.version}) is not 32 bytes, got ${decryptedSeed.length} bytes.`);
+                }
+                return decryptedSeed; // Return 32-byte seed Buffer
+            } catch (error) {
+                logApi.error('[ContestEvalService] Failed to decrypt v2_seed format private key:', { error: error.message, version: parsedData.version });
+                throw ServiceError.operation('Failed to decrypt v2_seed format private key for contest wallet', {
+                    originalError: error.message, type: 'DECRYPTION_ERROR_V2_SEED_CES'
+                });
+            }
+        } else {
+            logApi.error('[ContestEvalService] Unrecognized encrypted private key format or version for contest wallet key.', { parsedData });
+            throw ServiceError.operation('Unrecognized encrypted key format for contest wallet.', {
+                version: parsedData.version, type: 'DECRYPTION_ERROR_UNRECOGNIZED_CES'
             });
         }
     }
 
-    // Perform a blockchain transfer
     /**
-     * Performs a blockchain transfer using SolanaEngine
-     * @param {Object} contestWallet - The contest wallet object
-     * @param {string} recipientAddress - The recipient address
-     * @param {number} amount - The amount to transfer in SOL
-     * @returns {Promise<string>} - The signature of the transaction
+     * Performs a blockchain transfer using SolanaEngine (v2).
+     * @param {Object} contestWallet - DB record for the contest wallet (contains encrypted private_key).
+     * @param {string} recipientAddressString - The recipient address string.
+     * @param {number} amountSOL - The amount to transfer in SOL.
+     * @returns {Promise<string>} - The transaction signature.
      */
-    async performBlockchainTransfer(contestWallet, recipientAddress, amount) {
+    async performBlockchainTransfer(contestWallet, recipientAddressString, amountSOL) {
+        logApi.info(`[ContestEvalService] Initiating v2 blockchain transfer: ${amountSOL} SOL from contest wallet ${contestWallet.wallet_address} to ${recipientAddressString}`);
         try {
-            // Decrypt the private key
-            const decryptedPrivateKey = this.decryptPrivateKey(contestWallet.private_key);
-            const privateKeyBytes = bs58.decode(decryptedPrivateKey);
-            const fromKeypair = Keypair.fromSecretKey(privateKeyBytes);
+            const decryptedSeed_32bytes = this.decryptPrivateKey(contestWallet.private_key);
+            const fromSigner_v2 = await createKeyPairSignerFromBytes(decryptedSeed_32bytes);
 
-            // Create transaction object - standard SOL transfer
-            const transaction = new Transaction().add(
-                SystemProgram.transfer({
-                    fromPubkey: fromKeypair.publicKey,
-                    toPubkey: new PublicKey(recipientAddress),
-                    lamports: Math.round(amount * LAMPORTS_PER_SOL) // Convert SOL to lamports, using round instead of floor
-                })
-            );
-            
-            // Send the transaction using SolanaEngine with optimal configuration
-            const result = await solanaEngine.sendTransaction(
-                transaction, 
-                [fromKeypair], 
-                {
-                    commitment: 'confirmed',
-                    skipPreflight: false,
-                    maxRetries: 3,
-                    blockHeightRetries: 2
-                }
-            );
-            
-            // Log successful transaction
-            logApi.info(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.BOLD_GREEN}Transaction successful:${fancyColors.RESET} Sent ${amount} SOL to ${recipientAddress.substring(0, 6)}...${recipientAddress.substring(recipientAddress.length - 4)}, signature: ${result.signature}`);
-            
-            // Return only the signature string as expected by calling methods
-            return result.signature;
-        } catch (error) {
-            // Proper error handling with blockchain service error category
-            logApi.error(`${serviceSpecificColors.contestEvaluation.tag}[contestEvaluationService]${fancyColors.RESET} ${fancyColors.RED}Transaction failed:${fancyColors.RESET} ${error.message}`);
-            
-            throw ServiceError.blockchain('Blockchain transfer failed', {
-                error: error.message,
-                contestWallet: contestWallet.wallet_address,
-                recipient: recipientAddress,
-                amount,
-                timestamp: new Date().toISOString()
+            if (fromSigner_v2.address !== contestWallet.wallet_address) {
+                logApi.error('[ContestEvalService] CRITICAL MISMATCH: Decrypted key does not match contest wallet address!', {
+                    derived: fromSigner_v2.address, stored: contestWallet.wallet_address, contestId: contestWallet.contest_id
+                });
+                throw new ServiceError.security('Source wallet address mismatch after decryption during transfer.');
+            }
+
+            const lamportsToTransfer = BigInt(Math.round(amountSOL * LAMPORTS_PER_SOL_V2));
+
+            const transferInstruction_v2 = createSystemTransferInstruction({
+                fromAddress: fromSigner_v2.address,
+                toAddress: v2Address(recipientAddressString),
+                lamports: lamportsToTransfer
             });
+            
+            const result = await solanaEngine.sendTransaction(
+                [transferInstruction_v2],
+                fromSigner_v2.address, // Fee payer
+                [fromSigner_v2],       // Signers
+                { commitment: 'confirmed', skipPreflight: false, maxRetries: 3 }
+            );
+
+            if (!result || !result.signature) {
+                throw new Error('solanaEngine.sendTransaction did not return a signature for prize/refund.');
+            }
+            
+            logApi.info(`[ContestEvalService] Transfer successful: ${amountSOL} SOL to ${recipientAddressString}. Sig: ${result.signature}`);
+            return result.signature;
+
+        } catch (error) {
+            logApi.error(`[ContestEvalService] performBlockchainTransfer failed: ${error.message}`, { 
+                error, source: contestWallet.wallet_address, dest: recipientAddressString, amount: amountSOL 
+            });
+            if (error instanceof ServiceError) throw error;
+            throw ServiceError.blockchain('Contest prize/refund transfer failed', { originalError: error.message });
         }
     }
 
@@ -776,70 +798,98 @@ class ContestEvaluationService extends BaseService {
      * @param {Decimal} totalPrizePool - The total prize pool
      * @returns {Promise<Object>} - The result of the validation
      */
-    async validateContestWalletBalance(contestWallet, totalPrizePool) {
+    async validateContestWalletBalance(contestWallet, totalPrizePoolLamports) { // Changed totalPrizePool to be in lamports
         try {
-            // Use solanaEngine to execute the RPC call instead of direct connection
-            const balance = await solanaEngine.executeConnectionMethod('getBalance', new PublicKey(contestWallet.wallet_address));
-            const minimumBuffer = config.master_wallet.min_contest_wallet_balance * LAMPORTS_PER_SOL; // 0.01 SOL
-            const requiredBalance = Math.ceil(totalPrizePool * LAMPORTS_PER_SOL) + minimumBuffer;
+            const balanceResult = await solanaEngine.executeConnectionMethod('getBalance', contestWallet.wallet_address); // Pass string address
+            const currentWalletLamports = balanceResult.value; 
             
-            if (balance < requiredBalance) {
-                throw new Error(`Insufficient contest wallet balance. Required: ${(requiredBalance / LAMPORTS_PER_SOL).toFixed(4)} SOL (including ${config.master_wallet.min_contest_wallet_balance} SOL buffer), Available: ${(balance / LAMPORTS_PER_SOL).toFixed(4)} SOL`);
+            const minimumBufferLamports = Math.round(config.master_wallet.min_contest_wallet_balance * LAMPORTS_PER_SOL_V2);
+            // totalPrizePoolLamports is now expected to be passed in as lamports (BigInt or number)
+            const requiredBalanceLamports = BigInt(totalPrizePoolLamports) + BigInt(minimumBufferLamports);
+            
+            if (BigInt(currentWalletLamports) < requiredBalanceLamports) {
+                throw new Error(`Insufficient contest wallet balance. Required: ${Number(requiredBalanceLamports) / LAMPORTS_PER_SOL_V2} SOL, Available: ${Number(currentWalletLamports) / LAMPORTS_PER_SOL_V2} SOL`);
             }
 
             return {
                 isValid: true,
-                balance: balance / LAMPORTS_PER_SOL,
-                required: requiredBalance / LAMPORTS_PER_SOL,
-                buffer: minimumBuffer / LAMPORTS_PER_SOL
+                balanceSOL: Number(currentWalletLamports) / LAMPORTS_PER_SOL_V2,
+                requiredSOL: Number(requiredBalanceLamports) / LAMPORTS_PER_SOL_V2,
             };
         } catch (error) {
-            logApi.error('Contest wallet balance validation failed:', error);
-            throw error;
+            logApi.error('[ContestEvalService] Contest wallet balance validation failed:', { contestId: contestWallet.contest_id, wallet: contestWallet.wallet_address, error: error.message });
+            // Re-throw specific error or a generic ServiceError
+            throw new ServiceError.validation(`Contest wallet (${contestWallet.wallet_address}) balance check failed: ${error.message}`);
         }
     }
 
-    // Validate the token balance
     /**
-     * Validates the token balance
-     * @param {Object} wallet - The wallet object
-     * @param {string} mint - The mint address
-     * @param {number} amount - The amount to validate
-     * @returns {Promise<Object>} - The result of the validation
+     * Validates the token balance of a specific wallet for a given mint using Helius Kite.
+     * @param {Object} wallet - The wallet object from DB (must have wallet_address string).
+     * @param {string} mintString - The mint address string.
+     * @param {bigint | number} requiredAmountLamports - The required amount in token's smallest units.
+     * @returns {Promise<Object>} - { isValid: boolean, balanceLamports?: bigint, requiredLamports?: bigint, error?: string }
      */
-    async validateTokenBalance(wallet, mint, amount) {
+    async validateTokenBalance(wallet, mintString, requiredAmountLamports) {
+        logApi.info(`[ContestEvalService] Validating token balance via Kite for wallet ${wallet.wallet_address}, mint ${mintString}, amount ${requiredAmountLamports.toString()}`);
+        let kiteConnection;
         try {
-            // Dynamic import of SPL token functions to avoid direct dependencies
-            const { getAssociatedTokenAddress, getAccount } = await import('@solana/spl-token');
-            
-            const associatedTokenAddress = await getAssociatedTokenAddress(
-                new PublicKey(mint),
-                new PublicKey(wallet.wallet_address)
-            );
-
-            try {
-                // Use solanaEngine's connection via executeRpc
-                const tokenAccount = await solanaEngine.executeRpc(
-                    connection => getAccount(connection, associatedTokenAddress)
-                );
-                
-                if (tokenAccount.amount < BigInt(amount)) {
-                    throw new Error(`Insufficient token balance. Required: ${amount}, Available: ${tokenAccount.amount}`);
-                }
-                return {
-                    isValid: true,
-                    balance: Number(tokenAccount.amount),
-                    required: amount
-                };
-            } catch (error) {
-                if (error.name === 'TokenAccountNotFoundError') {
-                    throw new Error(`Token account not found for mint ${mint}`);
-                }
-                throw error;
+            kiteConnection = solanaEngine.getKiteConnection();
+            if (!kiteConnection || !kiteConnection.getTokenAccountBalance) {
+                throw new Error('Kite connection or getTokenAccountBalance method not available via solanaEngine.');
             }
+        } catch (e) {
+            logApi.error(`[ContestEvalService] Failed to get Kite connection: ${e.message}`);
+            throw new ServiceError.dependency('Kite connection unavailable for token balance validation.', { originalError: e.message });
+        }
+
+        try {
+            const walletAddressString = wallet.wallet_address;
+            const requiredAmountBigInt = BigInt(requiredAmountLamports);
+
+            // Use Kite to get the token account balance
+            // getTokenAccountBalance(wallet: Address, mint: Address, useTokenExtensions?: boolean)
+            // It returns Promise<TokenAmount> where TokenAmount = { amount: bigint, decimals: number, uiAmount: number, uiAmountString: string }
+            const tokenBalanceInfo = await kiteConnection.getTokenAccountBalance(walletAddressString, mintString);
+
+            if (!tokenBalanceInfo || typeof tokenBalanceInfo.amount !== 'bigint') {
+                logApi.warn(`[ContestEvalService] Kite.getTokenAccountBalance did not return valid balance for ${mintString} in ${walletAddressString}. Response:`, tokenBalanceInfo);
+                // This implies the ATA might not exist or has zero balance, or an error occurred.
+                // Kite's getTokenAccountBalance should ideally handle non-existent ATAs gracefully (e.g., return 0 balance or throw specific error).
+                // For now, if amount is not a bigint, assume balance is insufficient or error.
+                if (requiredAmountBigInt > 0n) { // If a positive amount is required, this is a failure.
+                     throw new ServiceError.validation(`Could not retrieve valid token balance for ${mintString}. ATA might not exist or balance is zero.`);
+                } else { // If 0 is required, and we couldn't get a balance, consider it valid (0 <= 0).
+                    return { isValid: true, balanceLamports: 0n, requiredLamports: 0n };
+                }
+            }
+
+            const currentTokenLamports = tokenBalanceInfo.amount; // This is a bigint
+            logApi.debug(`[ContestEvalService] Token balance (Kite) for ${mintString}: ${currentTokenLamports.toString()} (raw units)`);
+
+            if (currentTokenLamports < requiredAmountBigInt) {
+                throw new ServiceError.validation(
+                    `Insufficient token balance for ${mintString}. Required: ${requiredAmountBigInt.toString()}, Available: ${currentTokenLamports.toString()}`
+                );
+            }
+
+            return {
+                isValid: true,
+                balanceLamports: currentTokenLamports,
+                requiredLamports: requiredAmountBigInt
+            };
+
         } catch (error) {
-            logApi.error('Token balance validation failed:', error);
-            throw error;
+            logApi.error(`[ContestEvalService] Token balance validation via Kite failed for ${mintString} in wallet ${wallet.wallet_address}:`, { 
+                error: error.message, 
+                wallet: wallet.wallet_address, 
+                mint: mintString, 
+                required: requiredAmountLamports.toString(),
+                // stack: error.stack?.substring(0,300) // Optional: for more detailed debugging
+            });
+            if (error instanceof ServiceError) throw error;
+            // Wrap other errors into a ServiceError for consistent handling
+            throw new ServiceError.operation(`Token balance validation via Kite failed: ${error.message}`);
         }
     }
 

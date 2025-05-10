@@ -154,36 +154,31 @@ class VanityApiClient {
         jobStatus: result.status
       });
 
-      // Get the vanity wallet request
-      const request = await prisma.vanity_wallet_pool.findUnique({
-        where: { id: parseInt(requestId) }
-      });
+      const request = await prisma.vanity_wallet_pool.findUnique({ where: { id: parseInt(requestId) } });
+      if (!request) throw new Error(`Vanity wallet request #${requestId} not found`);
 
-      if (!request) {
-        throw new Error(`Vanity wallet request #${requestId} not found`);
-      }
-
-      // If the job was completed successfully
       if (result.status === 'Completed' && result.result) {
-        const { address, keypair_bytes } = result.result;
+        const { address, seed_bytes } = result.result; // Now expects seed_bytes (Uint8Array)
 
         logApi.info(`${fancyColors.MAGENTA}[VanityApiClient]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} Success ${fancyColors.RESET} Vanity wallet generated: ${address}`, {
           address,
-          pattern: request.pattern
+          pattern: request.pattern,
+          seedLength: seed_bytes?.length // Should be 32
         });
 
-        // Convert keypair_bytes to a string for storage
-        const privateKeyJson = JSON.stringify(keypair_bytes);
+        if (!(seed_bytes instanceof Uint8Array) || seed_bytes.length !== 32) {
+            logApi.error("Invalid seed_bytes received from generator!", { seed_bytes });
+            throw new Error('Generator did not provide a valid 32-byte Uint8Array seed.');
+        }
         
-        // Encrypt the private key before storing it
-        const encryptedPrivateKey = await this.encryptPrivateKey(privateKeyJson);
+        // Encrypt the 32-byte Uint8Array seed directly
+        const encryptedSeedJson = await this.encryptPrivateKey(seed_bytes); // Pass Uint8Array
 
-        // Update the database record
         const updatedRecord = await prisma.vanity_wallet_pool.update({
           where: { id: parseInt(requestId) },
           data: {
             wallet_address: address,
-            private_key: encryptedPrivateKey,
+            private_key: encryptedSeedJson, // This will now be the JSON string {encrypted, iv, tag, aad, version}
             status: 'completed',
             attempts: result.attempts || 0,
             duration_ms: result.duration_ms || 0,
@@ -191,7 +186,6 @@ class VanityApiClient {
             updated_at: new Date()
           }
         });
-
         return updatedRecord;
       } 
       // If the job failed or was cancelled
@@ -490,36 +484,43 @@ class VanityApiClient {
   /**
    * Encrypts a private key before storing it in the database
    * 
-   * @param {string} privateKeyJson - The private key as a JSON string
+   * @param {string} privateKeySeed_32_bytes_uint8array - The private key as a 32-byte Uint8Array
    * @returns {Promise<string>} - The encrypted private key
    */
-  static async encryptPrivateKey(privateKeyJson) {
+  static async encryptPrivateKey(privateKeySeed_32_bytes_uint8array) {
     try {
       if (!process.env.WALLET_ENCRYPTION_KEY) {
-        logApi.warn(`${fancyColors.MAGENTA}[VanityApiClient]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} Warning ${fancyColors.RESET} No encryption key found, storing without encryption`);
-        return privateKeyJson;
+        logApi.warn(`${fancyColors.MAGENTA}[VanityApiClient]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} Warning ${fancyColors.RESET} No encryption key found, CRITICAL: Storing seed UNENCRYPTED for vanity wallet! This is a fallback and highly insecure.`);
+        // In a real scenario, you might throw an error or have a more secure fallback.
+        // For now, returning a string representation of the Uint8Array if no key.
+        // THIS IS NOT IDEAL FOR PRODUCTION.
+        return JSON.stringify({ unencrypted_seed_hex: Buffer.from(privateKeySeed_32_bytes_uint8array).toString('hex'), version: 'v2_seed_unencrypted_fallback' });
+      }
+
+      if (!(privateKeySeed_32_bytes_uint8array instanceof Uint8Array) || privateKeySeed_32_bytes_uint8array.length !== 32) {
+        throw new Error('encryptPrivateKey for VanityApiClient expects a 32-byte Uint8Array seed.');
       }
       
-      // Get the encryption key (should be a 32-byte/64-character hex string)
       const encryptionKey = Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex');
-      
-      // Create a random initialization vector
-      const iv = crypto.randomBytes(16);
-      
-      // Create cipher
+      const iv = crypto.randomBytes(12); // AES-GCM standard IV size
+      const aad = crypto.randomBytes(16); // Optional AAD for context
       const cipher = crypto.createCipheriv('aes-256-gcm', encryptionKey, iv);
+      cipher.setAAD(aad);
       
-      // Encrypt the data
-      let encrypted = cipher.update(privateKeyJson, 'utf8', 'hex');
-      encrypted += cipher.final('hex');
-      
-      // Get the auth tag
+      let encrypted = cipher.update(privateKeySeed_32_bytes_uint8array); // Pass Uint8Array directly
+      encrypted = Buffer.concat([encrypted, cipher.final()]);
       const authTag = cipher.getAuthTag();
       
-      // Format: iv:authTag:encryptedData
-      return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
+      // Store as a JSON object for better versioning and clarity
+      return JSON.stringify({
+        encrypted: encrypted.toString('hex'),
+        iv: iv.toString('hex'),
+        tag: authTag.toString('hex'),
+        aad: aad.toString('hex'),
+        version: 'v2_seed_vanity' // Specific version for vanity encrypted seeds
+      });
     } catch (error) {
-      logApi.error(`${fancyColors.MAGENTA}[VanityApiClient]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Error ${fancyColors.RESET} Encrypting private key: ${error.message}`, {
+      logApi.error(`${fancyColors.MAGENTA}[VanityApiClient]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Error ${fancyColors.RESET} Encrypting private key seed: ${error.message}`, {
         error: error.message,
         stack: error.stack
       });
@@ -530,46 +531,100 @@ class VanityApiClient {
   /**
    * Decrypts a private key retrieved from the database
    * 
-   * @param {string} encryptedPrivateKey - The encrypted private key
-   * @returns {Promise<string>} - The decrypted private key as a JSON string
+   * @param {string} encryptedPrivateKeyString - The encrypted private key
+   * @returns {Promise<Buffer>} - The decrypted private key as a 32-byte Buffer
    */
-  static async decryptPrivateKey(encryptedPrivateKey) {
+  static async decryptPrivateKey(encryptedPrivateKeyString) {
     try {
-      // Check if this is an encrypted value (contains the format separator)
-      if (!encryptedPrivateKey.includes(':')) {
-        // Not encrypted, return as is (likely from before encryption was implemented)
-        return encryptedPrivateKey;
+      let parsedData;
+      try {
+        parsedData = JSON.parse(encryptedPrivateKeyString);
+      } catch (e) {
+        // Not JSON, attempt to parse as old colon-separated format if it contains colons
+        if (typeof encryptedPrivateKeyString === 'string' && encryptedPrivateKeyString.includes(':')) {
+          logApi.warn(`${fancyColors.MAGENTA}[VanityApiClient]${fancyColors.RESET} ${fancyColors.YELLOW}Attempting to decrypt legacy colon-separated private key format.${fancyColors.RESET}`);
+          const parts = encryptedPrivateKeyString.split(':');
+          if (parts.length === 3) { // iv:authTag:encryptedData
+            const [ivHex, authTagHex, encryptedDataHex] = parts;
+            const encryptionKey = Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex');
+            const iv = Buffer.from(ivHex, 'hex');
+            const authTag = Buffer.from(authTagHex, 'hex');
+            const decipher = crypto.createDecipheriv('aes-256-gcm', encryptionKey, iv);
+            decipher.setAuthTag(authTag);
+            let decryptedLegacyContent = decipher.update(encryptedDataHex, 'hex', 'utf8');
+            decryptedLegacyContent += decipher.final('utf8');
+            
+            // This decryptedLegacyContent was the JSON string of the 64-byte array, e.g. "[1,2,3,...]"
+            const keypair_array_64 = JSON.parse(decryptedLegacyContent);
+            if (Array.isArray(keypair_array_64) && keypair_array_64.length === 64) {
+              logApi.info("Successfully decrypted legacy colon-separated key and extracted 32-byte seed.");
+              return Buffer.from(Uint8Array.from(keypair_array_64.slice(0, 32))); // Return 32-byte seed as Buffer
+            } else {
+              throw new Error('Legacy key decryption (colon-separated) did not result in 64-byte array after inner JSON parse.');
+            }
+          } else {
+            throw new Error('Invalid legacy colon-separated format.');
+          }
+        } else {
+          // Not JSON and not colon-separated, likely an old unencrypted plaintext key (e.g. the JSON string of array before encryption was added)
+          logApi.warn(`${fancyColors.MAGENTA}[VanityApiClient]${fancyColors.RESET} ${fancyColors.YELLOW}Private key is not JSON and not colon-separated. Assuming it might be an unencrypted JSON array string (legacy).${fancyColors.RESET}`, { preview: encryptedPrivateKeyString.substring(0,50)});
+          try {
+            const keypair_array_64_direct = JSON.parse(encryptedPrivateKeyString);
+            if (Array.isArray(keypair_array_64_direct) && keypair_array_64_direct.length === 64) {
+                logApi.info("Parsed unencrypted JSON array string (legacy) and extracted 32-byte seed.");
+                return Buffer.from(Uint8Array.from(keypair_array_64_direct.slice(0, 32)));
+            }
+          } catch (parseError) { /* Fall through to error if this also fails */ }
+          throw new Error('Private key is not in a recognizable encrypted JSON or legacy format.');
+        }
       }
-      
-      if (!process.env.WALLET_ENCRYPTION_KEY) {
-        throw new Error('Wallet encryption key not found in environment');
+
+      // Handle new JSON-based encrypted formats
+      if (parsedData.version === 'v2_seed_vanity' || parsedData.version === 'v2_seed') { // Also accept 'v2_seed' for wider compatibility
+        logApi.info(`${fancyColors.MAGENTA}[VanityApiClient]${fancyColors.RESET} Decrypting private key with version: ${parsedData.version}`);
+        const { encrypted, iv, tag, aad } = parsedData;
+        if (!encrypted || !iv || !tag || !aad) {
+          throw new Error(`Encrypted data (version: ${parsedData.version}) is missing required fields.`);
+        }
+
+        const encryptionKey = Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex');
+        const decipher = crypto.createDecipheriv('aes-256-gcm', encryptionKey, Buffer.from(iv, 'hex'));
+        decipher.setAuthTag(Buffer.from(tag, 'hex'));
+        decipher.setAAD(Buffer.from(aad, 'hex'));
+
+        let decryptedSeed = decipher.update(Buffer.from(encrypted, 'hex'));
+        decryptedSeed = Buffer.concat([decryptedSeed, decipher.final()]);
+
+        if (decryptedSeed.length !== 32) {
+          throw new Error(`Decrypted seed (version: ${parsedData.version}) is not 32 bytes long, got ${decryptedSeed.length} bytes.`);
+        }
+        logApi.info(`${fancyColors.MAGENTA}[VanityApiClient]${fancyColors.RESET} Successfully decrypted 32-byte seed (version: ${parsedData.version}).`);
+        return decryptedSeed; // Return as Buffer
+
+      } else if (parsedData.version === 'v2_seed_unencrypted_fallback') {
+        logApi.error(`${fancyColors.MAGENTA}[VanityApiClient]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} CRITICAL SECURITY WARNING ${fancyColors.RESET} Using UNENCRYPTED FALLBACK SEED for vanity wallet. WALLET_ENCRYPTION_KEY was likely missing during encryption.`);
+        if (!parsedData.unencrypted_seed_hex) {
+            throw new Error('Unencrypted fallback seed data is missing required hex field.');
+        }
+        const seedBuffer = Buffer.from(parsedData.unencrypted_seed_hex, 'hex');
+        if (seedBuffer.length !== 32) {
+            throw new Error(`Unencrypted fallback seed hex does not represent 32 bytes, got ${seedBuffer.length} bytes.`);
+        }
+        return seedBuffer;
+      } else {
+        throw new Error(`Unrecognized encrypted private key version: ${parsedData.version || 'none'}`);
       }
-      
-      // Get the encryption key
-      const encryptionKey = Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex');
-      
-      // Split the components
-      const [ivHex, authTagHex, encryptedData] = encryptedPrivateKey.split(':');
-      
-      // Convert back to buffers
-      const iv = Buffer.from(ivHex, 'hex');
-      const authTag = Buffer.from(authTagHex, 'hex');
-      
-      // Create decipher
-      const decipher = crypto.createDecipheriv('aes-256-gcm', encryptionKey, iv);
-      decipher.setAuthTag(authTag);
-      
-      // Decrypt the data
-      let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
-      decrypted += decipher.final('utf8');
-      
-      return decrypted;
+
     } catch (error) {
       logApi.error(`${fancyColors.MAGENTA}[VanityApiClient]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} Error ${fancyColors.RESET} Decrypting private key: ${error.message}`, {
         error: error.message,
-        stack: error.stack
+        stack: error.stack,
+        encryptedKeyPreview: typeof encryptedPrivateKeyString === 'string' ? encryptedPrivateKeyString.substring(0, 50) + '...' : 'Not a string'
       });
-      throw error;
+      // To avoid breaking callers that might expect a string (even if erroneous), consider what to throw/return.
+      // For now, rethrowing the original error or a new ServiceError.
+      if (error instanceof ServiceError) throw error;
+      throw new ServiceError.operation('Failed to decrypt vanity private key', { originalError: error.message });
     }
   }
 }

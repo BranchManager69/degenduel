@@ -1,5 +1,16 @@
 // /routes/status.js
 
+/** 
+ * Launch Countdown Status:
+ * 
+ * @description This route handles the countdown mode for the launch of the platform.
+ * 
+ * @author BranchManager69
+ * @version 2.1.0
+ * @created 2025-05-09
+ * @updated 2025-05-09 
+ */
+
 import express from "express";
 import prisma from "../config/prisma.js";
 import { logApi } from "../utils/logger-suite/logger.js";
@@ -216,13 +227,19 @@ router.get("/countdown", async (req, res) => {
       });
     }
 
+    // Get token contract address from token_config (just get the first row)
+    const tokenConfig = await prisma.token_config.findFirst({
+      select: { address: true }
+    });
+
     // Return countdown data if it's enabled
     return res.json({
       enabled: true,
       end_time: countdown.value.end_time,
       title: countdown.value.title || "Coming Soon",
       message: countdown.value.message || "Our platform is launching soon.",
-      redirect_url: countdown.value.redirect_url
+      redirect_url: countdown.value.redirect_url,
+      token_address: tokenConfig?.address || null
     });
   } catch (error) {
     logApi.error("Failed to get countdown status", {

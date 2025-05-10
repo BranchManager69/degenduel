@@ -49,6 +49,8 @@ import {
   broadcastToSubscribers
 } from './handlers.js';
 
+import { registerContestEventHandlers } from './contestEventHandlers.js';
+
 // Create a logger instance for the unified WebSocket server
 //   [I'll allow it but this is the only time that I can think of where we use two separate loggers in the same file - 4/30/2025]
 const log = logger.forService('UNIFIED_WS');
@@ -150,6 +152,8 @@ export default class UnifiedWebSocketServer {
         this.broadcastStats.lastReportTime = now;
       }
     }, 60000); // Report every minute
+
+    this.setupEventHandlers();
   }
 
   initTopicSubscriptions() {
@@ -426,5 +430,18 @@ export default class UnifiedWebSocketServer {
     }
     
     log.info('Unified WebSocket Server cleanup completed');
+  }
+
+  /**
+   * Setup event handlers from various sources.
+   */
+  setupEventHandlers() {
+    log.info('Setting up Unified WebSocket event handlers...');
+    // Register handlers from core services
+    registerServiceEvents(this);
+    // Register handlers specifically for contests
+    registerContestEventHandlers(this);
+    // Register handlers for other domains here if needed in the future
+    log.info('Unified WebSocket event handlers setup complete.');
   }
 }

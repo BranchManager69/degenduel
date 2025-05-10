@@ -4,8 +4,6 @@ import { logApi } from '../../utils/logger-suite/logger.js';
 import { serviceSpecificColors, fancyColors } from '../../utils/colors.js';
 import { heliusClient } from './helius-client.js';
 import serviceEvents from '../../utils/service-suite/service-events.js';
-import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
-import { PublicKey } from '@solana/web3.js';
 
 // Formatting helpers for consistent logging
 const formatLog = {

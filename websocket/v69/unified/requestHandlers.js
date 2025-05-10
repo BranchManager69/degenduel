@@ -111,6 +111,10 @@ export async function handleRequest(ws, message, sendMessage, sendError) {
       case TOPICS.CONTEST:
         await handleContestRequest(ws, normalizedMessage, sendMessage, sendError);
         break;
+
+      case TOPICS.CONTEST_CHAT:
+        await handleContestChatRequest(ws, normalizedMessage, sendMessage, sendError);
+        break;
         
       default:
         sendError(ws, `Request handling not implemented for topic: ${normalizedTopic}`, 5001);
@@ -134,7 +138,8 @@ export {
   handleTokenBalanceRequest,
   handleSolanaBalanceRequest,
   handleTerminalRequest,
-  handleContestRequest
+  handleContestRequest,
+  handleContestChatRequest
 };
 
 /**
@@ -1010,5 +1015,94 @@ async function handleContestRequest(ws, message, sendMessage, sendError) {
       data: message.data
     });
     return sendError(ws, `Contest request error: ${error.message}`, 5000);
+  }
+}
+
+/**
+ * Handle contest chat related requests
+ * @param {WebSocket} ws - WebSocket connection
+ * @param {Object} message - Parsed message (expects topic: 'contest-chat', action: 'GET_MESSAGES', data: { contest_id: number })
+ * @param {Function} sendMessage - Function to send messages
+ * @param {Function} sendError - Function to send errors
+ */
+async function handleContestChatRequest(ws, message, sendMessage, sendError) {
+  if (message.action !== DDWebSocketActions.GET_MESSAGES && message.action !== 'GET_MESSAGES' && message.action !== 'getMessages') {
+    return sendError(ws, `Unknown action for contest-chat: ${message.action}`, 4009);
+  }
+
+  const contestId = message.data?.contest_id;
+  if (!contestId || typeof contestId !== 'number') {
+    return sendError(ws, 'Numeric contest_id is required in message.data', 4006);
+  }
+
+  try {
+    // 1. Fetch contest participants
+    const participantsData = await prisma.contest_participants.findMany({
+      where: { contest_id: contestId },
+      include: {
+        users: {
+          select: {
+            id: true,
+            wallet_address: true, // Keep wallet_address as it is the true user_id in many contexts
+            nickname: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    const participants = participantsData.map(p => ({
+      user_id: p.users.wallet_address, // Using wallet_address as the user_id as per typical frontend expectation
+      username: p.users.nickname || p.users.wallet_address.substring(0, 6) + '...', // Fallback for username
+      role: p.users.role,
+      // Add any other relevant participant info needed for display directly from p.users or p itself
+    }));    
+
+    // 2. Fetch chat messages for the contest
+    const messagesData = await prisma.contest_chat_messages.findMany({
+      where: { contest_id: contestId },
+      orderBy: { created_at: 'asc' }, // Oldest messages first
+      take: 100, // Limit to the latest 100 messages, adjust as needed
+      include: {
+        sender: {
+          select: {
+            id: true, 
+            wallet_address: true,
+            nickname: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    const messages = messagesData.map(msg => ({
+      id: msg.id.toString(), // Message ID
+      contest_id: msg.contest_id,
+      sender: {
+        user_id: msg.sender.wallet_address, // Using wallet_address as the user_id
+        username: msg.sender.nickname || msg.sender.wallet_address.substring(0, 6) + '...', // Fallback for username
+        role: msg.sender.role,
+      },
+      text: msg.message_text,
+      timestamp: msg.created_at.toISOString(),
+    }));
+
+    // 3. Send the response
+    sendMessage(ws, {
+      type: MESSAGE_TYPES.RESPONSE,
+      topic: TOPICS.CONTEST_CHAT,
+      action: message.action, // Echo back the action
+      requestId: message.requestId, // Echo back requestId if present
+      data: {
+        contest_id: contestId,
+        messages: messages,
+        participants: participants,
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+  } catch (error) {
+    logApi.error(`${wsColors.tag}[request-handlers]${fancyColors.RESET} ${fancyColors.RED}Error in handleContestChatRequest for contest ${contestId}:${fancyColors.RESET}`, error);
+    sendError(ws, `Error fetching contest chat data: ${error.message}`, 5000);
   }
 }

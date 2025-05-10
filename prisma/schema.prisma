@@ -33,6 +33,7 @@ model contest_participants {
   entry_transaction    transactions? @relation("contest_participants_entry_transaction_idTotransactions", fields: [entry_transaction_id], references: [id])
   prize_transaction    transactions? @relation("contest_participants_prize_transaction_idTotransactions", fields: [prize_transaction_id], references: [id])
   users                users         @relation(fields: [wallet_address], references: [wallet_address])
+  portfolio_history    contest_portfolio_history[] // Add this line
 
   @@unique([contest_id, wallet_address])
   @@index([wallet_address])
@@ -46,7 +47,8 @@ model contest_portfolios {
   contest_id     Int
   wallet_address String   @db.VarChar(44)
   token_id       Int
-  weight         Int
+  weight         Int // Represents the intended allocation percentage (e.g., 50 for 50%)
+  quantity       Decimal  @db.Decimal(20, 8) // Actual token quantity held, calculated on join/trade
   created_at     DateTime @default(now()) @db.Timestamptz(6)
   contests       contests @relation(fields: [contest_id], references: [id], onDelete: Cascade)
   tokens         tokens   @relation(fields: [token_id], references: [id])
@@ -145,6 +147,32 @@ model contest_portfolio_trades {
   @@map("contest_portfolio_trades")
 }
 
+model contest_portfolio_history {
+  id                    Int      @id @default(autoincrement())
+  contest_participant_id Int      // Links to contest_participants.id
+  timestamp             DateTime @db.Timestamptz(6)
+  portfolio_value       Decimal  @db.Decimal(20, 8) // Store the calculated value
+
+  participant contest_participants @relation(fields: [contest_participant_id], references: [id], onDelete: Cascade)
+
+  @@index([contest_participant_id, timestamp]) // Index for efficient lookup per participant
+  @@map("contest_portfolio_history")
+}
+
+model contest_chat_messages {
+  id                  Int      @id @default(autoincrement())
+  contest_id          Int
+  sender_wallet_address String   @db.VarChar(44)
+  message_text        String   @db.Text
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+
+  contest contests @relation(fields: [contest_id], references: [id], onDelete: Cascade)
+  sender  users    @relation(fields: [sender_wallet_address], references: [wallet_address])
+
+  @@index([contest_id, created_at])
+  @@map("contest_chat_messages")
+}
+
 model contests {
   id                        Int                         @id @default(autoincrement())
   contest_code              String                      @unique
@@ -186,6 +214,7 @@ model contests {
   creator                   users?                      @relation("ContestCreator", fields: [created_by_user], references: [wallet_address])
   creation_credit           contest_creation_credits?   @relation(fields: [creator_credit_used], references: [id])
   pending_entries           pending_contest_entries[]   @relation("ContestPendingEntries")
+  chat_messages             contest_chat_messages[]     // Added relation for contest chat messages
 
   @@index([status])
   @@index([start_time])
@@ -411,6 +440,7 @@ model users {
   profile_image_updated_at  DateTime?                   @db.Timestamptz(6)
   last_balance_check        DateTime?                   @db.Timestamptz(6)
   last_known_balance        BigInt?
+  is_ai_agent               Boolean                     @default(false) // Added to identify AI agents
   contest_participants      contest_participants[]
   contest_portfolio_trades  contest_portfolio_trades[]
   contest_portfolios        contest_portfolios[]
@@ -442,6 +472,8 @@ model users {
   owned_managed_wallets     managed_wallets[]           @relation("ManagedWalletOwner") // Added back-relation for managed wallets
   refresh_tokens            refresh_tokens[]
   biometric_auth_challenges biometric_auth_challenges[] // Added relation for biometric challenges
+  qr_auth_sessions          qr_auth_sessions[]          @relation("UserQrAuthSessions") // QR code auth sessions
+  sent_chat_messages        contest_chat_messages[] // Added relation for user sent chat messages
 
   @@index([wallet_address], map: "idx_users_wallet")
   @@index([username], map: "idx_users_username")
@@ -1914,4 +1946,21 @@ model refresh_tokens {
   @@index([wallet_address])
   @@index([expires_at])
   @@map("refresh_tokens")
+}
+
+model qr_auth_sessions {
+  id            String    @id @default(cuid())
+  session_token String    @unique
+  session_data  Json?     @default("{}")
+  status        String    @default("pending")
+  expires_at    DateTime
+  created_at    DateTime  @default(now())
+  completed_at  DateTime?
+  user_id       Int?
+  
+  user          users?    @relation("UserQrAuthSessions", fields: [user_id], references: [id], onDelete: SetNull)
+  
+  @@index([expires_at], name: "qr_auth_sessions_expires_at_idx")
+  @@index([status], name: "qr_auth_sessions_status_idx")
+  @@map("qr_auth_sessions")
 }

@@ -104,9 +104,9 @@ class ServiceManager {
      * Register a service with its dependencies
      */ 
     register(serviceOrName, dependencies = []) {
+        const callStack = new Error().stack || '';
         // Extreme debugging - log the caller
         if (DEBUG_SERVICE_REGISTRATION) {
-            const callStack = new Error().stack || '';
             logApi.info(`${fancyColors.RED}🔥 CALLER (DEBUG): ${callStack.split('\n').slice(0, 5).join('\n')}${fancyColors.RESET}`);
         }
         

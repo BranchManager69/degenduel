@@ -21,8 +21,6 @@ import { fancyColors } from '../utils/colors.js';
 // ** Service Manager **
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
-import { createContestWallet } from '../utils/solana-suite/solana-wallet.js';
-import { Decimal } from '@prisma/client/runtime/library';
 // Service authentication for maintenance bypass
 import { generateServiceAuthHeader } from '../config/service-auth.js';
 
@@ -558,10 +556,7 @@ class ContestSchedulerService extends BaseService {
             
             // Create contest and wallet in a transaction
             const result = await prisma.$transaction(async (prisma) => {
-                // 1. Create contest first
-                const contest = await prisma.contests.create({
-                    data: contestData
-                });
+                const contest = await prisma.contests.create({ data: contestData });
 
                 logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET}${fancyColors.BOLD}${fancyColors.BG_LIGHT_GREEN} Created scheduled contest ${fancyColors.RESET}`);
                 logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Details: ${contest.name} (ID: ${contest.id}, Code: ${contest.contest_code})`);
@@ -574,71 +569,25 @@ class ContestSchedulerService extends BaseService {
                     logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Created from config schedule: ${schedule.name}`);
                 }
                 
-                // 2. Use contest wallet service to create wallet (this properly handles vanity wallets)
-                // Import the service (already configured with proper vanity wallet handling)
-                let contestWallet;
+                let contestWalletRecord;
                 try {
-                    // Use the contest wallet service which properly sets is_vanity and vanity_type
-                    // We need to import it here to avoid circular dependencies
-                    const contestWalletService = (await import('../services/contestWalletService.js')).default;
-                    contestWallet = await contestWalletService.createContestWallet(contest.id);
-                    
-                    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Created wallet for contest: ${contestWallet.wallet_address}`);
-                    if (contestWallet.is_vanity) {
-                        logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.GREEN}Using ${contestWallet.vanity_type} vanity wallet!${fancyColors.RESET}`);
+                    // Use the refactored ContestWalletService directly
+                    contestWalletRecord = await ContestWalletService.createContestWallet(contest.id);
+                    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Created wallet for contest via ContestWalletService: ${contestWalletRecord.wallet_address}`);
+                    if (contestWalletRecord.is_vanity) {
+                        logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.GREEN}Using ${contestWalletRecord.vanity_type} vanity wallet!${fancyColors.RESET}`);
                     }
-                } catch (walletError) {
-                    // Fall back to direct wallet creation if service fails
-                    logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} VANITY WALLET FAILURE ${fancyColors.RESET} ${fancyColors.YELLOW}Using fallback random wallet creation for scheduled contest${fancyColors.RESET}`, {
-                        error: walletError.message,
-                        stack: walletError.stack,
-                        errorType: walletError.name || 'Unknown',
-                        contestId: contest.id,
-                        details: 'Contest wallet service failed to create vanity wallet - this indicates an issue with the vanity wallet system'
-                    });
-                    
-                    // Add to scheduler stats
-                    this.schedulerStats.contests.failedVanityWallets = (this.schedulerStats.contests.failedVanityWallets || 0) + 1;
-                    
-                    // Log prominently using logApi
-                    logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} CRITICAL ERROR ${fancyColors.RESET}
-╔════════════════════════════════════════════════════════════════════════════╗
-║  ⚠️  VANITY WALLET CREATION FAILED FOR SCHEDULED CONTEST #${contest.id}       
-║  Contest Code: ${contest.contest_code}
-║  Error: ${walletError.message}
-║  Using fallback random wallet creation instead
-║  This should be investigated to restore vanity wallet functionality
-╚════════════════════════════════════════════════════════════════════════════╝`, 
-                    {
-                        error: walletError.message,
-                        stack: walletError.stack,
+                } catch (walletServiceError) {
+                    logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} CRITICAL ERROR ${fancyColors.RESET} ContestWalletService failed to create wallet for scheduled contest #${contest.id}: ${walletServiceError.message}`, {
+                        error: walletServiceError.message,
+                        stack: walletServiceError.stack,
                         contestId: contest.id,
                         contestCode: contest.contest_code
                     });
-                    
-                    // Direct wallet creation using the utility function
-                    const { publicKey, encryptedPrivateKey } = await createContestWallet();
-                    
-                    // Create wallet record with explicit is_vanity = false flag
-                    contestWallet = await prisma.contest_wallets.create({
-                        data: {
-                            contest_id: contest.id,
-                            wallet_address: publicKey,
-                            private_key: encryptedPrivateKey,
-                            balance: '0',
-                            is_vanity: false,
-                            vanity_type: null,
-                            fallback_creation: true // Add a flag to track fallback creation
-                        }
-                    });
-                    
-                    // Log the fallback wallet creation clearly
-                    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BLUE}Fallback wallet created successfully${fancyColors.RESET}`, {
-                        contest_id: contest.id,
-                        wallet_address: publicKey,
-                        is_vanity: false,
-                        fallback_creation: true
-                    });
+                    // If ContestWalletService fails, we should not proceed with a fallback that uses old key formats.
+                    // Let the transaction rollback by re-throwing the error.
+                    this.schedulerStats.contests.failed++; // Mark failure for this schedule attempt
+                    throw new Error(`Wallet creation failed for contest ${contest.id} via ContestWalletService: ${walletServiceError.message}`);
                 }
                 
                 // Try to generate an image for the contest after wallet is created
@@ -716,7 +665,7 @@ class ContestSchedulerService extends BaseService {
                     logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.YELLOW}Error initializing image service: ${imageServiceError.message}${fancyColors.RESET}`);
                 }
                 
-                return { contest, wallet: contestWallet };
+                return { contest, wallet: contestWalletRecord };
             });
             
             // Update stats

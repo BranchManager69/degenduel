@@ -15,7 +15,7 @@ import fs from 'fs';
 import { logApi } from '../../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../../utils/colors.js';
 import prisma from '../../../config/prisma.js';
-import { Keypair } from '@solana/web3.js';
+import { getAddressFromPublicKey } from '@solana/addresses';
 
 // Determine current file directory for temporary files
 // (old way of storing found keypairs)
@@ -292,78 +292,51 @@ class LocalVanityGenerator {
       try {
         const line = outputBuffer.split('\n').find(l => l.includes('Wrote keypair to'));
         const match = line?.match(/Wrote keypair to (\S+\.json)/);
-        if (!match) throw new Error('Output parsing failed');
+        if (!match) throw new Error('Output parsing failed for keypair file path');
 
         const originalPath = match[1];
-        
-        // Get the intended final path
         const finalPath = this.getKeypairFilePath(job.id, job.pattern);
         
-        // Check if original path exists
         if (!fs.existsSync(originalPath)) {
-          // Check if the file might be in the project root (this should NEVER happen with fixed code)
           const possibleRootPath = path.join(process.cwd(), path.basename(originalPath));
           if (fs.existsSync(possibleRootPath)) {
-            // IMPORTANT: This is a SEVERE warning - this should never happen with fixed code paths
-            // If you see this warning, it indicates a regression or new issue with file paths
-            logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} CRITICAL WARNING ${fancyColors.RESET} Keypair incorrectly saved to project root! This indicates a possible regression. ${possibleRootPath}`);
-            logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.YELLOW}Recovered by moving from project root to: ${finalPath}${fancyColors.RESET}`);
-            
-            // Still recover the file to prevent data loss, but make sure it's very visible in logs
+            logApi.warn(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} Keypair file found at project root (unexpected): ${possibleRootPath}. Moving to ${finalPath}`);
             fs.renameSync(possibleRootPath, finalPath);
           } else {
             throw new Error(`Keypair file not found at ${originalPath} or ${possibleRootPath}`);
           }
         } else {
-          // Move from original location to final location
           fs.renameSync(originalPath, finalPath);
         }
         
-        const keypair = JSON.parse(fs.readFileSync(finalPath, 'utf8'));
+        const keypairFileContent = fs.readFileSync(finalPath, 'utf8');
+        const keypairArray_64 = JSON.parse(keypairFileContent); // This is the array of 64 numbers
 
-        // Get the actual Solana public key from the keypair
-        const secretKey = Uint8Array.from(keypair);
-        const wallet = Keypair.fromSecretKey(secretKey);
-        const publicKey = wallet.publicKey.toString();
-
-        // 🔽 DROP A PLAINTEXT VERSION
-        const plaintextKeyPath = finalPath.replace('/keypairs/', '/pkeys/').replace(/\.json$/, '.key');
-        const raw = JSON.stringify(keypair);
-        const plainDir = path.dirname(plaintextKeyPath);
-        if (!fs.existsSync(plainDir)) fs.mkdirSync(plainDir, { recursive: true });
-        fs.writeFileSync(plaintextKeyPath, raw);
-
-        // 🔄 Update existing record in database instead of creating a new one
-        try {
-          // Get theoretical probability based on pattern and case sensitivity
-          const charSpace = job.caseSensitive !== false ? 58 : 33; // 58 for case-sensitive, 33 for case-insensitive
-          const theoreticalAttempts = Math.pow(charSpace, job.pattern.length);
-          const efficiency = (theoreticalAttempts / (result.attempts || lastAttemptCount || 1)) * 100;
-          
-          // Enhanced data collection - removed unsupported metadata field
-          await prisma.vanity_wallet_pool.update({
-            where: { id: parseInt(job.id) }, // Use the job ID to find the existing record
-            data: {
-              wallet_address: publicKey, // Use the actual Solana public key
-              private_key: raw,
-              status: 'completed',
-              attempts: result.attempts || lastAttemptCount || 0, // Use the parsed attempt count
-              duration_ms: Date.now() - startTime,
-              completed_at: new Date(),
-              updated_at: new Date()
-              // Removed metadata field as it's not in the schema
-            }
-          });
-          logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} UPDATED DB ${fancyColors.RESET} Successfully updated record for job #${job.id} with completed address ${publicKey}`);
-        } catch (dbError) {
-          logApi.error(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} DB ERROR ${fancyColors.RESET} Failed to update database record for job #${job.id}: ${dbError.message}`, {
-            error: dbError.message,
-            stack: dbError.stack,
-            jobId: job.id
-          });
+        if (!Array.isArray(keypairArray_64) || keypairArray_64.length !== 64) {
+          throw new Error(`Invalid keypair data in file ${finalPath}. Expected 64-byte array, got length ${keypairArray_64.length}.`);
         }
 
-        // Calculate performance metrics
+        // Extract the 32-byte seed and the 32-byte public key from the 64-byte array
+        const seed_32_bytes_uint8array = Uint8Array.from(keypairArray_64.slice(0, 32));
+        const publicKey_32_bytes_uint8array = Uint8Array.from(keypairArray_64.slice(32, 64));
+        
+        // Get the v2 address string from the raw public key bytes
+        const publicKeyString_v2 = await getAddressFromPublicKey(publicKey_32_bytes_uint8array);
+        logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} Generated vanity address: ${publicKeyString_v2} for job ${job.id}`);
+
+        // 🔽 DROP A PLAINTEXT VERSION (This part stores the full 64-byte array as JSON string)
+        // This might be useful for ops/backup but is not what we pass to VanityApiClient for encryption.
+        const plaintextKeyPath = finalPath.replace('/keypairs/', '/pkeys/').replace(/\.json$/, '.key');
+        const rawPrivateKeyForPlaintext = JSON.stringify(keypairArray_64); // Still store full 64 bytes here for ops if needed
+        const plainDir = path.dirname(plaintextKeyPath);
+        if (!fs.existsSync(plainDir)) fs.mkdirSync(plainDir, { recursive: true });
+        fs.writeFileSync(plaintextKeyPath, rawPrivateKeyForPlaintext);
+
+        // 🔄 Update existing record in database (via onComplete callback)
+        // The onComplete callback (VanityApiClient.processLocalResult) will handle DB update.
+        // We now pass the 32-byte seed instead of the full 64-byte keypair_bytes.
+        
+        // ... (metrics calculation: charSpace, theoreticalAttempts, efficiency, etc. remain the same) ...
         const charSpace = job.caseSensitive !== false ? 58 : 33;
         const theoreticalAttempts = Math.pow(charSpace, job.pattern.length);
         const attempts = result.attempts || lastAttemptCount || 0;
@@ -371,13 +344,12 @@ class LocalVanityGenerator {
         const attemptsPerSec = Math.round(attempts / (duration / 1000));
         const efficiency = (theoreticalAttempts / (attempts || 1)) * 100;
         
-        // Enhanced completion callback with detailed metrics
         job.onComplete({
           status: 'Completed',
           id: job.id,
           result: { 
-            address: publicKey, 
-            keypair_bytes: keypair,
+            address: publicKeyString_v2, 
+            seed_bytes: seed_32_bytes_uint8array, // PASS THE 32-BYTE SEED (Uint8Array)
             metrics: {
               theoretical_attempts: theoreticalAttempts,
               efficiency_percentage: efficiency,

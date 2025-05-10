@@ -198,16 +198,16 @@ router.post('/register-options', requireAuth, async (req, res) => {
       // Using the database integer ID (converted to string/buffer) is best practice.
       userID: userIdInt.toString(), // Convert integer ID to string for WebAuthn
       userName: userNickname, 
-      attestationType: 'none', // Simplest attestation
+      attestationType: 'direct', // Request attestation for better device info
       excludeCredentials: userCredentials.map(cred => ({
         id: cred.credentialID, // Pass the Buffer directly
         type: 'public-key',
         transports: cred.transports, // Use transports if available
       })),
       authenticatorSelection: {
-        residentKey: 'preferred', // Prefer resident keys (Passkeys)
-        requireResidentKey: false, // Don't strictly require them for broader compatibility
-        userVerification: 'preferred',
+        residentKey: 'required', // Require resident keys (Passkeys) for cross-device sync
+        requireResidentKey: true, // Make resident keys required for Passkey support
+        userVerification: 'required', // Require biometric verification
         authenticatorAttachment: authenticatorType || undefined,
       },
     });

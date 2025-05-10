@@ -20,11 +20,18 @@ import prisma from '../config/prisma.js';
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 // Solana
-import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
+// import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
 import bs58 from 'bs58';
 import crypto from 'crypto';
 // Other
 import { Decimal } from '@prisma/client/runtime/library';
+import { solanaEngine } from './solana-engine/index.js';
+import { createKeyPairSignerFromBytes } from '@solana/keys';
+import { address as v2Address, getAddressFromPublicKey } from '@solana/addresses';
+import { Buffer } from 'node:buffer';
+import { createSystemTransferInstruction } from '@solana/pay';
+
+const LAMPORTS_PER_SOL_V2 = 1_000_000_000;
 
 const WALLET_RAKE_CONFIG = {
     name: SERVICE_NAMES.WALLET_RAKE,
@@ -59,9 +66,6 @@ class WalletRakeService extends BaseService {
     constructor() {
         ////super(WALLET_RAKE_CONFIG.name, WALLET_RAKE_CONFIG);
         super(WALLET_RAKE_CONFIG);
-        
-        // Initialize Solana connection
-        this.connection = new Connection(config.rpc_urls.primary, "confirmed");
         
         // Service-specific state
         this.rakeStats = {
@@ -144,6 +148,10 @@ class WalletRakeService extends BaseService {
                 };
             }
 
+            // Test connection via solanaEngine
+            await solanaEngine.executeConnectionMethod('getLatestBlockhash');
+            logApi.info('[WalletRakeService] Connection test via solanaEngine successful.');
+
             // Load initial rake state
             const [totalRaked, totalWallets] = await Promise.all([
                 prisma.transactions.aggregate({
@@ -190,111 +198,53 @@ class WalletRakeService extends BaseService {
         }
     }
 
-    // Utility: Decrypt wallet private key
-    decryptPrivateKey(encryptedData) {
+    /**
+     * Decrypts a private key stored by ContestWalletService (expected v2_seed format).
+     * @param {string} encryptedDataJson - The encrypted private key data (JSON string from DB).
+     * @returns {Buffer} - The decrypted 32-byte private key seed as a Buffer.
+     */
+    decryptPrivateKey(encryptedDataJson) {
+        let parsedData;
         try {
-            const { encrypted, iv, tag } = JSON.parse(encryptedData);
-            const decipher = crypto.createDecipheriv(
-                'aes-256-gcm',
-                Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex'),
-                Buffer.from(iv, 'hex')
-            );
-            
-            decipher.setAuthTag(Buffer.from(tag, 'hex'));
-            
-            const decrypted = Buffer.concat([
-                decipher.update(Buffer.from(encrypted, 'hex')),
-                decipher.final()
-            ]);
-            
-            return decrypted.toString();
-        } catch (error) {
-            throw ServiceError.operation('Failed to decrypt wallet key', {
-                error: error.message,
-                type: 'DECRYPTION_ERROR'
-            });
+            parsedData = JSON.parse(encryptedDataJson);
+        } catch (e) {
+            logApi.error('[WalletRakeService] Failed to parse encryptedDataJson', { data: encryptedDataJson, error: e.message });
+            throw ServiceError.operation('Failed to decrypt key: Invalid JSON format.', { type: 'DECRYPTION_ERROR_JSON_PARSE' });
         }
-    }
 
-    // Core operation: Transfer SOL with safety checks
-    async transferSOL(fromKeypair, amount, contestId, retryCount = 0) {
-        try {
-            // Verify current balance before transfer
-            const currentBalance = await this.connection.getBalance(fromKeypair.publicKey);
-            const minRequired = this.config.wallet.min_balance_sol * LAMPORTS_PER_SOL;
-            
-            if (currentBalance < (amount + minRequired)) {
-                throw ServiceError.validation('Insufficient balance for rake operation', {
-                    available: currentBalance / LAMPORTS_PER_SOL,
-                    required: (amount + minRequired) / LAMPORTS_PER_SOL
+        // Expecting keys from ContestWalletService which should be 'v2_seed' or similar from our refactor
+        if (parsedData.version && (parsedData.version === 'v2_seed' || parsedData.version.startsWith('v2_seed'))) {
+            try {
+                const { encrypted, iv, tag, aad } = parsedData;
+                if (!encrypted || !iv || !tag || !aad) {
+                    throw new Error(`Encrypted key (version: ${parsedData.version}) is missing required fields.`);
+                }
+                const decipher = crypto.createDecipheriv(
+                    'aes-256-gcm', // Assuming standard AES-256-GCM
+                    Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex'),
+                    Buffer.from(iv, 'hex')
+                );
+                decipher.setAuthTag(Buffer.from(tag, 'hex'));
+                decipher.setAAD(Buffer.from(aad, 'hex'));
+                let decryptedSeed = decipher.update(Buffer.from(encrypted, 'hex'));
+                decryptedSeed = Buffer.concat([decryptedSeed, decipher.final()]);
+                if (decryptedSeed.length !== 32) {
+                    throw new Error(`Decrypted seed (version: ${parsedData.version}) is not 32 bytes, got ${decryptedSeed.length} bytes.`);
+                }
+                return decryptedSeed; // Return 32-byte seed Buffer
+            } catch (error) {
+                logApi.error('[WalletRakeService] Failed to decrypt v2_seed format private key:', { error: error.message, version: parsedData.version });
+                throw ServiceError.operation('Failed to decrypt v2_seed format private key', {
+                    originalError: error.message, type: 'DECRYPTION_ERROR_V2_SEED'
                 });
             }
-
-            // Import the transferSOL function dynamically to avoid circular dependencies
-            const { transferSOL } = await import('../utils/solana-suite/web3-v2/solana-transaction-v2.js');
-            
-            // Use the new v2 transaction utility with amount in SOL
-            const amountInSOL = amount / LAMPORTS_PER_SOL;
-            const { signature } = await transferSOL(
-                this.connection,
-                fromKeypair,
-                this.config.wallet.master_wallet,
-                amountInSOL
-            );
-
-            // Get contest details for logging
-            const contest = await prisma.contests.findUnique({
-                where: { id: contestId },
-                select: { 
-                    created_by_user_id: true,
-                    contest_code: true
-                }
+        } else {
+            // This service should ONLY be dealing with keys created by ContestWalletService or similar v2 services.
+            // Legacy key formats from other sources are not expected here.
+            logApi.error('[WalletRakeService] Unrecognized encrypted private key format or version for contest wallet key.', { parsedData });
+            throw ServiceError.operation('Unrecognized encrypted key format for contest wallet.', {
+                version: parsedData.version, type: 'DECRYPTION_ERROR_UNRECOGNIZED'
             });
-
-            // Log the successful rake transaction
-            const tx = await prisma.transactions.create({
-                data: {
-                    wallet_address: fromKeypair.publicKey.toString(),
-                    type: 'WITHDRAWAL',
-                    amount: amount / LAMPORTS_PER_SOL,
-                    balance_before: currentBalance / LAMPORTS_PER_SOL,
-                    balance_after: (currentBalance - amount) / LAMPORTS_PER_SOL,
-                    description: `Rake operation from contest ${contest?.contest_code || contestId}`,
-                    status: config.transaction_statuses.COMPLETED,
-                    blockchain_signature: signature,
-                    completed_at: new Date(),
-                    created_at: new Date(),
-                    user_id: contest?.created_by_user_id,
-                    contest_id: contestId
-                }
-            });
-
-            // Update last processed time for this wallet
-            this.rakeStats.wallets.last_processed[fromKeypair.publicKey.toString()] = Date.now();
-
-            return { signature, transaction: tx };
-        } catch (error) {
-            // Log failed rake attempt
-            await prisma.transactions.create({
-                data: {
-                    wallet_address: fromKeypair.publicKey.toString(),
-                    type: 'WITHDRAWAL',
-                    amount: amount / LAMPORTS_PER_SOL,
-                    description: `Failed rake operation: ${error.message}`,
-                    status: config.transaction_statuses.FAILED,
-                    error_details: JSON.stringify(error),
-                    created_at: new Date(),
-                    contest_id: contestId
-                }
-            });
-
-            // Handle retries
-            if (retryCount < this.config.maxRetries) {
-                await new Promise(resolve => setTimeout(resolve, this.config.retryDelayMs));
-                return this.transferSOL(fromKeypair, amount, contestId, retryCount + 1);
-            }
-
-            throw error;
         }
     }
 
@@ -310,34 +260,38 @@ class WalletRakeService extends BaseService {
                 return null;
             }
 
-            // Get wallet balance
-            const pubkey = new PublicKey(wallet.wallet_address);
-            const balance = await this.connection.getBalance(pubkey);
-            const minBalance = this.config.wallet.min_balance_sol * LAMPORTS_PER_SOL;
+            const balanceResult = await solanaEngine.executeConnectionMethod('getBalance', wallet.wallet_address);
+            const balanceLamports = balanceResult.value;
+            
+            const minBalanceLamports = Math.round(this.config.wallet.min_balance_sol * LAMPORTS_PER_SOL_V2);
+            const minRakeAmountLamports = Math.round(this.config.wallet.min_rake_amount * LAMPORTS_PER_SOL_V2);
 
-            // Skip if balance is too low
-            if (balance <= minBalance) {
+            if (balanceLamports <= minBalanceLamports) {
                 this.rakeStats.wallets.skipped++;
                 return null;
             }
 
-            // Calculate rake amount
-            const rakeAmount = balance - minBalance;
-            if (rakeAmount < (this.config.wallet.min_rake_amount * LAMPORTS_PER_SOL)) {
+            const rakeAmountLamports = balanceLamports - minBalanceLamports;
+            if (rakeAmountLamports < minRakeAmountLamports) {
                 this.rakeStats.wallets.skipped++;
                 return null;
             }
 
-            // Create keypair for transfer
-            const decryptedPrivateKey = this.decryptPrivateKey(wallet.private_key);
-            const privateKeyBytes = bs58.decode(decryptedPrivateKey);
-            const fromKeypair = Keypair.fromSecretKey(privateKeyBytes);
+            const decryptedSeed_32bytes = this.decryptPrivateKey(wallet.private_key);
+            const rakeSourceSigner_v2 = await createKeyPairSignerFromBytes(decryptedSeed_32bytes);
+
+            // Verify derived address matches stored address
+            if (rakeSourceSigner_v2.address !== wallet.wallet_address) {
+                logApi.error('[WalletRakeService] CRITICAL: Derived address from decrypted seed MISMATCHES stored wallet address!', 
+                    { stored: wallet.wallet_address, derived: rakeSourceSigner_v2.address, contestId: wallet.contest_id });
+                throw new ServiceError.security('Rake source wallet address mismatch after decryption.');
+            }
 
             // Add to active operations
             this.activeOperations.set(wallet.wallet_address, {
                 startTime,
                 contestId: wallet.contest_id,
-                amount: rakeAmount
+                amount: rakeAmountLamports
             });
 
             // Set timeout
@@ -352,9 +306,21 @@ class WalletRakeService extends BaseService {
             
             this.operationTimeouts.add(timeout);
 
-            // Perform transfer with retries
-            const result = await this.transferSOL(fromKeypair, rakeAmount, wallet.contest_id);
+            // V2 Rake Transfer
+            const v2RakeInstruction = createSystemTransferInstruction({
+                fromAddress: rakeSourceSigner_v2.address,
+                toAddress: v2Address(this.config.wallet.master_wallet),
+                lamports: BigInt(rakeAmountLamports)
+            });
 
+            const txResult = await solanaEngine.sendTransaction(
+                [v2RakeInstruction],
+                rakeSourceSigner_v2.address,
+                [rakeSourceSigner_v2],
+                { commitment: 'confirmed' }
+            );
+            const signature = txResult.signature;
+            
             // Clear timeout and active operation
             clearTimeout(timeout);
             this.operationTimeouts.delete(timeout);
@@ -363,9 +329,9 @@ class WalletRakeService extends BaseService {
             // Update statistics
             this.rakeStats.operations.total++;
             this.rakeStats.operations.successful++;
-            this.rakeStats.amounts.total_raked += rakeAmount / LAMPORTS_PER_SOL;
+            this.rakeStats.amounts.total_raked += rakeAmountLamports / LAMPORTS_PER_SOL_V2;
             this.rakeStats.amounts.by_contest[wallet.contest_id] = 
-                (this.rakeStats.amounts.by_contest[wallet.contest_id] || 0) + (rakeAmount / LAMPORTS_PER_SOL);
+                (this.rakeStats.amounts.by_contest[wallet.contest_id] || 0) + (rakeAmountLamports / LAMPORTS_PER_SOL_V2);
             this.rakeStats.wallets.processed++;
 
             // Log admin action if context provided
@@ -376,14 +342,45 @@ class WalletRakeService extends BaseService {
                     {
                         contest_id: wallet.contest_id,
                         wallet_address: wallet.wallet_address,
-                        amount: rakeAmount / LAMPORTS_PER_SOL,
-                        signature: result.signature
+                        amount: rakeAmountLamports / LAMPORTS_PER_SOL_V2,
+                        signature: signature
                     },
                     adminContext
                 );
             }
 
-            return result;
+            // Ensure Prisma logging uses correct amounts and potentially a new type like 'RAKE_TRANSFER'
+            await prisma.transactions.create({
+                data: {
+                    wallet_address: rakeSourceSigner_v2.address,
+                    type: 'RAKE_TRANSFER', // More specific type
+                    amount: new Decimal(rakeAmountLamports / LAMPORTS_PER_SOL_V2),
+                    balance_before: balanceLamports / LAMPORTS_PER_SOL_V2,
+                    balance_after: (balanceLamports - rakeAmountLamports) / LAMPORTS_PER_SOL_V2,
+                    description: `Rake operation from contest ${wallet.contest_code || wallet.contest_id}`,
+                    status: config.transaction_statuses.COMPLETED,
+                    blockchain_signature: signature,
+                    completed_at: new Date(),
+                    created_at: new Date(),
+                    user_id: wallet.created_by_user_id,
+                    contest_id: wallet.contest_id
+                }
+            });
+
+            return { signature, transaction: {
+                wallet_address: wallet.wallet_address,
+                type: 'WITHDRAWAL',
+                amount: rakeAmountLamports / LAMPORTS_PER_SOL_V2,
+                balance_before: balanceLamports / LAMPORTS_PER_SOL_V2,
+                balance_after: (balanceLamports - rakeAmountLamports) / LAMPORTS_PER_SOL_V2,
+                description: `Rake operation from contest ${wallet.contest_code || wallet.contest_id}`,
+                status: config.transaction_statuses.COMPLETED,
+                blockchain_signature: signature,
+                completed_at: new Date(),
+                created_at: new Date(),
+                user_id: wallet.created_by_user_id,
+                contest_id: wallet.contest_id
+            } };
         } catch (error) {
             this.rakeStats.operations.total++;
             this.rakeStats.operations.failed++;

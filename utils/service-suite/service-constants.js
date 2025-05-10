@@ -49,6 +49,7 @@ export const SERVICE_NAMES = {
     ACHIEVEMENT: 'achievement_service',
     REFERRAL: 'referral_service',
     LEVELING: 'leveling_service',
+    PORTFOLIO_SNAPSHOT: 'portfolio_snapshot_service', // Added new service name
 
     // Wallet Layer Services
     CONTEST_WALLET: 'contest_wallet_service',
@@ -187,6 +188,16 @@ export const SERVICE_METADATA = {
         updateFrequency: '5m',
         criticalLevel: 'medium',
         dependencies: [SERVICE_NAMES.ACHIEVEMENT]
+    },
+    [SERVICE_NAMES.PORTFOLIO_SNAPSHOT]: {
+        layer: SERVICE_LAYERS.CONTEST, // Runs alongside other contest logic
+        description: 'Periodically snapshots participant portfolio values for historical charting.',
+        updateFrequency: '15s', // Configurable via constructor
+        criticalLevel: 'medium', // Important for charts, but API still works without it
+        dependencies: [
+            SERVICE_NAMES.MARKET_DATA, // Needs current prices
+            SERVICE_NAMES.CONTEST_EVALUATION // Implicitly needs active contest info
+        ]
     },
 
     // Wallet Layer Services

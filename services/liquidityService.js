@@ -7,7 +7,6 @@
  */
 
 import { BaseService } from '../utils/service-suite/base-service.js';
-import { Connection, PublicKey, Keypair } from '@solana/web3.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import { config } from '../config/config.js';
 import { ServiceError } from '../utils/service-suite/service-error.js';
@@ -17,6 +16,10 @@ import { fancyColors } from '../utils/colors.js';
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 import walletGenerationService from './walletGenerationService.js';
+import { solanaEngine } from './solana-engine/index.js'; // Assuming solanaEngine is correctly imported
+import { generateKeyPair as generateKeyPairV2 } from '@solana/keys';
+import { getAddressFromPublicKey } from '@solana/addresses';
+import crypto from 'crypto'; // For encryption
 
 const LIQUIDITY_CONFIG = {
     name: SERVICE_NAMES.LIQUIDITY,
@@ -44,9 +47,7 @@ const LIQUIDITY_CONFIG = {
 class LiquidityService extends BaseService {
     constructor() {
         super(LIQUIDITY_CONFIG);
-        
-        // Initialize Solana connection with config RPC
-        this.connection = new Connection(config.rpc_urls.primary, "confirmed");
+        this.wallet = null; // Keep track of the active liquidity wallet from DB
         
         // Initialize service-specific stats
         this.liquidityStats = {
@@ -132,26 +133,51 @@ class LiquidityService extends BaseService {
         setTimeout(() => this.dynamicIntervalCheck(), 30000);
     }
 
+    /**
+     * Encrypts a 32-byte private key seed specifically for liquidity wallets.
+     * @param {Uint8Array} privateKeySeedBytes - The 32-byte private key seed.
+     * @returns {string} - Encrypted JSON string { version, encrypted, iv, tag, aad }.
+     */
+    encryptPrivateKeyLocal(privateKeySeedBytes) {
+        if (!(privateKeySeedBytes instanceof Uint8Array) || privateKeySeedBytes.length !== 32) {
+            throw new ServiceError.validation('encryptPrivateKeyLocal expects a 32-byte Uint8Array seed.');
+        }
+        try {
+            const iv = crypto.randomBytes(12);
+            const aad = crypto.randomBytes(16);
+            const cipher = crypto.createCipheriv('aes-256-gcm', Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex'), iv);
+            cipher.setAAD(aad);
+            let encrypted = cipher.update(privateKeySeedBytes);
+            encrypted = Buffer.concat([encrypted, cipher.final()]);
+            const tag = cipher.getAuthTag();
+            return JSON.stringify({
+                version: 'v2_seed_liquidity',
+                encrypted: encrypted.toString('hex'),
+                iv: iv.toString('hex'),
+                tag: tag.toString('hex'),
+                aad: aad.toString('hex')
+            });
+        } catch (error) {
+            logApi.error(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.RED}Failed to encrypt seed locally:${fancyColors.RESET}`, error);
+            throw ServiceError.operation('Local seed encryption failed', { originalError: error.message });
+        }
+    }
+
     // Initialize the service
     async initialize() {
         try {
-            // Call parent initialize first
             await super.initialize();
-            
-            // Check if service is enabled via service profile
             if (!config.services.liquidity) {
                 logApi.warn(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} SERVICE DISABLED ${fancyColors.RESET} Liquidity Service is disabled in the '${config.services.active_profile}' service profile`);
                 return false; // Skip initialization
             }
             
-            // Check dependencies
             const walletGenStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.WALLET_GENERATOR);
-            if (!walletGenStatus) {
-                throw ServiceError.initialization('Wallet Generator Service not healthy');
-            }
+            if (!walletGenStatus) throw ServiceError.initialization('Wallet Generator Service not healthy');
 
-            // Check if we can connect to Solana
-            await this.connection.getRecentBlockhash();
+            // Test connection via solanaEngine
+            await solanaEngine.executeConnectionMethod('getLatestBlockhash');
+            logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} Connection test via solanaEngine successful.`);
             
             // Find the most recent active liquidity wallet
             logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET}${fancyColors.CYAN}${fancyColors.BG_LIGHT_BLUE} 🔍 ${fancyColors.DARK_BLUE}Checking for existing liquidity wallets... ${fancyColors.RESET}`);
@@ -190,21 +216,18 @@ class LiquidityService extends BaseService {
             
             // Use the most recently created liquidity wallet
             const wallet = existingWallets[0];
-            // If we found a wallet, use it
             if (wallet) {
                 this.wallet = wallet;
-                // Get its current balance
-                const balance = await this.connection.getBalance(
-                    new PublicKey(wallet.wallet_address)
-                );
+                // Get balance via solanaEngine, passing string address
+                const balanceResult = await solanaEngine.executeConnectionMethod('getBalance', wallet.wallet_address);
+                const fetchedBalance = balanceResult.value; // Renamed to avoid conflict
                 
-                // Update service stats
                 this.liquidityStats.wallets.total = 1;
                 this.liquidityStats.wallets.active = 1;
-                this.liquidityStats.wallets.balance_total = balance / 1000000000;
+                this.liquidityStats.wallets.balance_total = fetchedBalance / LAMPORTS_PER_SOL_V2; // Use a V2 constant
                 this.liquidityStats.wallets.by_purpose.liquidity = {
                     count: 1,
-                    balance: balance / 1000000000
+                    balance: fetchedBalance / LAMPORTS_PER_SOL_V2
                 };
                 
                 // Update ServiceManager state
@@ -228,7 +251,6 @@ class LiquidityService extends BaseService {
                 //    balance: this.liquidityStats.wallets.balance_total
                 });
                 
-                // Return true to indicate successful initialization
                 return true;
             }
 
@@ -258,23 +280,22 @@ class LiquidityService extends BaseService {
                 this.wallet = mostRecentWallet;
                 
                 // Get initial balance
-                const balance = await this.connection.getBalance(
-                    new PublicKey(mostRecentWallet.wallet_address)
-                );
+                const balanceResult = await solanaEngine.executeConnectionMethod('getBalance', mostRecentWallet.wallet_address);
+                const reactivatedBalance = balanceResult.value; // Renamed
                 
                 // Update stats
                 this.liquidityStats.wallets.total = 1;
                 this.liquidityStats.wallets.active = 1;
-                this.liquidityStats.wallets.balance_total = balance / 1000000000;
+                this.liquidityStats.wallets.balance_total = reactivatedBalance / LAMPORTS_PER_SOL_V2; // Use V2 constant
                 this.liquidityStats.wallets.by_purpose.liquidity = {
                     count: 1,
-                    balance: balance / 1000000000
+                    balance: reactivatedBalance / LAMPORTS_PER_SOL_V2
                 };
                 
                 // Log success with detailed information
                 logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.ORANGE}REACTIVATED WALLET:${fancyColors.RESET} ${fancyColors.GREEN}Using existing wallet instead of creating new one${fancyColors.RESET}`, {
                     wallet: mostRecentWallet.wallet_address,
-                    balance: balance / 1000000000,
+                    balance: reactivatedBalance / LAMPORTS_PER_SOL_V2,
                     created: new Date(mostRecentWallet.created_at).toLocaleString()
                 });
                 
@@ -300,22 +321,20 @@ class LiquidityService extends BaseService {
                 
                 // Create the wallet in the database directly (since the generateWallet method
                 // has different purpose formatting)
-                const keypair = Keypair.generate();
-                const walletAddress = keypair.publicKey.toString();
-                const privateKey = Buffer.from(keypair.secretKey).toString('base64');
-                
-                // Encrypt the private key using the wallet generator's encryption method
-                const encryptedPrivateKey = walletGenerationService.encryptPrivateKey(privateKey);
+                const newV2KeyPair = await generateKeyPairV2();
+                const newWalletAddress = await getAddressFromPublicKey(newV2KeyPair.publicKey);
+                const seed_32_bytes = newV2KeyPair.secretKey;
+                const encryptedSeedJson = this.encryptPrivateKeyLocal(seed_32_bytes);
                 
                 // Save to database
                 const newWallet = await prisma.seed_wallets.create({
                     data: {
-                        wallet_address: walletAddress,
-                        private_key: encryptedPrivateKey,
+                        wallet_address: newWalletAddress,
+                        private_key: encryptedSeedJson,
                         purpose: 'liquidity',
                         is_active: true,
                         metadata: {
-                            created_by: 'liquidity_service_autorecovery',
+                            created_by: 'liquidity_service_v2',
                             created_at: new Date().toISOString(),
                             description: 'Name: ${walletIdentifier} (automatically created liquidity wallet)'
                         }
@@ -348,7 +367,7 @@ class LiquidityService extends BaseService {
                 );
                 
                 logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.GREEN}Created new liquidity wallet successfully${fancyColors.RESET}`, {
-                    wallet: walletAddress
+                    wallet: newWalletAddress
                 });
                 
                 return true;
@@ -417,16 +436,15 @@ class LiquidityService extends BaseService {
                 return true; // Return true to avoid circuit breaker
             }
             
-            // Check balance
-            const balance = await this.connection.getBalance(
-                new PublicKey(this.wallet.wallet_address)
-            );
+            // Check balance via solanaEngine
+            const balanceResultOp = await solanaEngine.executeConnectionMethod('getBalance', this.wallet.wallet_address);
+            const currentBalance = balanceResultOp.value; // Renamed
             
             // Update stats
-            this.liquidityStats.wallets.balance_total = balance / 1000000000;
+            this.liquidityStats.wallets.balance_total = currentBalance / LAMPORTS_PER_SOL_V2; // Use V2 constant
             this.liquidityStats.wallets.by_purpose.liquidity = {
                 count: 1,
-                balance: balance / 1000000000
+                balance: currentBalance / LAMPORTS_PER_SOL_V2
             };
             this.liquidityStats.operations.total++;
             this.liquidityStats.operations.successful++;
@@ -494,6 +512,9 @@ class LiquidityService extends BaseService {
         }
     }
 }
+
+// Define LAMPORTS_PER_SOL_V2 if not already globally available or imported from a shared const file
+const LAMPORTS_PER_SOL_V2 = 1_000_000_000;
 
 const liquidityService = new LiquidityService();
 export default liquidityService;

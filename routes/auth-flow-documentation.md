@@ -24,14 +24,23 @@ DegenDuel supports multiple authentication methods:
      - `/api/auth/twitter/callback` - OAuth callback
      - `/api/auth/twitter/link` - Link Twitter to existing account
 
-4. **Biometric Authentication** (Upcoming - In Development)
+4. **Biometric Authentication**
    - Fingerprint/Face ID authentication using WebAuthn
-   - Includes custodial wallet generation for users
-   - Creates managed wallets for users without existing wallets
-   - Endpoints (planned):
-     - `/api/auth/register-biometric` - Register new device
-     - `/api/auth/biometric-challenge` - Generate challenge
-     - `/api/auth/verify-biometric` - Verify biometric auth
+   - Supports cross-device usage via Passkeys
+   - Endpoints:
+     - `/api/auth/biometric/register-options` - Get registration options
+     - `/api/auth/biometric/register-verify` - Verify registration
+     - `/api/auth/biometric/auth-options` - Get auth options
+     - `/api/auth/biometric/auth-verify` - Verify biometric auth
+     
+5. **QR Code Authentication**
+   - Cross-device authentication using QR codes
+   - Allows login on new devices using authenticated mobile device
+   - Endpoints:
+     - `/api/auth/qr/generate` - Generate QR code
+     - `/api/auth/qr/verify/:token` - Verify from mobile device
+     - `/api/auth/qr/poll/:token` - Poll status from web
+     - `/api/auth/qr/complete/:token` - Complete auth on web
 
 ## Authentication Status
 
@@ -171,9 +180,13 @@ All authentication methods are tracked through the unified status endpoint:
    - Key rotation and backup procedures
    - Clear wallet recovery mechanisms for users
 
-## Biometric Authentication Implementation (Planned)
+## Cross-Device Authentication Implementation
 
-### Backend Components
+DegenDuel implements two powerful methods for cross-device authentication:
+
+### 1. Passkey-Based Biometric Authentication
+
+The biometric authentication is implemented using WebAuthn with Passkey support:
 
 #### Database Schema
 
@@ -181,68 +194,111 @@ All authentication methods are tracked through the unified status endpoint:
 -- Biometric credentials table
 CREATE TABLE biometric_credentials (
   id SERIAL PRIMARY KEY,
-  user_id TEXT REFERENCES users(wallet_address),
+  user_id INTEGER REFERENCES users(id), -- Uses integer user ID
   credential_id TEXT UNIQUE NOT NULL,
   public_key TEXT NOT NULL,
+  counter BIGINT DEFAULT 0,
   device_info JSONB,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  last_used TIMESTAMP WITH TIME ZONE,
-  custodial_wallet_address TEXT,
-  custodial_wallet_encrypted_key TEXT
+  last_used TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Add credential_id column to auth_challenges table
-ALTER TABLE auth_challenges ADD COLUMN credential_id TEXT;
+-- Biometric auth challenges table
+CREATE TABLE biometric_auth_challenges (
+  id TEXT PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id),
+  challenge TEXT NOT NULL,
+  type TEXT NOT NULL,
+  credential_id TEXT,
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 ```
 
 #### API Endpoints
 
-1. **Register Biometric**
+1. **Register Biometric Passkey**
    ```
-   POST /api/auth/register-biometric
+   POST /api/auth/biometric/register-options
+   POST /api/auth/biometric/register-verify
    ```
-   - Registers new biometric credential
-   - Creates custodial wallet if needed
-   - Links to existing account if authenticated
+   - Configured for Passkey creation with `residentKey: 'required'`
+   - Uses `attestationType: 'direct'` for detailed attestation
+   - Ensures credential is synced to user's password manager
 
-2. **Biometric Challenge**
+2. **Authenticate with Biometric Passkey**
    ```
-   GET /api/auth/biometric-challenge?credential_id={id}
+   POST /api/auth/biometric/auth-options
+   POST /api/auth/biometric/auth-verify
    ```
-   - Generates random challenge for biometric authentication
-   - Stores challenge in auth_challenges table
+   - Verifies biometric assertion
+   - Issues JWT tokens upon successful verification
+   - Updates credential counter for security
 
-3. **Verify Biometric**
+### 2. QR Code Authentication
+
+QR code authentication allows using an authenticated mobile device to log in on other devices:
+
+#### Database Schema
+
+```sql
+-- QR authentication sessions table
+CREATE TABLE qr_auth_sessions (
+  id TEXT PRIMARY KEY,
+  session_token TEXT UNIQUE NOT NULL,
+  session_data JSONB DEFAULT '{}',
+  status TEXT DEFAULT 'pending',
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  completed_at TIMESTAMP WITH TIME ZONE,
+  user_id INTEGER REFERENCES users(id)
+);
+```
+
+#### API Endpoints
+
+1. **Generate QR Code**
    ```
-   POST /api/auth/verify-biometric
+   POST /api/auth/qr/generate
    ```
-   - Verifies biometric authentication response
-   - Validates cryptographic attestation
-   - Issues JWT token upon successful verification
+   - Creates a pending QR authentication session
+   - Returns a QR code data URL containing the session token
+   - Session expires after 5 minutes
 
-### Integration with WebAuthn
+2. **Verify QR Code (Mobile Device)**
+   ```
+   POST /api/auth/qr/verify/:token
+   ```
+   - Called by the authenticated mobile device
+   - Links the user's ID to the session
+   - Marks session as "approved"
 
-The biometric authentication will use the Web Authentication API (WebAuthn) standard:
+3. **Poll QR Status (New Device)**
+   ```
+   GET /api/auth/qr/poll/:token
+   ```
+   - Allows new device to check authentication status
+   - Returns current session status
 
-1. **Registration Flow:**
-   - Client: Call `navigator.credentials.create()` with challenge from server
-   - Client: Send attestation to server
-   - Server: Verify attestation and store credential
-
-2. **Authentication Flow:**
-   - Client: Call `navigator.credentials.get()` with challenge from server
-   - Client: Send assertion to server
-   - Server: Verify assertion and issue JWT
+4. **Complete Authentication (New Device)**
+   ```
+   POST /api/auth/qr/complete/:token
+   ```
+   - Completes the authentication on the new device
+   - Issues JWT tokens for the new device
+   - Marks session as "completed"
 
 ### Security Considerations
 
-1. **Credential Security**
-   - Only store non-sensitive credential IDs and public keys
-   - Never store actual biometric data
-   - Implement strong attestation verification
+1. **Passkey Security**
+   - Only stores credential IDs and public keys, never biometric data
+   - Uses attestation verification to prevent spoofing
+   - Ensures proper key management with incremental counters
+   - Syncs across devices securely via platform mechanisms
 
-2. **Custodial Wallet Protection**
-   - Encrypt all private keys at rest
-   - Use hardware security modules (HSM) for key storage
-   - Implement transaction limits for custodial wallets
-   - Provide clear recovery mechanisms
+2. **QR Code Security**
+   - Short-lived sessions (5 minutes) to prevent replay attacks
+   - Two-phase verification process (approve + complete)
+   - Session tokens are cryptographically random
+   - Sessions tied to specific users and devices
+   - Comprehensive logging of all authentication activities

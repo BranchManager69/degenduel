@@ -15,7 +15,7 @@ import { ServiceError } from '../utils/service-suite/service-error.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import prisma from '../config/prisma.js';
 import { solanaEngine, heliusBalanceTracker } from '../services/solana-engine/index.js';
-import { PublicKey } from '@solana/web3.js';
+import { isAddress } from '@solana/addresses';
 import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
 import { fancyColors } from '../utils/colors.js';
 
@@ -31,6 +31,8 @@ const USER_BALANCE_TRACKING_CHECK_INTERVAL = config.service_intervals.user_balan
 const USER_BALANCE_TRACKING_MIN_CHECK_INTERVAL = config.service_thresholds.user_balance_tracking_min_check_interval; // Hard minimum between balance checks (minutes)
 const USER_BALANCE_TRACKING_MAX_CHECK_INTERVAL = config.service_thresholds.user_balance_tracking_max_check_interval; // Hard maximum between checks (minutes)
 const USER_BALANCE_TRACKING_BATCH_SIZE = config.service_thresholds.user_balance_tracking_batch_size; // in users (hard maximum = 100; do not exceed)
+
+const LAMPORTS_PER_SOL_V2 = 1_000_000_000; // Ensure this is defined
 
 // User balance tracking service configuration
 const BALANCE_TRACKING_CONFIG = {
@@ -692,6 +694,12 @@ class UserBalanceTrackingService extends BaseService {
             
             const nickname = user?.nickname || 'Unknown';
             
+            // Validate address with v2 utility before using it
+            if (!isAddress(walletAddress)) {
+                logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} BALANCE ERROR ${fancyColors.RESET} Invalid wallet address format: ${walletAddress}`);
+                throw new ServiceError('invalid_address', `Invalid wallet address format: ${walletAddress}`);
+            }
+
             // Get Solana connection from SolanaEngine
             const connection = solanaEngine.getConnection();
             
@@ -708,19 +716,27 @@ class UserBalanceTrackingService extends BaseService {
                 this.trackingStats.solana.requestsPerHour = 1;
             }
             
-            // Get balance from Solana using SolanaEngine
-            const balance = await solanaEngine.executeConnectionMethod(
+            // Get balance from Solana using SolanaEngine, passing string address
+            const balanceResult = await solanaEngine.executeConnectionMethod(
                 'getBalance', 
-                new PublicKey(walletAddress)
+                walletAddress // Pass string address directly
             );
+            const balanceLamports = balanceResult.value; // Assuming connectionManager returns {value: lamports_bigint}
+
+            if (balanceLamports === undefined || balanceLamports === null) {
+                logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} BALANCE INVALID ${fancyColors.RESET} getBalance returned null/undefined for ${walletAddress}`);
+                // Treat as 0 or handle as error depending on desired behavior
+                // For now, Prisma update might fail if balance_lamports is not a BigInt/Number
+            }
             
+            const solBalance = Number(balanceLamports || 0) / LAMPORTS_PER_SOL_V2;
+
             // Record balance history - verify balance is valid
-            if (typeof balance === 'number' && !isNaN(balance)) {
-                const balance_lamports = BigInt(balance); // Already in lamports from Solana
+            if (typeof balanceLamports === 'bigint' && !isNaN(balanceLamports)) {
                 await prisma.wallet_balance_history.create({
                     data: {
                         wallet_address: walletAddress,
-                        balance_lamports,
+                        balance_lamports: BigInt(balanceLamports),
                         timestamp: new Date(),
                         users: {
                             connect: { wallet_address: walletAddress }
@@ -728,21 +744,20 @@ class UserBalanceTrackingService extends BaseService {
                     }
                 });
             } else {
-                logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} BALANCE INVALID ${fancyColors.RESET} Invalid balance (${balance}) for wallet ${walletAddress}, cannot store in history`);
+                logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} BALANCE INVALID ${fancyColors.RESET} Invalid balance (${balanceLamports}) for wallet ${walletAddress}, cannot store in history`);
             }
             
             // Update user record with latest balance - only if balance is valid
-            if (typeof balance === 'number' && !isNaN(balance)) {
-                const balance_lamports = BigInt(balance); // Already in lamports from Solana
+            if (typeof balanceLamports === 'bigint' && !isNaN(balanceLamports)) {
                 await prisma.users.update({
                     where: { wallet_address: walletAddress },
                     data: { 
                         last_balance_check: new Date(),
-                        last_known_balance: balance_lamports
+                        last_known_balance: BigInt(balanceLamports)
                     }
                 });
             } else {
-                logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} BALANCE INVALID ${fancyColors.RESET} Invalid balance (${balance}) for wallet ${walletAddress}, skipping user record update`);
+                logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} BALANCE INVALID ${fancyColors.RESET} Invalid balance (${balanceLamports}) for wallet ${walletAddress}, skipping user record update`);
             }
             
             const duration = Date.now() - startTime;
@@ -751,14 +766,14 @@ class UserBalanceTrackingService extends BaseService {
             // Format the wallet address for display with proper spacing
             const shortWallet = `${walletAddress.slice(0, 8)}...${walletAddress.slice(-4)}`;
             // Calculate SOL amount (lamports / 10^9)
-            const solAmount = typeof balance === 'number' ? balance / 1_000_000_000 : 'N/A';
+            const solAmount = typeof solBalance === 'number' ? solBalance : 'N/A';
             
             logApi.info(`${fancyColors.BG_ORANGE}${fancyColors.WHITE} BALANCE UPDATED ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.ORANGE}[userBalanceTrackingService]${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.YELLOW}${nickname || 'Unknown'}${fancyColors.RESET} (${fancyColors.DARK_ORANGE}${shortWallet}${fancyColors.RESET}): ${fancyColors.BOLD}${fancyColors.YELLOW}${solAmount} SOL${fancyColors.RESET} ${fancyColors.ORANGE}(${duration}ms)${fancyColors.RESET} | ${fancyColors.UNDERLINE}${fancyColors.GRAY}${solscanUrl}${fancyColors.RESET}`);
             
             return {
                 wallet: walletAddress,
                 nickname: nickname,
-                balance: balance,
+                balance: solBalance,
                 timestamp: new Date(),
                 duration: duration
             };
@@ -1070,11 +1085,10 @@ class UserBalanceTrackingService extends BaseService {
         }
         
         try {
-            // Validate the wallet address
-            try {
-                new PublicKey(walletAddress);
-            } catch (error) {
-                logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} BALANCE WS ERROR ${fancyColors.RESET} Invalid wallet address: ${walletAddress}`);
+            // Validate the wallet address using v2 utility
+            if (!isAddress(walletAddress)) {
+                logApi.error(`${fancyColors.BG_RED}${fancyColors.WHITE} BALANCE WS ERROR ${fancyColors.RESET} Invalid wallet address for subscription: ${walletAddress}`);
+                this.pendingSubscriptions.set(walletAddress, { retries: 99, lastAttempt: Date.now(), nickname, error: 'Invalid Address' }); // Mark as max retries
                 return false;
             }
             
@@ -1189,7 +1203,7 @@ class UserBalanceTrackingService extends BaseService {
             
             // Record balance history - verify balance is valid and convert to lamports
             if (typeof balance === 'number' && !isNaN(balance)) {
-                const balance_lamports = BigInt(Math.round(balance * 1_000_000_000)); // Convert SOL to lamports for storage
+                const balance_lamports = BigInt(Math.round(balance * LAMPORTS_PER_SOL_V2)); // Convert SOL to lamports for storage
                 await prisma.wallet_balance_history.create({
                     data: {
                         wallet_address: walletAddress,
@@ -1207,7 +1221,7 @@ class UserBalanceTrackingService extends BaseService {
             
             // Update user record with latest balance - only if balance is valid
             if (typeof balance === 'number' && !isNaN(balance)) {
-                const balance_lamports = BigInt(Math.round(balance * 1_000_000_000)); // Convert SOL to lamports for storage
+                const balance_lamports = BigInt(Math.round(balance * LAMPORTS_PER_SOL_V2)); // Convert SOL to lamports for storage
                 await prisma.users.update({
                     where: { wallet_address: walletAddress },
                     data: { 

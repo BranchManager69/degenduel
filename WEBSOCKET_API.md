@@ -2,6 +2,60 @@
 
 This document outlines the WebSocket events used in DegenDuel.
 
+### Topic: `SYSTEM`
+
+General system events, status updates, and connection management.
+
+#### Action: `MAINTENANCE_MODE_UPDATE` (NEW)
+
+Pushed by the server whenever the system maintenance mode status is changed by an admin.
+
+**Direction:** Server -> Client
+
+**Payload:**
+
+```json
+{
+  "type": "EVENT",
+  "topic": "SYSTEM",
+  "action": "MAINTENANCE_MODE_UPDATE",
+  "data": {
+    "enabled": boolean // true if maintenance is active, false otherwise
+  },
+  "timestamp": "string" // ISO 8601 timestamp of when this message was sent by the server
+}
+```
+
+**Example (Maintenance Enabled):**
+
+```json
+{
+  "type": "EVENT",
+  "topic": "SYSTEM",
+  "action": "MAINTENANCE_MODE_UPDATE",
+  "data": {
+    "enabled": true
+  },
+  "timestamp": "2024-07-05T10:30:00.123Z"
+}
+```
+
+**Example (Maintenance Disabled):**
+
+```json
+{
+  "type": "EVENT",
+  "topic": "SYSTEM",
+  "action": "MAINTENANCE_MODE_UPDATE",
+  "data": {
+    "enabled": false
+  },
+  "timestamp": "2024-07-05T11:00:00.456Z"
+}
+```
+
+Clients should subscribe to the `SYSTEM` topic to receive this message.
+
 ### Topic: `LAUNCH_EVENTS`
 
 Events related to major launch or reveal activities.

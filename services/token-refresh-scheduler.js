@@ -27,9 +27,10 @@ import { PrismaClient } from '@prisma/client';
 // Solana Engine
 import { jupiterClient, getJupiterClient } from './solana-engine/jupiter-client.js';
 import { heliusClient } from './solana-engine/helius-client.js';
-// Logger
+// Logger and Progress Utilities
 import { logApi } from '../utils/logger-suite/logger.js';
 import { fancyColors } from '../utils/colors.js';
+import { createBatchProgress } from '../utils/logger-suite/batch-progress.js';
 // Token Refresh Scheduler components
 import PriorityQueue from './token-refresh-scheduler/priority-queue.js';
 import TokenRankAnalyzer from './token-refresh-scheduler/rank-analyzer.js';
@@ -723,40 +724,86 @@ class TokenRefreshScheduler extends BaseService {
         return;
       }
       
+      // Initialize batch progress tracker
+      const totalTokenCount = batches.reduce((sum, batch) => sum + batch.length, 0);
+      const progress = createBatchProgress({
+        name: 'Token Refresh',
+        total: batches.length,
+        service: this.name,
+        operation: 'token_price_refresh',
+        category: 'scheduler',
+        metadata: {
+          total_tokens: totalTokenCount,
+          due_tokens: dueTokens.length,
+          available_api_calls: availableApiCalls,
+          rate_limit_adjustment: this.rateLimitAdjustmentFactor,
+          scheduler_cycle: Date.now()
+        }
+      });
+      
+      // Start the progress tracker
+      progress.start();
+
       // Execute batches sequentially with proper rate limiting
       for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
         // Skip if scheduler was stopped
-        if (!this.isRunning) break;
+        if (!this.isRunning) {
+          progress.finish({ message: "Token refresh interrupted - scheduler stopped" });
+          break;
+        }
         
         const batch = batches[batchIndex];
         const batchNum = batchIndex + 1;
         
-        // Log clear batch information
-        logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Processing scheduler batch ${batchNum}/${batches.length} with ${batch.length} tokens`);
+        // Update progress with current batch info
+        const tokenExamples = batch.slice(0, 3)
+          .map(token => token.symbol || `ID:${token.id}`)
+          .join(', ');
         
-        // Process the batch
-        await this.processBatch(batch, batchNum, batches.length);
+        progress.update(0, [`Processing batch ${batchNum}/${batches.length} (${batch.length} tokens, e.g. ${tokenExamples}...)`]);
         
-        // Add calculated delay between batches based on rate limit
-        if (batchIndex < batches.length - 1) {
-          // Use a minimum delay that respects API rate limits
-          // The Jupiter API can handle 100 req/sec, but we want to be very conservative
-          // to avoid hitting rate limits so frequently
-          const minDelayMs = Math.max(this.config.batchDelayMs, 2000); // At least 2000ms between batches
+        try {
+          // Process the batch and track timing
+          const batchStartTime = Date.now();
+          await this.processBatch(batch, batchNum, batches.length);
+          const batchDuration = Date.now() - batchStartTime;
           
-          // Add exponential backoff if we've had any failures
-          if (this.consecutiveFailures > 0) {
-            const backoffFactor = Math.min(Math.pow(2, this.consecutiveFailures), 15);
-            const backoffMs = minDelayMs * backoffFactor;
-            logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Adding ${backoffMs}ms delay due to previous failures (backoff factor: ${backoffFactor})`);
-            await new Promise(resolve => setTimeout(resolve, backoffMs));
-          } else {
-            // Normal delay - log it so we can track timing
-            logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Adding standard ${minDelayMs}ms delay between batches`);
-            await new Promise(resolve => setTimeout(resolve, minDelayMs));
+          // Mark batch complete with timing
+          progress.completeBatch(batchNum, batch.length, [`${batch.length} tokens updated`], batchDuration);
+          
+          // Add calculated delay between batches based on rate limit
+          if (batchIndex < batches.length - 1) {
+            // Use a minimum delay that respects API rate limits
+            const minDelayMs = Math.max(this.config.batchDelayMs, 2000); // At least 2000ms between batches
+            
+            // Add exponential backoff if we've had any failures
+            if (this.consecutiveFailures > 0) {
+              const backoffFactor = Math.min(Math.pow(2, this.consecutiveFailures), 15);
+              const backoffMs = minDelayMs * backoffFactor;
+              progress.update(0, [`Adding ${backoffMs}ms delay (backoff factor: ${backoffFactor})`]);
+              await new Promise(resolve => setTimeout(resolve, backoffMs));
+            } else {
+              // Normal delay - update progress
+              progress.update(0, [`Standard delay ${minDelayMs}ms between batches`]);
+              await new Promise(resolve => setTimeout(resolve, minDelayMs));
+            }
           }
+        } catch (error) {
+          // Track batch error
+          progress.trackError(
+            batchNum,
+            error,
+            false, // Not fatal, will continue with other batches
+            error.response?.status || null,
+            error.name || 'ProcessingError'
+          );
         }
       }
+      
+      // Complete the progress tracker
+      progress.finish({
+        message: `Token refresh complete: ${totalTokenCount} tokens in ${batches.length} batches`
+      });
       
       // If we got here, reset consecutive failures as the cycle completed successfully
       if (this.consecutiveFailures > 0) {
@@ -808,70 +855,42 @@ class TokenRefreshScheduler extends BaseService {
    * @param {number} totalBatches - Total number of batches
    */
   async processBatch(batch, batchNum = 1, totalBatches = 1) {
-    try {
-      this.lastBatchStartTime = Date.now();
-      this.currentBatch = batch;
-      
-      // Enhanced batch processing log with token examples and time
-      // Get some example token symbols for better log context
-      const tokenExamples = batch.slice(0, 5)
-        .map(token => token.symbol || `ID:${token.id}`)
-        .join(', ');
-      
-      // Include timestamp and more detailed context
-      const timestamp = new Date().toLocaleTimeString();
-      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} [${timestamp}] Processing batch ${batchNum}/${totalBatches} with ${batch.length} tokens (examples: ${tokenExamples}...)`);
-      
-      // Set metadata on the batch for Jupiter to use in its logs
-      batch.source_service = 'token_refresh_scheduler';
-      batch.batch_group = `group-${new Date().getHours()}-${Math.floor(Date.now()/300000)}`; // 5-min groups for tracking
-      
-      // Increment API call counter
-      this.apiCallsInCurrentWindow++;
-      this.lifetimeBatches++;
-      
-      // Extract addresses for the batch
-      const tokenAddresses = batch.map(token => token.address);
-      
-      // Fetch prices from Jupiter API - now includes batch numbering internally
-      const priceData = await jupiterClient.getPrices(tokenAddresses);
-      
-      if (!priceData) {
-        throw new Error(`Jupiter API returned empty price data for batch ${batchNum}/${totalBatches}`);
-      }
-      
-      // Track successful result
-      this.consecutiveFailures = 0;
-      
-      // Process results and update database
-      await this.updateTokenPrices(batch, priceData);
-      
-      // Record completion time for metrics
-      const batchDuration = Date.now() - this.lastBatchStartTime;
-      this.metricsCollector.recordBatchCompletion(batch.length, batchDuration);
-      
-      // Always log completion with batch numbers
-      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Batch ${batchNum}/${totalBatches} processed in ${batchDuration}ms`);
-      
-      // Clear current batch reference
-      this.currentBatch = null;
-    } catch (error) {
-      // Increment failure counters
-      this.consecutiveFailures++;
-      this.lifetimeFailures++;
-      
-      // Log error with batch number for traceability
-      logApi.error(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Error processing batch ${batchNum}/${totalBatches}:`, error);
-      
-      // Record batch failure for metrics
-      if (this.lastBatchStartTime) {
-        const batchDuration = Date.now() - this.lastBatchStartTime;
-        this.metricsCollector.recordBatchFailure(batch?.length || 0, batchDuration, error.message);
-      }
-      
-      // Re-throw for the scheduler to handle
-      throw error;
+    this.lastBatchStartTime = Date.now();
+    this.currentBatch = batch;
+    
+    // Set metadata on the batch for Jupiter to use in its logs
+    batch.source_service = 'token_refresh_scheduler';
+    batch.batch_group = `group-${new Date().getHours()}-${Math.floor(Date.now()/300000)}`; // 5-min groups for tracking
+    
+    // Increment API call counter
+    this.apiCallsInCurrentWindow++;
+    this.lifetimeBatches++;
+    
+    // Extract addresses for the batch
+    const tokenAddresses = batch.map(token => token.address);
+    
+    // Fetch prices from Jupiter API - now includes batch numbering internally
+    const priceData = await jupiterClient.getPrices(tokenAddresses);
+    
+    if (!priceData) {
+      throw new Error(`Jupiter API returned empty price data for batch ${batchNum}/${totalBatches}`);
     }
+    
+    // Track successful result
+    this.consecutiveFailures = 0;
+    
+    // Process results and update database
+    await this.updateTokenPrices(batch, priceData);
+    
+    // Record completion time for metrics
+    const batchDuration = Date.now() - this.lastBatchStartTime;
+    this.metricsCollector.recordBatchCompletion(batch.length, batchDuration);
+    
+    // Clear current batch reference
+    this.currentBatch = null;
+    
+    // Return the duration for the progress tracker
+    return batchDuration;
   }
 
   /**

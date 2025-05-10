@@ -413,7 +413,6 @@ const config = {
     },
   },
 
-  // Solana timeout settings:
   // Service testing configuration
   service_test: {
     contest_wallet_self_test: process.env.CONTEST_WALLET_SELF_TEST === 'true',
@@ -421,6 +420,7 @@ const config = {
     // Add other service test configurations here as needed
   },
 
+  // Solana timeout settings:
   solana_timeouts: {
     // ^^^ = uses RPC calls
 
@@ -522,6 +522,15 @@ const config = {
     // Contest evaluation circuit breaker backoff max delay:
     contest_evaluation_circuit_breaker_backoff_max_delay:
       process.env.CONTEST_EVALUATION_CIRCUIT_BREAKER_BACKOFF_MAX_DELAY || 30, // seconds
+  
+  /* CONTEST SCHEDULER SERVICE */
+
+    // TODO (?)
+
+  /* PORTFOLIO SNAPSHOT SERVICE */
+
+    // TODO
+  
   },
 
   // Service threshold settings:
@@ -582,6 +591,14 @@ const config = {
     contest_evaluation_min_prize_amount:
       process.env.CONTEST_EVALUATION_MIN_PRIZE_AMOUNT || 0.001, // SOL - min amount to distribute as prize
   
+  /* CONTEST SCHEDULER SERVICE */
+
+    // TODO (?)
+
+  /* PORTFOLIO SNAPSHOT SERVICE */
+
+    // TODO
+
   },
   
   // Logtail config:
@@ -661,6 +678,7 @@ const config = {
     max_devices_per_user: parseInt(process.env.MAX_DEVICES_PER_USER || '10'),
     auto_authorize_first_device: process.env.AUTO_AUTHORIZE_FIRST_DEVICE === 'true' || true
   },
+
   // Debug modes:
   debug_modes: {
     secure_middleware: process.env.SECURE_MIDDLEWARE_DEBUG_MODE || 'false',
@@ -670,7 +688,8 @@ const config = {
     websocket: process.env.WEBSOCKET_DEBUG_MODE || 'false',
   },
   
-  // Force disable specific services (overrides service profiles)
+  // Super-force disable specific services (overrides service profiles)
+  // IS THIS USED ANYWHERE?
   disable_services: {
     // token_sync has been permanently removed
     token_whitelist: true, // Permanently disable token_whitelist service (using token.is_active flag instead)
@@ -704,7 +723,8 @@ const config = {
       token_enrichment_service: true, // New token enrichment service
       discord_notification_service: true, // Discord notification service (webhook notifications)
       discord_interactive_service: true, // Discord interactive service (DegenDuel AI Discord Bot)
-      launch_event: true, // Added new service
+      launch_event_service: true, // Added new service
+      portfolio_snapshot_service: true, // New portfolio snapshot service
       // Additional services would be defined here as we expand this pattern
       // etc.
     },
@@ -712,26 +732,35 @@ const config = {
     // Development profile - services disabled by default (just AI API for now)
     development: {
 
-      ai_service: false,
-      launch_event: true, // Enabled in dev for testing
+      /*
+      Prefer services that:
+      - DO NOT MODIFY THE DATABASE
+      - DO NOT USE EXTERNAL APIs
+      - DO NOT USE RPC CALLS
+      - DO NOT INCUR EXCESSIVE COSTS
+      - DO NOT CAUSE SERIOUS ISSUES WITH CONCURRENT PROD SERVICES (race conditions)
+      */
 
-      // DISABLED IN DEVELOPMENT 
-      //   These are NOT NEEDED and CAUSE SERIOUS ISSUES with concurrent prod services (race conditions):
+      // BELOW SERVICES ARE ENABLED IN DEVELOPMENT
+      launch_event_service: true, // Enabled in dev for testing
+
+      // BELOW SERVICES ARE DISABLED IN DEVELOPMENT 
+      ai_service: false,
       discord_notification_service: false, // Disable Discord notification service in development
-      discord_interactive_service: false, // Disable Discord interactive service in development
-      market_data: false, // Disabled to prevent token fetching in dev environment
-      contest_evaluation: false,
-      token_whitelist: false,
-      liquidity: false, // Require wallet_generator_service, fails because it's disabled in dev
-      user_balance_tracking: false, // Requires SolanaEngine service
-      wallet_rake: false, 
-      contest_scheduler: false, // Disable contest scheduler in development to prevent conflicts
-      achievement_service: false,
-      referral_service: false,
-      leveling_service: false,
-      contest_wallet_service: false,
-      admin_wallet_service: false,
-      wallet_generator_service: false,
+      discord_interactive_service: false, // Disable Discord interactive service in development 
+      market_data: false, // Disabled to prevent token fetching in dev environment (uses external API)
+      contest_evaluation: false, // Disabled to prevent real contest evaluations from being run in development
+      token_whitelist: false, // Completely removed from the application (DEPRECATED)
+      liquidity: false, // Require wallet_generator_service, fails because it's disabled in dev (also, old and probably deprecated)
+      user_balance_tracking: false, // Disabled to prevent excessive RPC calls and database modifications in development
+      wallet_rake: false, // Disabled to prevent excessive RPC calls and blockchain transactions in development
+      contest_scheduler: false, // Disable contest scheduler in development to prevent double-scheduling conflicts
+      achievement_service: false, // Disabled to prevent excessive RPC calls and database modifications in development
+      referral_service: false, // Disabled to prevent database modifications in development
+      leveling_service: false, // Disabled to prevent database modifications in development
+      contest_wallet_service: false, // Disabled to prevent excessive RPC calls and blockchain transactions in development
+      admin_wallet_service: false, // Disabled to prevent excessive RPC calls and blockchain transactions in development
+      wallet_generator_service: false, // Disabled to prevent excessive RPC calls and blockchain transactions in development
       vanity_wallet_service: false, // Disable vanity wallet service in development
       solana_service: false, // [EDIT: DISABLED 4/24/25] Keep Solana service enabled in development for connection management
       solana_engine_service: false, // [EDIT: DISABLED 4/24/25] Keep SolanaEngine service enabled in development for testing
@@ -739,6 +768,8 @@ const config = {
       token_dex_data_service: false, // Disable DEX pool data service in development
       token_detection_service: false, // Disable token detection service in development
       token_enrichment_service: false, // Disable token enrichment service in development
+      portfolio_snapshot_service: false, // Disable portfolio snapshot service to prevent double-snapshotting in development (causes race conditions)
+      
       // Any future services that may cause conflicts with prod services would be disabled here too
     }
   },
@@ -771,78 +802,92 @@ const config = {
                    (process.env.NODE_ENV === 'production' ? 'production' : 'development'),
     
     // Determine if specific services are enabled based on active profile
+    
+    // TOKEN SYNC SERVICE
     get token_sync() {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.token_sync;
     },
-    
+
+    // TOKEN MONITOR SERVICE
     get token_monitor() {
       //return true; // WAS PREVIOUSLY ALWAYS TRUE (4/24/25)
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.token_monitor;
     },
-    
+
+    // MARKET DATA SERVICE
     get market_data() {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.market_data;
     },
-    
+
+    // CONTEST EVALUATION SERVICE
     get contest_evaluation() {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.contest_evaluation;
     },
-    
+
+    // TOKEN WHITELIST SERVICE
     get token_whitelist() {
       // Token whitelist service is permanently disabled - using token.is_active flag instead
       return false;
     },
-    
+
+    // LIQUIDITY SERVICE
     get liquidity() {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.liquidity;
     },
-    
+
+    // USER BALANCE TRACKING SERVICE
     get user_balance_tracking() {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.user_balance_tracking;
     },
-    
+
+    // WALLET RAKE SERVICE    
     get wallet_rake() {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.wallet_rake;
     },
-    
+
+    // CONTEST SCHEDULER SERVICE
     get contest_scheduler() {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.contest_scheduler;
     },
-    
+
+    // ACHIEVEMENT SERVICE
     get achievement_service() {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.achievement_service;
     },
-    
+
+    // REFERRAL SERVICE
     get referral_service() {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.referral_service;
     },
-    
+
+    // LEVELING SERVICE
     get leveling_service() {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.leveling_service;
     },
-    
+
+    // CONTEST WALLET SERVICE
     get contest_wallet_service() {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
@@ -862,90 +907,112 @@ const config = {
     //                 config.service_profiles.development;
     //  return profile.contest_service;
     //},
-    
+
+    // ADMIN WALLET SERVICE
     get admin_wallet_service() {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.admin_wallet_service;
     },
-    
+
+    // WALLET GENERATOR SERVICE
     get wallet_generator_service() {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.wallet_generator_service;
     },
-    
+
+    // AI SERVICE
     get ai_service() {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.ai_service;
     },
-    
+
+    // SOLANA SERVICE
     get solana_service() {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.solana_service;
     },
-    
+
+    // SOLANA ENGINE SERVICE
     get solana_engine_service() {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.solana_engine_service;
     },
-    
+
+    // VANITY WALLET SERVICE
     get vanity_wallet_service() {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.vanity_wallet_service;
     },
-    
+
+    // TOKEN REFRESH SCHEDULER SERVICE
     get token_refresh_scheduler() { // Renamed getter (removed _service suffix)
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.token_refresh_scheduler_service; // Access profile using the new underscore key
     },
-    
+
+    // TOKEN DEX DATA SERVICE
     get token_dex_data_service() {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.token_dex_data_service;
     },
-    
+
+    // TOKEN DETECTION SERVICE
     get token_detection_service() {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.token_detection_service;
     },
-    
+
+    // TOKEN ENRICHMENT SERVICE
     get token_enrichment_service() {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.token_enrichment_service;
     },
 
-    // TODO: Might be missing a few services
-
+    // DISCORD NOTIFICATION SERVICE
     get discord_notification_service() {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.discord_notification_service;
     },
 
+    // DISCORD INTERACTIVE SERVICE
     get discord_interactive_service() {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
       return profile.discord_interactive_service;
     },
 
-    get launch_event() { // Added getter for the new service
+    // LAUNCH EVENT SERVICE
+    get launch_event_service() { // Added getter for the new service
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
-      return profile.launch_event;
+      return profile.launch_event_service;
     },
-  
+
+    // PORTFOLIO SNAPSHOT SERVICE
+    get portfolio_snapshot_service() {
+      const profile = config.service_profiles[config.services.active_profile] || 
+                     config.service_profiles.development;
+      return profile.portfolio_snapshot_service;
+    },
+
+    // [Future Services Go Here]
+
+    // TODO: Double check that all services are included here
+    
   },
 
-  // GPU Server Configuration (DEPRECATED AND NOT USED)
+  // GPU Server Configuration (DEPRECATED - NOT USED)
   gpuServer: {
     // Allow multiple IPs separated by commas, or IP patterns with wildcards
     // First IP in the list is used as the default when connecting to the server
@@ -980,6 +1047,7 @@ const config = {
       PORTFOLIO: 'portfolio',
       SYSTEM: 'system',
       CONTEST: 'contest',
+      CONTEST_CHAT: 'contest-chat', // Added new topic for contest chat
       USER: 'user',
       ADMIN: 'admin',
       WALLET: 'wallet',

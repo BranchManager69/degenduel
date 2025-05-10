@@ -4,6 +4,7 @@ import express from "express";
 import prisma from "../../config/prisma.js";
 import { requireAdmin, requireAuth } from "../../middleware/auth.js";
 import { logApi } from "../../utils/logger-suite/logger.js";
+import serviceEvents, { SERVICE_EVENTS } from "../../utils/service-suite/service-events.js";
 
 const VERBOSE_MAINTENANCE = false;
 
@@ -156,27 +157,42 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
     const value = {
       enabled,
       duration,
-      last_enabled: enabled ? timestamp : null,
-      last_disabled: !enabled ? timestamp : null,
+      // Keep track of last enabled/disabled times - might be useful?
+      // Note: This logic slightly differs from original; ensures only relevant timestamp is updated
+      ...(enabled ? { last_enabled: timestamp } : { last_disabled: timestamp }), 
       updated_by: req.user.wallet_address,
     };
 
+    // Fetch the previous value to include in the event if needed
+    const previousSetting = await prisma.system_settings.findUnique({
+      where: { key: "maintenance_mode" },
+      select: { value: true }
+    });
+
     // Update or create the maintenance mode setting
-    await prisma.system_settings.upsert({
+    const updatedSetting = await prisma.system_settings.upsert({
       where: { key: "maintenance_mode" },
       update: {
-        value,
+        value: { // Ensure we update only the fields within the JSON value
+          ...previousSetting?.value, // Preserve existing fields
+          ...value // Overwrite with new values
+        },
         updated_at: timestamp,
         updated_by: req.user.wallet_address,
       },
       create: {
         key: "maintenance_mode",
-        value,
+        value: value, // Use the full value object for creation
         description: "Controls system-wide maintenance mode",
         updated_at: timestamp,
         updated_by: req.user.wallet_address,
       },
     });
+
+    // --- Emit the event after successful update --- 
+    serviceEvents.emit(SERVICE_EVENTS.MAINTENANCE_MODE_UPDATED, { enabled });
+    logApi.info(`📢 Emitted ${SERVICE_EVENTS.MAINTENANCE_MODE_UPDATED} event: enabled=${enabled}`);
+    // ---------------------------------------------
 
     // Log the action with more details
     await prisma.admin_logs.create({
@@ -195,11 +211,12 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
 
     logApi.info(`✅ Maintenance mode updated (${Date.now() - startTime}ms)`);
 
+    // Return the updated setting value from the upsert operation
     return res.json({
-      enabled,
-      duration,
-      timestamp: timestamp.toISOString(),
-      updated_by: req.user.wallet_address,
+      enabled: updatedSetting.value.enabled,
+      duration: updatedSetting.value.duration,
+      timestamp: updatedSetting.updated_at.toISOString(),
+      updated_by: updatedSetting.updated_by,
     });
   } catch (error) {
     logApi.error(`❌ Failed to update maintenance mode: ${error.message}`, {

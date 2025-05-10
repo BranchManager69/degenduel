@@ -66,9 +66,10 @@ const rateLimit = {
   maxTokensPerRequest: 100, // Jupiter allows up to 100 tokens per request
   batchingEnabled: true,
   batchFailureBackoffMs: 2000, // ms to wait after a batch failure (increased from 1000ms)
-  initialBackoffMs: 2000, // ms for initial backoff (new parameter)
-  maxBackoffMs: 30000, // Maximum backoff time (30s) (new parameter)
-  backoffFactor: 2.0, // Exponential backoff multiplier (new parameter)
+  initialBackoffMs: 1000, // ms for initial backoff (adjusted from 2000ms for faster first retry)
+  maxBackoffMs: 30000, // Maximum backoff time (30s)
+  backoffFactor: 2.0, // Exponential backoff multiplier (for reference, current client logic doubles)
+  maxRetries: 1, // Max number of retries for a failed batch request (1 initial + 1 retry)
 };
 
 // Export the Jupiter configuration

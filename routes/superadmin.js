@@ -18,6 +18,7 @@ import adminWalletService from '../services/admin-wallet/index.js';
 import { getContestWallet } from '../utils/solana-suite/solana-wallet.js';
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
+import ContestWalletService from '../../services/contest-wallet/contestWalletService.js';
 ////import liquidityService from '../services/liquidityService.js';
 ////import userBalanceTrackingService from '../services/userBalanceTrackingService.js';
 
@@ -929,28 +930,39 @@ router.get('/contests/:id/wallet', requireAuth, requireSuperAdmin, async (req, r
     try {
         const contestId = parseInt(req.params.id);
         
-        // Get contest wallet
-        const contestWallet = await prisma.contest_wallets.findUnique({
+        const contestWalletRecord = await prisma.contest_wallets.findUnique({
             where: { contest_id: contestId }
         });
 
-        if (!contestWallet) {
-            return res.status(404).json({ error: 'Contest wallet not found' });
+        if (!contestWalletRecord || !contestWalletRecord.private_key) {
+            return res.status(404).json({ error: 'Contest wallet not found or has no private key stored.' });
         }
 
-        // Get wallet instance (this decrypts the private key)
-        const wallet = await getContestWallet(contestWallet.private_key, contestWallet.wallet_address);
+        // Use ContestWalletService.decryptPrivateKey, which returns the 32-byte seed Buffer
+        const decryptedSeedBuffer = ContestWalletService.decryptPrivateKey(contestWalletRecord.private_key);
         
-        // Return private key in hex format
+        if (!(decryptedSeedBuffer instanceof Buffer) || decryptedSeedBuffer.length !== 32) {
+            // This case should ideally be caught by decryptPrivateKey itself if format is wrong
+            logApi.error('Decryption by ContestWalletService did not yield a 32-byte Buffer seed.', { contestId });
+            throw new Error('Failed to obtain valid 32-byte seed after decryption.');
+        }
+        
         res.json({
             contest_id: contestId,
-            wallet_address: contestWallet.wallet_address,
-            private_key: Buffer.from(wallet.secretKey).toString('hex')
+            wallet_address: contestWalletRecord.wallet_address,
+            private_seed_base58: bs58.encode(decryptedSeedBuffer),
+            private_seed_hex: decryptedSeedBuffer.toString('hex'),
+            key_format_info: "Decrypted 32-byte private seed."
         });
     } catch (error) {
-        logApi.error('Error getting contest wallet:', error);
-        res.status(500).json({ 
-            error: 'Failed to get contest wallet',
+        logApi.error('Error getting contest wallet private seed:', {
+            contestId: req.params.id, 
+            error: error.message,
+            stack: error.stack?.substring(0, 300)
+        });
+        const statusCode = error.code === 'DECRYPTION_ERROR_JSON_PARSE' || error.code === 'DECRYPTION_ERROR_UNRECOGNIZED' ? 400 : 500;
+        res.status(statusCode).json({ 
+            error: 'Failed to get contest wallet private seed',
             details: error.message 
         });
     }

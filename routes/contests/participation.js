@@ -13,13 +13,17 @@ import { requireAuth } from '../../middleware/auth.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import prisma from '../../config/prisma.js';
 import { Prisma } from '@prisma/client';
-import { verifyTransaction } from '../../utils/solana-suite/web3-v2/solana-connection-v2.js';
 import ReferralService from '../../services/referralService.js';
 import { 
   getAndValidateContest,
   canUserParticipate,
   getUserContestParticipations
 } from '../../utils/contest-helpers.js';
+import { solanaEngine } from '../../services/solana-engine/index.js';
+import { ServiceError } from '../../utils/service-suite/service-error.js';
+import { LAMPORTS_PER_SOL as LAMPORTS_PER_SOL_V1, PublicKey } from '@solana/web3.js';
+import bs58 from 'bs58';
+import { Buffer } from 'node:buffer';
 
 // Router
 const router = express.Router();
@@ -33,6 +37,8 @@ const participationLogger = {
   analytics: logApi.analytics
 };
 
+const LAMPORTS_PER_SOL_V2 = 1_000_000_000;
+
 /**
  * @route POST /api/contests/:id/enter
  * @description Enter a contest by paying the entry fee
@@ -42,7 +48,8 @@ router.post('/:id/enter', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { transaction_signature, referral_code } = req.body;
-    const userWallet = req.user.wallet_address;
+    const user = req.user;
+    const userWallet = user.wallet_address;
     
     const parsedId = parseInt(id, 10);
     if (isNaN(parsedId)) {
@@ -102,21 +109,62 @@ router.post('/:id/enter', requireAuth, async (req, res) => {
       }
       
       try {
-        // Verify transaction
-        const verificationResult = await verifyTransaction(
-          transaction_signature,
-          userWallet,
-          contestWalletAddress,
-          new Decimal(contest.entry_fee)
-        );
-        
-        if (!verificationResult.verified) {
-          return res.status(400).json({
-            error: 'invalid_transaction',
-            message: 'Transaction verification failed',
-            details: verificationResult.reason
-          });
+        // --- NEW V2 Transaction Verification using solanaEngine ---
+        const entryFeeDecimal = new Decimal(contest.entry_fee);
+        const requiredAmountLamports = BigInt(Math.round(entryFeeDecimal.toNumber() * LAMPORTS_PER_SOL_V2));
+
+        participationLogger.info('Verifying contest entry payment...', { 
+            signature: transaction_signature, userWallet, contestWalletAddress, requiredAmountLamports: requiredAmountLamports.toString() 
+        });
+
+        if (requiredAmountLamports <= 0) {
+            participationLogger.info('Contest entry fee is zero, skipping payment verification.', { contestId: parsedId });
+        } else {
+            const txDetails = await solanaEngine.executeConnectionMethod(
+                'getTransaction',
+                transaction_signature,
+                { commitment: 'confirmed', maxSupportedTransactionVersion: 0 }
+            );
+
+            if (!txDetails || !txDetails.transaction) {
+                throw new ServiceError(400, `Entry payment transaction ${transaction_signature} not found or failed.`);
+            }
+            if (txDetails.meta?.err) {
+                throw new ServiceError(400, `Entry payment transaction ${transaction_signature} failed on-chain: ${JSON.stringify(txDetails.meta.err)}`);
+            }
+
+            let paymentVerified = false;
+            const systemProgramIdString = '11111111111111111111111111111111';
+            // accountKeys from getTransaction are v1 PublicKey objects, so convert to string for comparison
+            const accountKeyStrings = txDetails.transaction.message.accountKeys.map(pk => pk.toString());
+
+            for (const instruction of txDetails.transaction.message.instructions) {
+                const programId = accountKeyStrings[instruction.programIdIndex];
+                if (programId === systemProgramIdString && instruction.data) {
+                    const instructionDataBuffer = Buffer.from(bs58.decode(instruction.data));
+                    if (instructionDataBuffer.length === 12) { // SystemProgram.transfer data length
+                        const instructionDiscriminator = instructionDataBuffer.readUInt32LE(0);
+                        if (instructionDiscriminator === 2) { // Transfer instruction
+                            const transferredLamports = instructionDataBuffer.readBigUInt64LE(4);
+                            const sourceAddressFromTx = accountKeyStrings[instruction.accounts[0]];
+                            const destinationAddressFromTx = accountKeyStrings[instruction.accounts[1]];
+
+                            if (sourceAddressFromTx === userWallet &&
+                                destinationAddressFromTx === contestWalletAddress &&
+                                transferredLamports === requiredAmountLamports) {
+                                paymentVerified = true;
+                                participationLogger.info('Contest entry payment verified successfully.', { signature: transaction_signature });
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            if (!paymentVerified) {
+                throw new ServiceError(400, 'Contest entry payment verification failed: Transfer to contest wallet not confirmed or amount incorrect.');
+            }
         }
+        // --- End V2 Transaction Verification ---
       } catch (verifyError) {
         participationLogger.error('Transaction verification error:', {
           error: verifyError.message,
@@ -124,12 +172,9 @@ router.post('/:id/enter', requireAuth, async (req, res) => {
           signature: transaction_signature,
           contestId: parsedId
         });
-        
-        return res.status(400).json({
-          error: 'transaction_verification_error',
-          message: 'Failed to verify transaction',
-          details: verifyError.message
-        });
+        const message = (verifyError instanceof ServiceError) ? verifyError.message : 'Failed to verify transaction';
+        const statusCode = (verifyError instanceof ServiceError) ? verifyError.statusCode : 400;
+        return res.status(statusCode).json({ error: 'transaction_verification_error', message, details: verifyError.message });
       }
     } else {
       // If no transaction signature, check if contest is free entry (entry_fee = 0)

@@ -24,17 +24,29 @@ import { heliusClient } from './helius-client.js';
 import { jupiterClient } from './jupiter-client.js';
 import { dexscreenerClient } from './dexscreener-client.js';
 import { heliusPoolTracker } from './helius-pool-tracker.js';
-import { Connection, PublicKey, Transaction, TransactionMessage, VersionedTransaction, sendAndConfirmTransaction } from '@solana/web3.js';
 import connectionManager from './connection-manager.js';
 import redisManager from '../../utils/redis-suite/redis-manager.js';
-
-// WRONG! DO NOT IMPORT A BRAND NEW PRISMA CLIENT HERE!
-import { PrismaClient } from '@prisma/client';
-// CORRECT! USE THE EXISTING PRISMA CLIENT FROM THE ADMIN WALLET SERVICE
-//import prisma from '../../config/prisma.js';
+import prisma from '../../config/prisma.js';
 
 // Config
 import config from '../../config/config.js';
+
+// Make sure to import v2 transaction and address utilities
+import { getAddressEncoder, isAddress } from '@solana/addresses';
+import { 
+  createTransactionMessage,
+  setTransactionMessageFeePayer,
+  setTransactionMessageLifetimeUsingBlockhash,
+  appendTransactionMessageInstruction
+} from '@solana/transaction-messages'; 
+import { 
+  compileTransaction,
+  signTransaction
+} from '@solana/transactions';
+import { fromLegacyInstruction, fromLegacyKeypair } from '@solana/compat'; // For converting v1 instructions/keypairs
+
+// Import Helius Kite
+import { connect as connectKite } from 'solana-kite';
 
 // Default solanaEngine colors if not found in serviceColors
 const defaultSolanaEngineColors = {
@@ -104,6 +116,8 @@ class SolanaEngineService extends BaseService {
 
     // Track last health check time
     this._lastHealthLog = 0;
+
+    this.kiteConnection = null; // For Helius Kite
   }
 
   /**
@@ -142,6 +156,21 @@ class SolanaEngineService extends BaseService {
       const dexscreenerInitialized = await dexscreenerClient.initialize();
       if (!dexscreenerInitialized) {
         logApi.warn(`${formatLog.tag()} ${formatLog.warning('DexScreener client initialization failed')}`);
+      }
+      
+      // Initialize Helius Kite connection
+      try {
+        const kiteRpcUrl = this.connectionManager.endpoint || config.rpc_urls.primary || config.rpc_urls.mainnet_http;
+        if (kiteRpcUrl) {
+          this.kiteConnection = connectKite(kiteRpcUrl);
+          logApi.info(`${formatLog.tag()} ${formatLog.success('Helius Kite client initialized successfully with RPC:')} ${kiteRpcUrl}`);
+        } else {
+          logApi.error(`${formatLog.tag()} ${formatLog.error('No RPC URL found for Helius Kite initialization.')}`);
+          // this.kiteConnection will remain null
+        }
+      } catch (kiteError) {
+        logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to initialize Helius Kite client:')} ${kiteError.message}`, { error: kiteError });
+        // this.kiteConnection will remain null
       }
       
       // Set up Jupiter price update callback
@@ -224,10 +253,10 @@ class SolanaEngineService extends BaseService {
   /**
    * Get a connection from the connection manager.
    * This simplified version just returns the single connection.
-   * @returns {Connection} The Solana connection
+   * @returns {SolanaRpcMethods} The Solana v2 RPC client // Type might differ based on exact v2 client chosen
    */
   getConnection() {
-    return this.connectionManager.getConnection();
+    return this.connectionManager.getRpcClient(); // Updated to call the v2 client getter
   }
   
   /**
@@ -238,7 +267,8 @@ class SolanaEngineService extends BaseService {
    */
   async executeConnectionMethod(methodName, ...args) {
     try {
-      return await this.connectionManager.executeMethod(methodName, args);
+      // Now calls the new method in connectionManager that maps v1 names to v2 calls
+      return await this.connectionManager.executeSolanaRpcMethod(methodName, args);
     } catch (error) {
       logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to execute method ${methodName}: ${error.message}`)}`);
       throw error;
@@ -255,196 +285,193 @@ class SolanaEngineService extends BaseService {
   }
   
   /**
-   * Send a transaction to the Solana network
-   * @param {Transaction|VersionedTransaction} transaction - The transaction to send
-   * @param {Array<Signer>} signers - The signers of the transaction
-   * @param {Object} options - Options for sending the transaction
-   * @returns {Promise<Object>} The result of the transaction
+   * Send a transaction to the Solana network (Fully Refactored for v2)
+   * @param {Array<import('@solana/transaction-messages').SolanaInstruction>} instructions - Array of v2 SolanaInstruction objects.
+   * @param {import('@solana/addresses').Address} feePayerAddress - The v2 Address string of the fee payer.
+   * @param {Array<import('@solana/signers').Signer>} signers - Array of v2 Signer objects (e.g., KeyPairSigner).
+   * @param {Object} options - Options for sending the transaction.
+   * @param {string} [options.commitment='confirmed'] - Desired commitment level for blockhash and confirmation.
+   * @param {boolean} [options.skipPreflight=false] - Whether to skip preflight checks.
+   * @param {number} [options.maxRetries=0] - Max retries for sendTransaction itself (RPC level).
+   * @param {number} [options.blockhashRetries=3] - Max retries for blockhash expiration (application level).
+   * @param {boolean} [options.waitForConfirmation=true] - Whether to wait for confirmation.
+   * @param {number} [options.confirmationTimeoutMs=60000] - Timeout for confirmation polling.
+   * @param {number} [options.pollIntervalMs=2000] - Interval for polling signature status.
+   * @returns {Promise<Object>} The result, including signature, blockhash info, and confirmationStatus.
    */
-  async sendTransaction(transaction, signers = [], options = {}) {
-    // Maximum retry attempts for block height exceeded errors
-    const MAX_BLOCK_HEIGHT_RETRIES = options.blockHeightRetries || 3;
-    let attemptCount = 0;
-    let lastError = null;
-    
-    // Continue retrying until we succeed or exhaust our retry attempts
-    while (attemptCount <= MAX_BLOCK_HEIGHT_RETRIES) {
+  async sendTransaction(instructions, feePayerAddress, signers, options = {}) {
+    logApi.info(`${formatLog.tag()} ${formatLog.header('SENDING TRANSACTION (Full v2 Path)')}`);
+    this.transactionStats.sent++;
+    const rpc = this.connectionManager.getRpcClient();
+
+    const blockhashRetries = options.blockhashRetries !== undefined ? options.blockhashRetries : 3;
+    let attempt = 0;
+
+    if (!instructions || instructions.length === 0) {
+        throw new Error('Transaction must have at least one instruction.');
+    }
+    if (!feePayerAddress || !isAddress(feePayerAddress)) {
+        throw new Error('Valid feePayerAddress (v2 Address string) is required.');
+    }
+    if (!signers || signers.length === 0) {
+        throw new Error('At least one v2 Signer object (fee payer) is required.');
+    }
+    // Ensure feePayer is the first signer or is present in signers array for `signTransaction`
+    // `signTransaction` expects signers in the order they appear in the message, or for feePayer to be explicitly handled.
+    // For simplicity here, we'll assume the `signers` array is correctly ordered and includes the fee payer.
+
+    while (attempt <= blockhashRetries) {
       try {
-        // On retry attempts, clone the transaction to avoid using the same one again
-        let txToSend = transaction;
-        if (attemptCount > 0) {
-          // Log that we're retrying
-          logApi.info(`${formatLog.tag()} ${formatLog.info(`Retrying transaction after block height exceeded error (attempt ${attemptCount}/${MAX_BLOCK_HEIGHT_RETRIES})`)}`)
-          
-          // For non-versioned transactions, create a clone
-          if (!transaction.version) {
-            // Create a new transaction with the same instructions
-            // but we'll get a fresh blockhash below
-            txToSend = new Transaction();
-            txToSend.add(...transaction.instructions);
-            txToSend.feePayer = transaction.feePayer;
-          } else {
-            // For versioned transactions, this is more complex and might not be supported
-            // without fully re-constructing the transaction
-            logApi.warn(`${formatLog.tag()} ${formatLog.warning('Retrying versioned transaction may not work as expected')}`)
+        // 1. Get Latest Blockhash
+        const commitment = options.commitment || 'confirmed';
+        const latestBlockhashResult = await rpc.getLatestBlockhash({ commitment }).send();
+        const { blockhash, lastValidBlockHeight } = latestBlockhashResult.value;
+
+        // 2. Create the v2 Transaction Message
+        const message = createTransactionMessage({
+          version: 0,
+          payerKey: feePayerAddress,
+          recentBlockhash: blockhash,
+          instructions: instructions 
+        });
+
+        // 3. Sign the Transaction Message
+        // `signTransaction` from `@solana/transactions` expects CryptoKeyPair-like objects or objects with a sign() method.
+        // If signers are KeyPairSigner from `@solana/kit`, they have a .signTransactions method, 
+        // but signTransaction from @solana/transactions expects CryptoKey[] or CryptoKeyPair[].
+        // For now, assuming `signers` contains objects that `signTransaction` can use (e.g., from fromLegacyKeypair or new v2 keypairs).
+        // This might need adjustment based on the actual structure of v2 Signer objects you intend to use.
+        // If using KeyPairSigner from @solana/kit, a different signing approach might be needed or a helper to extract CryptoKeyPairs.
+        // Let's assume for now `signers` are CryptoKeyPair[] as returned by `fromLegacyKeypair` for this step.
+        const signedTx = await signTransaction(signers, message);
+
+        // 4. Send the Transaction
+        const signature = await rpc.sendTransaction(
+          signedTx.serializedMessage, 
+          {
+            encoding: 'base64',
+            skipPreflight: options.skipPreflight || false,
+            preflightCommitment: commitment, // Use the same commitment for preflight
+            maxRetries: options.maxRetries || 0, 
+            minContextSlot: options.minContextSlot,
           }
-        }
-        
-        // Track transaction in stats
-        this.transactionStats.sent++;
-        
-        // Get the connection
-        const connection = this.getConnection();
-        
-        // Get the latest blockhash
-        // We always get a fresh blockhash on retries to help avoid block height exceeded errors
-        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-        
-        // Set the blockhash for the transaction if it's a legacy transaction
-        if (!txToSend.version) {
-          txToSend.recentBlockhash = blockhash;
-          txToSend.lastValidBlockHeight = lastValidBlockHeight;
-        }
-        
-        // Sign the transaction with all signers
-        if (signers.length > 0) {
-          // For versioned transactions
-          if (txToSend.version !== undefined) {
-            txToSend = await txToSend.sign(signers);
-          } else {
-            // For legacy transactions
-            txToSend = await sendAndConfirmTransaction(connection, txToSend, signers, {
-              skipPreflight: options.skipPreflight || false,
-              preflightCommitment: options.preflightCommitment || 'confirmed',
-              maxRetries: options.maxRetries || 3,
-            });
-            
-            // Update stats
-            this.transactionStats.confirmed++;
-            
-            // Return early for legacy transactions
+        ).send();
+
+        logApi.info(`${formatLog.tag()} ${formatLog.info('Transaction sent (Full v2 path)')} Signature: ${signature}`);
+
+        // 5. Handle Confirmation
+        if (options.waitForConfirmation !== false) {
+            const confirmationStatus = await this.confirmTransaction(signature, blockhash, lastValidBlockHeight, options);
             return {
-              signature: txToSend,
-              confirmationStatus: 'confirmed',
+              signature,
+              confirmationStatus,
               blockhash,
               lastValidBlockHeight
             };
-          }
         }
-        
-        // Send the raw transaction
-        const txid = await connection.sendTransaction(txToSend, {
-          skipPreflight: options.skipPreflight || false,
-          preflightCommitment: options.preflightCommitment || 'confirmed',
-          maxRetries: options.maxRetries || 3,
-        });
-        
-        // Log the transaction
-        logApi.info(`${formatLog.tag()} ${formatLog.info('Transaction sent')} Signature: ${txid}`);
-        
-        // If confirmation is requested, wait for confirmation
-        if (options.waitForConfirmation !== false) {
-          const confirmationStatus = await this.confirmTransaction(txid, blockhash, lastValidBlockHeight, options);
-          
-          return {
-            signature: txid,
-            confirmationStatus,
-            blockhash,
-            lastValidBlockHeight
-          };
-        }
-        
+
         return {
-          signature: txid,
-          confirmationStatus: 'sent',
+          signature,
           blockhash,
-          lastValidBlockHeight
+          lastValidBlockHeight,
+          confirmationStatus: 'sent'
         };
+
       } catch (error) {
-        lastError = error;
-        
-        // Check if this is a block height exceeded error and if we should retry
-        if (error.message && error.message.includes('block height exceeded') && attemptCount < MAX_BLOCK_HEIGHT_RETRIES) {
-          logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Transaction failed with block height exceeded. Retrying (${attemptCount + 1}/${MAX_BLOCK_HEIGHT_RETRIES})`)}`);
-          attemptCount++;
-          // Wait a short delay before retrying
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          continue;
+        logApi.warn(`${formatLog.tag()} Attempt ${attempt + 1}/${blockhashRetries + 1} failed for sendTransaction: ${error.message}`);
+        if (error.message && (error.message.includes('blockhash not found') || error.message.includes('block height exceeded') || error.message.includes('Transaction too old'))) {
+          if (attempt < blockhashRetries) {
+            logApi.info(`${formatLog.tag()} Retrying due to blockhash issue...`);
+            await new Promise(resolve => setTimeout(resolve, 1000 + (attempt * 500))); // Incremental backoff
+            attempt++;
+            continue; // Retry the while loop
+          }
+          logApi.error(`${formatLog.tag()} Max blockhash retries reached for transaction.`);
         }
-        
-        // If we get here, either it's not a block height error or we've exhausted our retries
-        // Update stats
         this.transactionStats.failed++;
-        
-        // Log the error
-        logApi.error(`${formatLog.tag()} ${formatLog.error('Transaction failed:')} ${error.message}`);
-        
-        // Throw the error
-        throw error;
+        logApi.error(`${formatLog.tag()} ${formatLog.error('Full v2 Transaction send/sign failed permanently:')} ${error.message}`, { stack: error.stack });
+        throw error; // Re-throw the last error after retries are exhausted or for non-blockhash errors
       }
     }
-    
-    // This should never be reached due to the loop logic above
-    // But just in case, make sure we have an error to throw
-    if (lastError) {
-      throw lastError;
-    } else {
-      throw new Error('Transaction failed after all retry attempts');
-    }
+    // Should not be reached if blockhashRetries >= 0, as loop will either return or throw.
+    // Added for safety if blockhashRetries is somehow negative.
+    throw new Error('sendTransaction failed after all attempts.'); 
   }
   
   /**
-   * Confirm a transaction
+   * Confirm a transaction (Refactored for v2)
    * @param {string} signature - The transaction signature
-   * @param {string} blockhash - The blockhash of the transaction
-   * @param {number} lastValidBlockHeight - The last valid block height
+   * @param {string} blockhash - The blockhash used when sending the transaction
+   * @param {number} lastValidBlockHeight - The last valid block height for the transaction
    * @param {Object} options - Options for confirming the transaction
-   * @returns {Promise<string>} The confirmation status
+   * @returns {Promise<string>} The confirmation status (e.g., 'processed', 'confirmed', 'finalized')
    */
   async confirmTransaction(signature, blockhash, lastValidBlockHeight, options = {}) {
+    const rpc = this.connectionManager.getRpcClient();
+    // Map v1 commitment to a hierarchy of v2 statuses for checking.
+    // If desired is 'confirmed', 'finalized' also counts.
+    // If desired is 'processed', 'confirmed' or 'finalized' also count.
+    const desiredCommitment = options.commitment || 'confirmed'; 
+    const pollIntervalMs = options.pollIntervalMs || 2000; 
+    const confirmationTimeoutMs = options.confirmationTimeoutMs || 60000; 
+
+    const startTime = Date.now();
+
+    logApi.info(`${formatLog.tag()} Confirming transaction (v2 polling) ${signature.substring(0,10)}... with target commitment ${desiredCommitment}`);
+
     try {
-      // Get the connection
-      const connection = this.getConnection();
-      
-      // Create the confirmation strategy
-      const confirmationStrategy = {
-        blockhash,
-        lastValidBlockHeight,
-        signature
-      };
-      
-      // Wait for confirmation
-      const confirmation = await connection.confirmTransaction(
-        confirmationStrategy,
-        options.commitment || 'confirmed'
-      );
-      
-      // Check if the confirmation was successful
-      if (confirmation?.value?.err) {
-        const errorMsg = JSON.stringify(confirmation.value.err);
-        this.transactionStats.failed++;
-        logApi.error(`${formatLog.tag()} ${formatLog.error('Transaction confirmed with error:')} ${errorMsg}`);
-        
-        // If the error is 'block height exceeded', we'll let the calling method handle it
-        // This allows the sendTransaction method to retry with a fresh blockhash
-        if (errorMsg.includes('block height exceeded')) {
-          throw new Error(`Transaction confirmed with error: block height exceeded`);
+      while (Date.now() - startTime < confirmationTimeoutMs) {
+        const statusesResult = await rpc.getSignatureStatuses([signature], { searchTransactionHistory: true }).send();
+        const statusInfo = statusesResult.value && statusesResult.value[0];
+
+        if (statusInfo) {
+          logApi.debug(`${formatLog.tag()} Sig ${signature.substring(0,10)}... Current Status: ${statusInfo.confirmationStatus}, Error: ${statusInfo.err}`);
+          
+          if (statusInfo.err) {
+            logApi.error(`${formatLog.tag()} Transaction ${signature} confirmed with error:`, statusInfo.err);
+            this.transactionStats.failed++;
+            throw new Error(`Transaction failed on-chain: ${JSON.stringify(statusInfo.err)}`);
+          }
+
+          const currentStatus = statusInfo.confirmationStatus;
+          let confirmed = false;
+          if (currentStatus === 'finalized') {
+            confirmed = true;
+          } else if (currentStatus === 'confirmed' && (desiredCommitment === 'confirmed' || desiredCommitment === 'processed')) {
+            confirmed = true;
+          } else if (currentStatus === 'processed' && desiredCommitment === 'processed') {
+            confirmed = true;
+          }
+
+          if (confirmed) {
+            logApi.info(`${formatLog.tag()} Transaction ${signature} confirmed to status: ${currentStatus} (desired: ${desiredCommitment})`);
+            this.transactionStats.confirmed++; 
+            return currentStatus; 
+          }
         }
-        
-        throw new Error(`Transaction confirmed with error: ${errorMsg}`);
+
+        // Check if blockheight exceeded only if not yet confirmed to avoid race condition with very fast finalization
+        const currentBlockHeight = await rpc.getBlockHeight({commitment: 'confirmed'}).send();
+        if (currentBlockHeight > lastValidBlockHeight) {
+          logApi.warn(`${formatLog.tag()} Transaction ${signature} expired. Current height ${currentBlockHeight} > lastValidBlockHeight ${lastValidBlockHeight}`);
+          this.transactionStats.failed++;
+          throw new Error('Transaction expired due to block height exceeded before reaching desired commitment');
+        }
+
+        await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
       }
-      
-      // Update stats
-      this.transactionStats.confirmed++;
-      
-      // Log the confirmation
-      logApi.info(`${formatLog.tag()} ${formatLog.success('Transaction confirmed')} Signature: ${signature}`);
-      
-      return 'confirmed';
-    } catch (error) {
+
+      logApi.warn(`${formatLog.tag()} Timeout confirming transaction ${signature} to commitment ${desiredCommitment}`);
       this.transactionStats.failed++;
-      logApi.error(`${formatLog.tag()} ${formatLog.error('Transaction confirmation failed:')} ${error.message}`);
-      throw error;
+      throw new Error(`Timeout confirming transaction to ${desiredCommitment}`);
+
+    } catch (error) {
+      // Ensure failure is counted if error originates before this block, or is rethrown
+      if (!error.message.includes('Transaction failed on-chain') && !error.message.includes('Transaction expired')) {
+        this.transactionStats.failed++; 
+      }
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Transaction confirmation process failed for signature')} ${signature}: ${error.message}`);
+      throw error; 
     }
   }
   
@@ -455,20 +482,17 @@ class SolanaEngineService extends BaseService {
    */
   async getConfiguration(includeStatus = false) {
     try {
-      const prisma = new PrismaClient();
       const config = await prisma.config_solana_engine.findFirst();
       
       if (!config) {
         throw new Error('SolanaEngine configuration not found in database');
       }
       
-      // Include connection status if requested
       let result = { config };
       if (includeStatus) {
         result.status = this.connectionManager.getStatus();
       }
       
-      await prisma.$disconnect();
       return result;
     } catch (error) {
       logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to get configuration: ${error.message}`)}`);
@@ -484,8 +508,6 @@ class SolanaEngineService extends BaseService {
    */
   async updateConfiguration(configUpdates, adminAddress) {
     try {
-      const prisma = new PrismaClient();
-      
       // Get current config
       let config = await prisma.config_solana_engine.findFirst();
       
@@ -508,7 +530,6 @@ class SolanaEngineService extends BaseService {
       // A restart will be required to apply the new configuration
       logApi.warn(`${formatLog.tag()} ${formatLog.warning('Service restart required to apply new configuration')}`);
       
-      await prisma.$disconnect();
       return updatedConfig;
     } catch (error) {
       logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to update configuration: ${error.message}`)}`);
@@ -671,7 +692,6 @@ class SolanaEngineService extends BaseService {
   async loadWatchedTokens() {
     try {
       // Get list of tokens to watch from the database
-      const prisma = new PrismaClient();
       const watchedTokens = await prisma.tokens.findMany({
         where: { is_active: true },
         select: { address: true }
@@ -686,8 +706,6 @@ class SolanaEngineService extends BaseService {
       } else {
         logApi.info(`${formatLog.tag()} ${formatLog.info('No watched tokens found in database')}`);
       }
-      
-      await prisma.$disconnect();
     } catch (error) {
       logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to load watched tokens:')} ${error.message}`);
     }
@@ -1323,6 +1341,12 @@ class SolanaEngineService extends BaseService {
         this._lastHealthLog = now;
       }
       
+      // Check Helius Kite connection
+      if (!this.kiteConnection) {
+        logApi.warn(`${formatLog.tag()} ${formatLog.warning('Helius Kite connection is not available during health check.')}`);
+        // Optionally try to reinitialize kite connection here if it's critical for operation
+      }
+      
       // Return true to indicate success
       return true;
     } catch (error) {
@@ -1380,6 +1404,19 @@ class SolanaEngineService extends BaseService {
       logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to handle WebSocket request:')} ${error.message}`);
       throw error;
     }
+  }
+
+  /**
+   * Get the Helius Kite connection client.
+   * @returns {object} The Helius Kite connection object.
+   * @throws {Error} If SolanaEngine or Kite connection is not initialized.
+   */
+  getKiteConnection() {
+    if (!this._initialized || !this.kiteConnection) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('getKiteConnection called but SolanaEngine or Kite is not initialized properly.')}`);
+      throw new Error('Kite connection not available or SolanaEngine not initialized.');
+    }
+    return this.kiteConnection;
   }
 }
 

@@ -3,10 +3,16 @@
 import { Router } from 'express';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import prisma from '../../config/prisma.js';
-import tokenWhitelistService from '../../services/tokenWhitelistService.js';
 import { requireAuth, requireAdmin } from '../../middleware/auth.js';
 import rateLimit from 'express-rate-limit';
 import AdminLogger from '../../utils/admin-logger.js';
+import { solanaEngine } from '../../services/solana-engine/index.js';
+import { ServiceError } from '../../utils/service-suite/service-error.js';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js'; // Temporarily for LAMPORTS_PER_SOL if not defined elsewhere as V2 yet
+import bs58 from 'bs58';
+import { Decimal } from 'decimal.js';
+// Consider defining LAMPORTS_PER_SOL_V2 = 1_000_000_000 locally or importing a shared V2 constant.
+const LAMPORTS_PER_SOL_V2 = 1_000_000_000;
 
 const router = Router();
 
@@ -605,6 +611,7 @@ const whitelistLimiter = rateLimit({
  */
 router.post('/whitelist', requireAuth, whitelistLimiter, async (req, res) => {
     const { contractAddress, transactionSignature } = req.body;
+    const user = req.user;
     const logContext = {
         path: 'POST /api/v2/tokens/whitelist',
         contractAddress,
@@ -616,37 +623,295 @@ router.post('/whitelist', requireAuth, whitelistLimiter, async (req, res) => {
     try {
         logApi.info('Token whitelist request received', logContext);
 
-        // Step 1: Verify the token and get metadata
-        const metadata = await tokenWhitelistService.verifyToken(contractAddress);
+        // --- Step 1: Verify the token and get metadata (NEW LOGIC) --- 
+        logApi.info('Verifying token metadata via solanaEngine...', { contractAddress });
+        
+        // Check Prisma first if we want to prevent re-whitelisting or handle updates differently
+        const existingToken = await prisma.tokens.findUnique({
+            where: { address: contractAddress } // Assuming 'address' is the field for contractAddress
+        });
 
-        // Step 2: Verify the payment
-        await tokenWhitelistService.verifyPayment(transactionSignature, req.user.wallet_address, req.user);
+        if (existingToken && existingToken.is_active) { 
+            // Or if any existingToken means it's already processed, adjust logic as needed.
+            throw new ServiceError(400, 'Token already whitelisted and active.');
+        }
 
-        // Step 3: Add to whitelist with metadata
-        const token = await tokenWhitelistService.addToWhitelist(contractAddress, metadata);
+        let fetchedMetadataArray;
+        try {
+            // solanaEngine.fetchTokenMetadata is expected to use heliusClient.getTokensMetadata
+            fetchedMetadataArray = await solanaEngine.fetchTokenMetadata([contractAddress]);
+        } catch (metaError) {
+            logApi.error('Failed to fetch token metadata via solanaEngine', { contractAddress, error: metaError.message, stack: metaError.stack });
+            throw new ServiceError(500, `Failed to fetch metadata for token ${contractAddress}: ${metaError.message}`);
+        }
 
-        logApi.info('Token whitelisted successfully', {
+        if (!fetchedMetadataArray || fetchedMetadataArray.length === 0 || !fetchedMetadataArray[0]) {
+            throw new ServiceError(404, `Token metadata not found on-chain for ${contractAddress}.`);
+        }
+        const onChainTokenInfo = fetchedMetadataArray[0]; 
+
+        // Define validation constants (could be from a shared config)
+        const REQUIRED_FIELDS_IN_METADATA = ['name', 'symbol']; // URI might be optional depending on strictness
+        const MAX_SYMBOL_LENGTH = 10;
+        const MAX_NAME_LENGTH = 50;
+
+        // Accessing Helius-like metadata structure (adjust if solanaEngine.fetchTokenMetadata returns different structure)
+        const metadataFromHelius = onChainTokenInfo.content?.metadata;
+        const jsonUriFromHelius = onChainTokenInfo.content?.json_uri;
+
+        if (!metadataFromHelius) {
+            throw new ServiceError(400, 'Metadata content not found in fetched token information.');
+        }
+
+        for (const field of REQUIRED_FIELDS_IN_METADATA) {
+            if (!metadataFromHelius[field]) {
+                throw new ServiceError(400, `Missing required metadata field: ${field}`);
+            }
+        }
+        
+        const tokenSymbol = metadataFromHelius.symbol;
+        const tokenName = metadataFromHelius.name;
+        // const tokenUri = jsonUriFromHelius || metadataFromHelius.uri; // Prefer json_uri if available
+        // For now, let's assume metadataFromHelius.uri is the one we need as per old service
+        const tokenUri = metadataFromHelius.uri; 
+
+        if (!tokenSymbol || tokenSymbol.length === 0 || tokenSymbol.length > MAX_SYMBOL_LENGTH) {
+            throw new ServiceError(400, `Token symbol '${tokenSymbol}' is invalid or exceeds max length of ${MAX_SYMBOL_LENGTH}.`);
+        }
+        if (!tokenName || tokenName.length === 0 || tokenName.length > MAX_NAME_LENGTH) {
+            throw new ServiceError(400, `Token name '${tokenName}' is invalid or exceeds max length of ${MAX_NAME_LENGTH}.`);
+        }
+        // URI validation can be added if it's strictly required
+        if (!tokenUri) {
+            logApi.warn('Token metadata URI is missing for', { contractAddress });
+            // Depending on policy, this might be an error or just a warning.
+            // throw new ServiceError(400, `Token metadata URI is missing.`);
+        }
+
+        const verifiedMetadata = {
+            name: tokenName,
+            symbol: tokenSymbol,
+            uri: tokenUri
+        };
+        logApi.info('Token metadata verified successfully via solanaEngine', { contractAddress, metadata: verifiedMetadata });
+        // --- End of Step 1 New Logic ---
+
+        // --- Step 2: Verify the payment (NEW LOGIC) --- 
+        logApi.info('Verifying payment transaction...', { signature: transactionSignature, userWallet: user.wallet_address });
+
+        // Calculate required amount (logic moved from deprecated service)
+        // These config values should come from your main application config
+        const baseSubmissionCostLamports = config.token_whitelist?.submission?.base_submission_cost_lamports || (1 * LAMPORTS_PER_SOL_V2); 
+        const superAdminCostLamports = config.token_whitelist?.submission?.super_admin_cost_lamports || (0.01 * LAMPORTS_PER_SOL_V2);
+        const discountPerLevelPercent = config.token_whitelist?.submission?.discount_per_level_percent || 1;
+        const treasuryWalletAddress = config.token_whitelist?.submission?.treasury_wallet_address || config.degenduel_treasury_wallet;
+
+        if (!treasuryWalletAddress) {
+            throw new ServiceError(500, 'Treasury wallet address for whitelist submission is not configured.');
+        }
+
+        let userLevel = 0;
+        if (user && user.id) {
+            const userStats = await prisma.user_stats.findUnique({ where: { user_id: user.id }, select: { level: true } });
+            userLevel = userStats?.level || 0;
+        }
+        
+        const costBeforeDiscount = (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') ? superAdminCostLamports : baseSubmissionCostLamports;
+        const discountAmount = (discountPerLevelPercent / 100) * userLevel * costBeforeDiscount;
+        const requiredAmountLamports = Math.max(0, Math.round(costBeforeDiscount - discountAmount));
+
+        logApi.info('Calculated whitelist submission fee', { 
+            userLevel, costBeforeDiscount, discountAmount, requiredAmountLamports, treasury: treasuryWalletAddress 
+        });
+
+        if (requiredAmountLamports <= 0 && !(user.role === 'SUPER_ADMIN' || user.role === 'ADMIN')) {
+            logApi.info('Zero submission fee calculated for non-admin, payment verification skipped.', logContext);
+            // If zero fee, payment verification might be skipped, or a different logic applied.
+            // For now, assume payment is required if amount > 0.
+        } else if (requiredAmountLamports > 0) {
+            const txDetails = await solanaEngine.executeConnectionMethod(
+                'getTransaction', 
+                transactionSignature, 
+                { commitment: 'confirmed', maxSupportedTransactionVersion: 0 }
+            );
+
+            if (!txDetails || !txDetails.transaction) {
+                throw new ServiceError(400, `Payment transaction ${transactionSignature} not found or failed.`);
+            }
+            if (txDetails.meta?.err) {
+                throw new ServiceError(400, `Payment transaction ${transactionSignature} failed on-chain: ${JSON.stringify(txDetails.meta.err)}`);
+            }
+
+            // TODO: VERY IMPORTANT - Parse txDetails.transaction.message.instructions to find the actual transfer
+            // This involves checking for SystemProgram.transfer to treasuryWalletAddress from user.wallet_address for requiredAmountLamports.
+            // Or, if SPL tokens are used for payment, checking for an SPL transfer.
+            // This parsing is complex and specific to the transaction structure.
+            // Helius parsed transaction API (if exposed via solanaEngine) would simplify this immensely.
+            let paymentVerified = false;
+            // Placeholder: Assume we need to find a system transfer.
+            const systemProgramId = '11111111111111111111111111111111';
+            const instructions = txDetails.transaction.message.instructions;
+            const accountKeys = txDetails.transaction.message.staticAccountKeys.map(pk => pk.toString()); // Get addresses as strings
+
+            for (const instruction of instructions) {
+                const programId = accountKeys[instruction.programIdIndex];
+                if (programId === systemProgramId) {
+                    // SystemProgram.transfer instruction specific checks
+                    // Accounts: 0 = source (signer), 1 = destination
+                    // Data: 4 bytes instruction discriminator (2 for transfer), 8 bytes lamports (u64le)
+                    if (instruction.data && instruction.accounts.length >= 2) {
+                        const instructionDataBuffer = Buffer.from(bs58.decode(instruction.data)); // instruction.data is base58 string
+                        if (instructionDataBuffer.length === 12) { // Discriminator (4) + Lamports (8)
+                            const instructionDiscriminator = instructionDataBuffer.readUInt32LE(0);
+                            if (instructionDiscriminator === 2) { // SystemProgram Transfer instruction index
+                                const transferredLamports = instructionDataBuffer.readBigUInt64LE(4);
+                                
+                                const sourceAccountIndex = instruction.accounts[0];
+                                const destinationAccountIndex = instruction.accounts[1];
+                                const sourceAddressFromTx = accountKeys[sourceAccountIndex];
+                                const destinationAddressFromTx = accountKeys[destinationAccountIndex];
+
+                                logApi.debug('Found SystemProgram.transfer instruction', {
+                                    source: sourceAddressFromTx,
+                                    destination: destinationAddressFromTx,
+                                    lamports: transferredLamports.toString(),
+                                    requiredLamports: requiredAmountLamports.toString(),
+                                    expectedSource: user.wallet_address,
+                                    expectedDestination: treasuryWalletAddress
+                                });
+
+                                if (sourceAddressFromTx === user.wallet_address &&
+                                    destinationAddressFromTx === treasuryWalletAddress &&
+                                    transferredLamports === BigInt(requiredAmountLamports)) {
+                                    paymentVerified = true;
+                                    logApi.info('Payment transaction successfully verified (SystemProgram.transfer).', {
+                                        signature: transactionSignature,
+                                        amount: requiredAmountLamports
+                                    });
+                                    break; // Payment verified, exit loop
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!paymentVerified) {
+                throw new ServiceError(400, 'Payment verification failed: Exact transfer to treasury not confirmed.');
+            }
+            logApi.info('Payment transaction successfully verified.', { signature: transactionSignature, amount: requiredAmountLamports });
+
+            // Log the verified payment transaction to Prisma
+            try {
+                const treasuryBalanceBefore = await solanaEngine.executeConnectionMethod('getBalance', treasuryWalletAddress);
+                // Assuming getBalance returns { value: lamports }
+                const treasuryBalanceBeforeLamports = treasuryBalanceBefore.value || BigInt(0);
+
+                await prisma.transactions.create({
+                    data: {
+                        wallet_address: user.wallet_address, // Sender of the fee
+                        type: 'WHITELIST_FEE', // Specific type for this transaction
+                        amount: new Decimal(requiredAmountLamports.toString()), // Store as Decimal
+                        // Storing treasury balance changes might be excessive, focus on fee itself
+                        // balance_before: new Decimal(treasuryBalanceBeforeLamports.toString()), 
+                        // balance_after: new Decimal((treasuryBalanceBeforeLamports + BigInt(requiredAmountLamports)).toString()),
+                        description: `Token whitelist submission fee for ${contractAddress}`,
+                        status: 'completed',
+                        blockchain_signature: transactionSignature,
+                        completed_at: new Date(txDetails.blockTime * 1000), // Use blockTime from txDetails if available
+                        created_at: new Date(),
+                        metadata: {
+                            contract_address_submitted: contractAddress,
+                            paid_to_treasury: treasuryWalletAddress,
+                            user_id: user.id,
+                            user_level: userLevel, // Calculated earlier
+                            calculated_fee_lamports: requiredAmountLamports.toString(),
+                            raw_tx_details_meta: txDetails.meta // Store raw meta for audit if needed
+                        }
+                    }
+                });
+                logApi.info('Whitelist fee payment transaction logged to database.', { signature: transactionSignature });
+            } catch (dbError) {
+                logApi.error('Failed to log whitelist payment transaction to database', { signature: transactionSignature, error: dbError.message, stack: dbError.stack });
+                // Decide if this is a critical failure that should halt the process
+                // For now, let's proceed but log the error. Could throw a ServiceError here.
+            }
+
+            logApi.info('Payment verification passed.');
+        }
+        // ... (Prisma logging for transaction to be added here) ...
+
+        // --- Step 3: Add token to our database (NEW LOGIC) ---
+        logApi.info('Adding token to database...', { contractAddress, metadata: verifiedMetadata });
+
+        let tokenInDb;
+        const existingTokenRecord = await prisma.tokens.findUnique({
+            where: { address: contractAddress }
+        });
+
+        if (existingTokenRecord) {
+            // Token exists, update it (e.g., if metadata changed or it was inactive)
+            logApi.info('Token already exists in DB, updating its record.', { contractAddress });
+            tokenInDb = await prisma.tokens.update({
+                where: { address: contractAddress },
+                data: {
+                    name: verifiedMetadata.name,
+                    symbol: verifiedMetadata.symbol,
+                    uri: verifiedMetadata.uri,
+                    chain: 'solana', // Assuming Solana
+                    is_active: true, // Or based on your approval flow
+                    last_verified_at: new Date(),
+                    // Potentially update other metadata fields if your schema supports them
+                    // image_url: onChainTokenInfo.content?.files?.find(f => f.uri && f.mime?.startsWith('image'))?.uri || onChainTokenInfo.content?.metadata?.image || null,
+                }
+            });
+        } else {
+            // Token does not exist, create it
+            logApi.info('Token does not exist in DB, creating new record.', { contractAddress });
+            tokenInDb = await prisma.tokens.create({
+                data: {
+                    address: contractAddress,
+                    name: verifiedMetadata.name,
+                    symbol: verifiedMetadata.symbol,
+                    uri: verifiedMetadata.uri,
+                    chain: 'solana',
+                    is_active: true, // Or based on your approval flow
+                    created_at: new Date(),
+                    updated_at: new Date(),
+                    last_verified_at: new Date(),
+                    // Potentially add other metadata fields
+                    // image_url: onChainTokenInfo.content?.files?.find(f => f.uri && f.mime?.startsWith('image'))?.uri || onChainTokenInfo.content?.metadata?.image || null,
+                }
+            });
+        }
+        logApi.info('Token successfully added/updated in database.', { tokenId: tokenInDb.id, contractAddress });
+        // --- End of Step 3 New Logic ---
+
+        logApi.info('Token whitelist request fully processed successfully.', {
             ...logContext,
-            tokenId: token.id,
-            metadata
+            tokenId: tokenInDb.id,
+            metadata: verifiedMetadata
         });
 
         res.json({
             success: true,
+            message: "Token whitelisted successfully.", // Updated message
             token: {
-                address: token.address,
-                name: token.name,
-                symbol: token.symbol,
-                status: 'pending'
+                address: tokenInDb.address,
+                name: tokenInDb.name,
+                symbol: tokenInDb.symbol,
+                status: tokenInDb.is_active ? 'active' : 'pending_approval' // Reflect actual status
             }
         });
     } catch (error) {
         logApi.error('Token whitelist request failed:', {
             ...logContext,
-            error: error.message
+            errorName: error.name,
+            errorMessage: error.message,
+            errorStack: error.stack?.substring(0, 500)
         });
 
-        const status = error.status || 500;
+        const status = error instanceof ServiceError ? error.statusCode : 500;
         const message = error.message || 'Internal server error';
 
         res.status(status).json({

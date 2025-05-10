@@ -22,7 +22,7 @@ import { heliusPoolTracker } from './helius-pool-tracker.js';
 export {
   heliusClient,
   jupiterClient,
-  getJupiterClient,
+  getJupiterClient, // only one with a getter? why?
   solanaEngine,
   heliusBalanceTracker,
   heliusPoolTracker

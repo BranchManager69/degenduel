@@ -26,6 +26,7 @@ import { heliusClient } from '../solana-engine/helius-client.js';
 import { getJupiterClient, jupiterClient } from '../solana-engine/jupiter-client.js';
 import { dexscreenerClient } from '../solana-engine/dexscreener-client.js';
 import tokenHistoryFunctions from '../token-history-functions.js';
+import { Decimal } from 'decimal.js';
 
 // Import modular components
 import marketData from './index.js';
@@ -1232,6 +1233,57 @@ class MarketDataService extends BaseService {
         } catch (error) {
             logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error stopping service:${fancyColors.RESET}`, error);
             throw error;
+        }
+    }
+
+    /**
+     * Get the current prices for a list of token IDs as a Map.
+     * Efficiently queries the token_prices table.
+     * @param {number[]} tokenIds - An array of token IDs to fetch prices for.
+     * @returns {Promise<Map<number, Decimal>>} - A Map where keys are token IDs and values are prices (Decimal).
+     */
+    async getCurrentPricesMap(tokenIds = []) {
+        if (!Array.isArray(tokenIds) || tokenIds.length === 0) {
+            return new Map(); // Return empty map if no IDs provided
+        }
+
+        try {
+            // Ensure service is healthy enough for a DB query
+            await this.checkServiceHealth(); 
+
+            const priceData = await marketDb.token_prices.findMany({
+                where: {
+                    token_id: { in: tokenIds }
+                },
+                select: {
+                    token_id: true,
+                    price: true
+                }
+            });
+
+            // Convert the result array into a Map for easy lookup
+            const priceMap = new Map();
+            priceData.forEach(p => {
+                // Ensure price is a Decimal, default to 0 if null/invalid
+                const priceDecimal = p.price ? new Decimal(p.price) : new Decimal(0);
+                priceMap.set(p.token_id, priceDecimal);
+            });
+
+            // Add default 0 price for any requested token IDs not found in the table
+            tokenIds.forEach(id => {
+                if (!priceMap.has(id)) {
+                    priceMap.set(id, new Decimal(0));
+                }
+            });
+
+            return priceMap;
+
+        } catch (error) {
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error fetching current prices map:${fancyColors.RESET}`, error);
+            // Don't throw, return empty map in case of error to avoid breaking callers?
+            // Or maybe re-throw as a ServiceError?
+            // Let's re-throw for now so the caller knows.
+            throw new ServiceError(ServiceErrorTypes.DATABASE, `Failed to fetch current prices map: ${error.message}`);
         }
     }
 }
