@@ -45,16 +45,13 @@ class PortfolioSnapshotService extends BaseService {
       let hasMoreParticipants = true;
       let skip = 0;
 
-      // Get MarketDataService instance
-      const marketDataService = this.serviceManager.getService(SERVICE_NAMES.MARKET_DATA);
+      const marketDataService = this.serviceManager.services.get(SERVICE_NAMES.MARKET_DATA);
       if (!marketDataService) {
         logApi.warn(`[${this.name}] Market Data Service not available, skipping cycle.`);
         return;
       }
 
       while (hasMoreParticipants) {
-        // 1. Fetch a batch of active participants 
-        // Ensure we fetch fields needed for event emissions later
         const currentBatchParticipants = await prisma.contest_participants.findMany({
           where: {
             status: 'active',
@@ -62,17 +59,10 @@ class PortfolioSnapshotService extends BaseService {
           },
           select: {
             id: true,
-            contest_id: true,         // Needed for leaderboard event
-            wallet_address: true,     // Needed for participant event
-            initial_balance: true,    // Needed for performance % in leaderboard/participant event
-            rank: true,               // Current rank, might be useful context
-            contest_portfolios: { 
-              select: {
-                token_id: true,
-                quantity: true
-              }
-            },
-            // Include users to get is_ai_agent and nickname for leaderboard context if needed directly here
+            contest_id: true,
+            wallet_address: true,
+            initial_balance: true,
+            rank: true,
             users: { select: { wallet_address: true, nickname: true, profile_image_url: true, role: true, is_ai_agent: true } }
           },
           orderBy: { id: 'asc' },
@@ -85,40 +75,50 @@ class PortfolioSnapshotService extends BaseService {
           continue;
         }
 
-        // 2. Collect unique token IDs (from currentBatchParticipants)
-        const uniqueTokenIds = Array.from(
-          new Set(
-            currentBatchParticipants.flatMap(p => p.contest_portfolios.map(cp => cp.token_id))
-          )
-        );
+        const participantIdsInBatch = currentBatchParticipants.map(p => p.id);
 
-        // 3. Fetch current prices for these tokens using MarketDataService
+        // Fetch all portfolio items for the participants in this batch
+        const portfolioItemsForBatch = await prisma.contest_portfolio_items.findMany({
+          where: {
+            contest_participant_id: { in: participantIdsInBatch }
+          },
+          select: {
+            contest_participant_id: true,
+            token_id: true,
+            quantity: true
+          }
+        });
+
+        const uniqueTokenIds = Array.from(new Set(portfolioItemsForBatch.map(item => item.token_id)));
+
         let currentTokenPricesMap = new Map();
         if (uniqueTokenIds.length > 0) {
             try {
                  currentTokenPricesMap = await marketDataService.getCurrentPricesMap(uniqueTokenIds);
             } catch (priceError) {
                 logApi.error(`[${this.name}] Failed to get prices from MarketDataService: ${priceError.message}. Skipping batch.`);
-                skip += BATCH_SIZE; // Move to next batch on price error
+                skip += BATCH_SIZE;
                 continue; 
             }
         } else {
-             // If a participant has no tokens somehow, skip price fetch for this batch
-             logApi.debug(`[${this.name}] No unique token IDs found in current participant batch (Skip: ${skip}).`);
+             logApi.debug(`[${this.name}] No unique token IDs found in portfolio items for current participant batch (Skip: ${skip}).`);
         }
        
         totalParticipantsProcessed += currentBatchParticipants.length;
         const snapshotsToSave = [];
         const participantUpdatesForDB = [];
-        const participantDetailsForEvent = []; // Store details needed for events
+        const participantDetailsForEvent = [];
         const now = new Date();
         const affectedContestIdsForEvents = new Set();
 
-        // 4. Calculate current portfolio value and prepare updates
         for (const participant of currentBatchParticipants) {
           let calculatedPortfolioValue = new Decimal(0);
-          if (participant.contest_portfolios && participant.contest_portfolios.length > 0) {
-            for (const portfolioItem of participant.contest_portfolios) {
+          const participantPortfolioItems = portfolioItemsForBatch.filter(
+            item => item.contest_participant_id === participant.id
+          );
+
+          if (participantPortfolioItems.length > 0) {
+            for (const portfolioItem of participantPortfolioItems) {
               const currentPrice = currentTokenPricesMap.get(portfolioItem.token_id);
               const quantity = portfolioItem.quantity ? new Decimal(portfolioItem.quantity) : new Decimal(0);
               if (currentPrice && quantity.greaterThan(0) && currentPrice.greaterThanOrEqualTo(0)) { 
@@ -126,6 +126,7 @@ class PortfolioSnapshotService extends BaseService {
               }
             }
           }
+          
           if (calculatedPortfolioValue.greaterThan(0)) {
             snapshotsToSave.push({
               contest_participant_id: participant.id,
@@ -137,7 +138,6 @@ class PortfolioSnapshotService extends BaseService {
             id: participant.id,
             portfolio_value: calculatedPortfolioValue
           });
-          // Store details for event emission AFTER DB update
           participantDetailsForEvent.push({
               id: participant.id,
               contest_id: participant.contest_id,
@@ -148,7 +148,6 @@ class PortfolioSnapshotService extends BaseService {
           affectedContestIdsForEvents.add(participant.contest_id);
         }
 
-        // 5. Save batch of snapshots
         if (snapshotsToSave.length > 0) {
           const result = await prisma.contest_portfolio_history.createMany({
             data: snapshotsToSave,
@@ -157,7 +156,6 @@ class PortfolioSnapshotService extends BaseService {
           totalSnapshotsSaved += result.count;
         }
 
-        // 6. Batch update contest_participants.portfolio_value using prisma.$transaction
         if (participantUpdatesForDB.length > 0) {
           try {
             await prisma.$transaction(
@@ -170,7 +168,6 @@ class PortfolioSnapshotService extends BaseService {
             );
             logApi.info(`[${this.name}] Batch updated portfolio_value for ${participantUpdatesForDB.length} participants.`);
 
-            // --- Emit events AFTER successful DB update ---
             for (const details of participantDetailsForEvent) {
                 const initialBalance = details.initial_balance ?? new Decimal(0);
                 let perfPercentage = new Decimal(0);
@@ -178,7 +175,6 @@ class PortfolioSnapshotService extends BaseService {
                     perfPercentage = details.new_portfolio_value.sub(initialBalance).div(initialBalance).mul(100);
                 }
 
-                // Calculate fresh rank for this participant
                 const newRank = await prisma.contest_participants.count({
                     where: {
                         contest_id: details.contest_id,
@@ -190,7 +186,7 @@ class PortfolioSnapshotService extends BaseService {
                     contestId: details.contest_id,
                     walletAddress: details.wallet_address,
                     participantData: {
-                        rank: newRank, // Freshly calculated rank
+                        rank: newRank,
                         portfolioValue: details.new_portfolio_value.toFixed(8),
                         performancePercentage: perfPercentage.toFixed(2)
                     }
@@ -198,12 +194,11 @@ class PortfolioSnapshotService extends BaseService {
             }
 
             for (const contestId of affectedContestIdsForEvents) {
-                // Re-fetch top N for leaderboard broadcast - rank will be based on latest values
                 const latestLeaderboardData = await prisma.contest_participants.findMany({
                     where: { contest_id: contestId, status: 'active' },
                     include: { users: { select: { wallet_address: true, nickname: true, profile_image_url: true, role: true, is_ai_agent: true } } },
                     orderBy: { portfolio_value: 'desc' },
-                    take: 100, // Or a configurable limit
+                    take: 100,
                 });
 
                 const formattedLeaderboard = latestLeaderboardData.map((lp, index) => {
@@ -220,7 +215,7 @@ class PortfolioSnapshotService extends BaseService {
                         profilePictureUrl: lp.users.profile_image_url,
                         portfolioValue: portfolioValue.toFixed(8),
                         performancePercentage: performancePercentage.toFixed(2),
-                        isCurrentUser: false, // Client can determine this
+                        isCurrentUser: false, 
                         isAiAgent: lp.users.is_ai_agent || false,
                         prizeAwarded: lp.prize_amount ? lp.prize_amount.toFixed(8) : null
                     };
@@ -235,8 +230,6 @@ class PortfolioSnapshotService extends BaseService {
 
           } catch (batchUpdateError) {
             logApi.error(`[${this.name}] Error batch updating portfolio_value for participants via transaction:`, batchUpdateError);
-            // Consider how to handle partial failures if not all updates in transaction succeed, though $transaction should roll back.
-            // For now, we log the error. The service will retry the whole batch on the next cycle if a transient error occurred.
           }
         }
 

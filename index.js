@@ -325,7 +325,7 @@ app.use("/api/blinks", maintenanceCheck, blinksRoutes);
 // Virtual Agent routes (inaccessible when in maintenance mode)
 app.use("/api/virtual-agent", maintenanceCheck, virtualAgentRoutes);
 // Profile Image Generator routes (inaccessible when in maintenance mode)
-app.use("/api", maintenanceCheck, profileImageGeneratorRoutes);
+app.use("/api/profile-image", maintenanceCheck, profileImageGeneratorRoutes);
 // Legacy AI chat routes (inaccessible when in maintenance mode)
 app.use("/api/ai", maintenanceCheck, legacyAiRoutes);
 // Solana RPC proxy route - available even during maintenance mode
@@ -698,7 +698,7 @@ async function initializeServer() {
                 // TODO: Check to see if this is causing our problems with the discord notification service
                 // Only instantiate Discord notification service if enabled in config
                 if (config.services.discord_notification_service) {
-                    const discordNotificationService = (await import('./services/discordNotificationService.js')).default;
+                    const discordNotificationService = (await import('./services/discord/discordNotificationService.js')).default;
                     await discordNotificationService.sendServerStartupNotification();
                     logApi.info('✅ Sent server startup notification to Discord');
                 } else {

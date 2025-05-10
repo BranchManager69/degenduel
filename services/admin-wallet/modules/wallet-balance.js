@@ -135,9 +135,10 @@ export async function updateWalletBalance(wallet, solanaEngine, config, walletSt
  * @returns {Object} - Results of the bulk balance update operation
  */
 export async function updateAllWalletBalances(solanaEngine, config, walletStats) {
-    // Function body remains largely the same as it delegates to updateWalletBalance
-    // No direct RPC calls here that need changing.
     const startTime = Date.now();
+    const BATCH_SIZE = 5; // Process 5 wallets per batch
+    const DELAY_BETWEEN_BATCHES_MS = 2000; // 2 seconds delay
+
     try {
         const managedWallets = await prisma.managed_wallets.findMany({
             where: {
@@ -151,31 +152,43 @@ export async function updateAllWalletBalances(solanaEngine, config, walletStats)
             failed: 0,
             updates: []
         };
-        
-        for (const wallet of managedWallets) {
-             if (!wallet.public_key) {
-                logApi.warn(`Skipping wallet ID ${wallet.id} due to missing public_key.`);
-                results.failed++; // Count as failed if no key
-                continue;
-            }
-            try {
-                const updateResult = await updateWalletBalance(wallet, solanaEngine, config, walletStats);
-                
-                if (updateResult.success) {
-                    results.updated++;
-                    if (Math.abs(updateResult.difference) > 0.001) {
-                        results.updates.push(updateResult);
-                    }
-                } else {
-                    results.failed++;
+
+        logApi.info(`[AdminWalletBalance] Starting balance update for ${managedWallets.length} admin wallets in batches of ${BATCH_SIZE}.`);
+
+        for (let i = 0; i < managedWallets.length; i += BATCH_SIZE) {
+            const batch = managedWallets.slice(i, i + BATCH_SIZE);
+            logApi.info(`[AdminWalletBalance] Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(managedWallets.length / BATCH_SIZE)} (${batch.length} wallets)`);
+
+            for (const wallet of batch) {
+                 if (!wallet.public_key) {
+                    logApi.warn(`[AdminWalletBalance] Skipping wallet ID ${wallet.id} due to missing public_key.`);
+                    results.failed++; // Count as failed if no key
+                    continue;
                 }
-            } catch (error) {
-                results.failed++;
-                logApi.error('Error updating individual admin wallet balance', {
-                    wallet_id: wallet.id,
-                    public_key: wallet.public_key,
-                    error: error.message
-                });
+                try {
+                    const updateResult = await updateWalletBalance(wallet, solanaEngine, config, walletStats);
+                    
+                    if (updateResult.success) {
+                        results.updated++;
+                        if (Math.abs(updateResult.difference) > 0.001) {
+                            results.updates.push(updateResult);
+                        }
+                    } else {
+                        results.failed++;
+                    }
+                } catch (error) {
+                    results.failed++;
+                    logApi.error('[AdminWalletBalance] Error updating individual admin wallet balance', {
+                        wallet_id: wallet.id,
+                        public_key: wallet.public_key,
+                        error: error.message
+                    });
+                }
+            }
+
+            if (i + BATCH_SIZE < managedWallets.length) {
+                logApi.info(`[AdminWalletBalance] Batch complete. Waiting ${DELAY_BETWEEN_BATCHES_MS}ms before next batch.`);
+                await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES_MS));
             }
         }
         
@@ -183,12 +196,13 @@ export async function updateAllWalletBalances(solanaEngine, config, walletStats)
             walletStats.performance.last_operation_time_ms = Date.now() - startTime;
         }
         
+        logApi.info(`[AdminWalletBalance] Finished balance update for all admin wallets. Updated: ${results.updated}, Failed: ${results.failed}.`);
         return {
             duration: Date.now() - startTime,
             ...results
         };
     } catch (error) {
-        logApi.error('Failed to update admin wallet balances', {
+        logApi.error('[AdminWalletBalance] Failed to update admin wallet balances', {
             error: error.message,
             stack: error.stack
         });

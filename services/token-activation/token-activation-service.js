@@ -7,12 +7,14 @@
  * @created 2025-05-12
  */
 
+import axios from 'axios';
 import { BaseService } from '../../utils/service-suite/base-service.js';
 import { SERVICE_NAMES } from '../../utils/service-suite/service-constants.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import { fancyColors, serviceColors } from '../../utils/colors.js';
 import prisma from '../../config/prisma.js';
 import { jupiterClient } from '../solana-engine/jupiter-client.js'; // To fetch prices/metrics
+import { jupiterConfig } from '../../config/external-api/jupiter-config.js'; // <-- IMPORT jupiterConfig
 import { logError, set, inc } from '../../utils/service-suite/safe-service.js';
 
 const DEFAULT_CHECK_INTERVAL_MS = 15 * 60 * 1000; // Every 15 minutes
@@ -23,6 +25,9 @@ const METRIC_STALE_THRESHOLD_HOURS = 6; // How old metrics can be before re-chec
 const CRITERIA_MIN_MARKET_CAP = 50000; // $50k
 const CRITERIA_MIN_VOLUME_24H = 10000; // $10k
 const CRITERIA_MAX_AGE_HOURS_FOR_NEW = 24 * 3; // 3 days for "new" token auto-activation
+
+const TOKEN_DETAILS_BATCH_SIZE = 10; // How many tokens to fetch details for in one sub-batch
+const DELAY_BETWEEN_TOKEN_DETAILS_BATCH_MS = 5000; // 5 seconds delay
 
 const formatLog = {
   tag: () => `${serviceColors.tokenActivationService || fancyColors.PURPLE}[TokenActivationSvc]${fancyColors.RESET}`,
@@ -276,144 +281,143 @@ class TokenActivationService extends BaseService {
       logApi.debug(`${formatLog.tag()} No addresses provided to _refreshMetricsForTokens.`);
       return;
     }
-    logApi.info(`${formatLog.tag()} Refreshing metrics for ${addresses.length} tokens...`);
+    logApi.info(`${formatLog.tag()} Refreshing metrics for ${addresses.length} tokens (in sub-batches of ${TOKEN_DETAILS_BATCH_SIZE})...`);
 
     try {
-      // Step 1: Get current prices from Jupiter Price API (via jupiterClient)
-      const priceDataMap = await jupiterClient.getPrices(addresses); // Uses /price/v2
+      const priceDataMap = await jupiterClient.getPrices(addresses);
 
       if (!priceDataMap || Object.keys(priceDataMap).length === 0) {
         logApi.warn(`${formatLog.tag()} No price data returned from jupiterClient for ${addresses.length} addresses during metric refresh.`);
-        // Optionally, update token_prices to nullify if needed, or just skip
         return;
       }
-      // console.log("DEBUG _refreshMetricsForTokens priceDataMap:", JSON.stringify(priceDataMap, null, 2)); // Your debug line
 
       const upsertPromises = [];
-      // For fetching additional details like volume, supply from Jupiter Token API (v1/token/{mint})
-      // We will do this one by one for now to manage rate limits and complexity.
-      // In a production system, a batching/queueing mechanism for these secondary calls would be better.
+      let processedCount = 0;
 
-      for (const address of addresses) {
-        const priceInfo = priceDataMap[address];
-        const tokenRecord = await prisma.tokens.findUnique({
-          where: { address },
-          select: { id: true, symbol: true, name: true, decimals: true, total_supply: true, coingeckoId: true }
-        });
+      for (let i = 0; i < addresses.length; i += TOKEN_DETAILS_BATCH_SIZE) {
+        const batchAddresses = addresses.slice(i, i + TOKEN_DETAILS_BATCH_SIZE);
+        logApi.info(`${formatLog.tag()} Processing token details sub-batch ${Math.floor(i / TOKEN_DETAILS_BATCH_SIZE) + 1}/${Math.ceil(addresses.length / TOKEN_DETAILS_BATCH_SIZE)} (${batchAddresses.length} tokens)`);
 
-        if (!tokenRecord) {
-          logApi.warn(`${formatLog.tag()} Token record not found in DB for address: ${address} during metric refresh.`);
-          continue;
-        }
-        let currentPrice = null;
-        if (priceInfo && priceInfo.price !== undefined && priceInfo.price !== null) {
-          currentPrice = parseFloat(priceInfo.price);
-          if (isNaN(currentPrice)) currentPrice = null; // Ensure it is a valid number
-        } else {
-          logApi.warn(`${formatLog.tag()} No valid price found from Jupiter Price API for ${address}. It will be set to null.`);
-          // Upsert with null price if no valid price info from Jupiter
-          upsertPromises.push(prisma.token_prices.upsert({
-            where: { token_id: tokenRecord.id },
-            update: { price: null, market_cap: null, volume_24h: null, liquidity: null, fdv: null, updated_at: new Date() },
-            create: { token_id: tokenRecord.id, price: null, market_cap: null, volume_24h: null, liquidity: null, fdv: null, updated_at: new Date() }
-          }));
-          continue; // Skip fetching further details if base price is missing
-        }
-        let marketCap = null;
-        let volume24h = null;
-        let liquidity = null; // Placeholder - requires DexScreener/Helius
-        let fdv = null;       // Placeholder - requires DexScreener/Helius or calculation
-        let tokenApiData = null;
-
-        // Step 2: Get Volume, Supply, etc. from Jupiter Token API (v1/token/{mint})
-        try {
-          // Construct the URL for the specific token endpoint
-          // Ensuring jupiterConfig and its properties are correctly accessed
-          const tokenApiUrl = `${jupiterConfig.endpoints.tokens.getTokenInfo}/${address}`.replace('{mint}', address); // More robust replace
-          
-          logApi.debug(`${formatLog.tag()} Fetching from Jupiter Token API: ${tokenApiUrl}`);
-          const tokenInfoResponse = await axios.get(tokenApiUrl, { 
-            headers: jupiterConfig.getHeaders ? jupiterConfig.getHeaders() : undefined, // Handle if getHeaders is not on config
-            timeout: 10000 
+        for (const address of batchAddresses) {
+          processedCount++;
+          const priceInfo = priceDataMap[address];
+          const tokenRecord = await prisma.tokens.findUnique({
+            where: { address },
+            select: { id: true, symbol: true, name: true, decimals: true, total_supply: true, coingeckoId: true }
           });
-          tokenApiData = tokenInfoResponse.data;
 
-          if (tokenApiData) {
-            // Volume - Jupiter Token API usually provides 'daily_volume' as USD volume
-            if (tokenApiData.daily_volume !== undefined && tokenApiData.daily_volume !== null) {
-              volume24h = parseFloat(tokenApiData.daily_volume);
-              if (isNaN(volume24h)) volume24h = null;
+          if (!tokenRecord) {
+            logApi.warn(`${formatLog.tag()} Token record not found in DB for address: ${address} during metric refresh.`);
+            continue;
+          }
+          let currentPrice = null;
+          if (priceInfo && priceInfo.price !== undefined && priceInfo.price !== null) {
+            currentPrice = parseFloat(priceInfo.price);
+            if (isNaN(currentPrice)) currentPrice = null;
+          } else {
+            logApi.warn(`${formatLog.tag()} No valid price found from Jupiter Price API for ${address}. It will be set to null.`);
+            upsertPromises.push(prisma.token_prices.upsert({
+              where: { token_id: tokenRecord.id },
+              update: { price: null, market_cap: null, volume_24h: null, liquidity: null, fdv: null, updated_at: new Date() },
+              create: { token_id: tokenRecord.id, price: null, market_cap: null, volume_24h: null, liquidity: null, fdv: null, updated_at: new Date() }
+            }));
+            continue; 
+          }
+          let marketCap = null;
+          let volume24h = null;
+          let liquidity = null; 
+          let fdv = null;       
+          let tokenApiData = null;
+
+          try {
+            if (typeof axios === 'undefined') {
+              logApi.error(`${formatLog.tag()} CRITICAL: axios is UNDEFINED right before trying to use it for address ${address}!`);
+            } else {
+              logApi.debug(`${formatLog.tag()} DEBUG: axios IS DEFINED. Type: ${typeof axios}. Has .get: ${typeof axios.get === 'function'}`);
             }
+            
+            const tokenApiUrl = jupiterConfig.endpoints.tokens.getToken(address);
+            logApi.debug(`${formatLog.tag()} Attempting to fetch from Jupiter Token API URL: '${tokenApiUrl}' for address: '${address}'`); 
 
-            // Market Cap - Attempt to get directly, else calculate
-            if (tokenApiData.market_cap_usd !== undefined && tokenApiData.market_cap_usd !== null) {
-                marketCap = parseFloat(tokenApiData.market_cap_usd);
-                if(isNaN(marketCap)) marketCap = null;
-            } else if (tokenApiData.marketCap) { // some APIs might use this camelCase
-                marketCap = parseFloat(tokenApiData.marketCap);
-                if(isNaN(marketCap)) marketCap = null;
-            } else if (currentPrice !== null) {
-              // Calculate MC if total_supply and decimals are available from our DB or tokenApiData
-              const supplySource = tokenApiData.supply || tokenRecord.total_supply; // Prefer API, fallback to DB
-              const decimalsSource = tokenApiData.decimals !== undefined ? tokenApiData.decimals : tokenRecord.decimals; // Prefer API
+            const tokenInfoResponse = await axios.get(tokenApiUrl, { 
+              headers: jupiterConfig.getHeaders ? jupiterConfig.getHeaders() : undefined,
+              timeout: 10000 
+            });
+            tokenApiData = tokenInfoResponse.data;
 
-              if (supplySource !== null && decimalsSource !== null) {
-                try {
-                  const supply = parseFloat(supplySource.toString()) / Math.pow(10, parseInt(decimalsSource.toString()));
-                  marketCap = currentPrice * supply;
-                  if (isNaN(marketCap)) marketCap = null;
-                } catch (mcCalcError) {
-                  logApi.warn(`${formatLog.tag()} Could not calculate market cap for ${address}: ${mcCalcError.message}`);
+            if (tokenApiData) {
+              if (tokenApiData.daily_volume !== undefined && tokenApiData.daily_volume !== null) {
+                volume24h = parseFloat(tokenApiData.daily_volume);
+                if (isNaN(volume24h)) volume24h = null;
+              }
+              if (tokenApiData.market_cap_usd !== undefined && tokenApiData.market_cap_usd !== null) {
+                  marketCap = parseFloat(tokenApiData.market_cap_usd);
+                  if(isNaN(marketCap)) marketCap = null;
+              } else if (tokenApiData.marketCap) {
+                  marketCap = parseFloat(tokenApiData.marketCap);
+                  if(isNaN(marketCap)) marketCap = null;
+              } else if (currentPrice !== null) {
+                const supplySource = tokenApiData.supply || tokenRecord.total_supply;
+                const decimalsSource = tokenApiData.decimals !== undefined ? tokenApiData.decimals : tokenRecord.decimals;
+                if (supplySource !== null && decimalsSource !== null) {
+                  try {
+                    const supply = parseFloat(supplySource.toString()) / Math.pow(10, parseInt(decimalsSource.toString()));
+                    marketCap = currentPrice * supply;
+                    if (isNaN(marketCap)) marketCap = null;
+                  } catch (mcCalcError) {
+                    logApi.warn(`${formatLog.tag()} Could not calculate market cap for ${address}: ${mcCalcError.message}`);
+                  }
                 }
               }
+              if ((tokenApiData.decimals !== undefined && tokenRecord.decimals !== tokenApiData.decimals) || 
+                  (tokenApiData.supply !== undefined && tokenRecord.total_supply?.toString() !== tokenApiData.supply?.toString())){
+                  await prisma.tokens.update({
+                      where: {id: tokenRecord.id},
+                      data: {
+                          decimals: tokenApiData.decimals !== undefined ? parseInt(tokenApiData.decimals) : tokenRecord.decimals,
+                          total_supply: tokenApiData.supply !== undefined ? parseFloat(tokenApiData.supply) / Math.pow(10, parseInt(tokenApiData.decimals || tokenRecord.decimals || 9)) : tokenRecord.total_supply,
+                          name: tokenRecord.name || tokenApiData.name, 
+                          symbol: tokenRecord.symbol || tokenApiData.symbol, 
+                          metadata_last_updated_at: new Date(), 
+                      }
+                  });
+              }
             }
-
-            // FDV - Placeholder, depends on max_supply vs total_supply or direct API field
-            // Liquidity - Placeholder, would typically come from DexScreener or specific pool APIs
-
-            // Update token record with decimals/supply if newly fetched and different
-            // This part can be expanded later if needed for full token hydration here
-            if ((tokenApiData.decimals !== undefined && tokenRecord.decimals !== tokenApiData.decimals) || 
-                (tokenApiData.supply !== undefined && tokenRecord.total_supply?.toString() !== tokenApiData.supply?.toString())){
-                await prisma.tokens.update({
-                    where: {id: tokenRecord.id},
-                    data: {
-                        decimals: tokenApiData.decimals !== undefined ? parseInt(tokenApiData.decimals) : tokenRecord.decimals,
-                        total_supply: tokenApiData.supply !== undefined ? parseFloat(tokenApiData.supply) / Math.pow(10, parseInt(tokenApiData.decimals || tokenRecord.decimals || 9)) : tokenRecord.total_supply,
-                        // raw_supply could also be stored if Jupiter returns it: BigInt(tokenApiData.supply)\n                        name: tokenRecord.name || tokenApiData.name, // Prefer existing name if API is blank\n                        symbol: tokenRecord.symbol || tokenApiData.symbol, // Prefer existing symbol\n                        metadata_last_updated_at: new Date(), // Mark that we touched it\n                    }
-                    }
-                });
+          } catch (tokenApiError) {
+            if (tokenApiError.message && tokenApiError.message.toLowerCase().includes('invalid url')) {
+              logError(logApi, this.name, `Failed to fetch from Jupiter Token API for ${address} due to INVALID URL. Constructed URL was: '${tokenApiUrl}'`, tokenApiError.response ? tokenApiError.response.status : 'N/A');
+            } else {
+              logError(logApi, this.name, `Failed to fetch from Jupiter Token API for ${address}: ${tokenApiError.message}`.substring(0, 200), tokenApiError.response ? tokenApiError.response.status : 'N/A');
             }
-
           }
-        } catch (tokenApiError) {
-          logError(logApi, this.name, `Failed to fetch from Jupiter Token API for ${address}: ${tokenApiError.message}`.substring(0, 200), tokenApiError.response ? tokenApiError.response.status : 'N/A');
-          // Continue with price-only update if Token API fails
+          const parseDecimal = (val) => (val !== undefined && val !== null && !isNaN(parseFloat(val))) ? parseFloat(val) : null;
+          upsertPromises.push(prisma.token_prices.upsert({
+            where: { token_id: tokenRecord.id },
+            update: {
+              price: parseDecimal(currentPrice),
+              market_cap: parseDecimal(marketCap),
+              volume_24h: parseDecimal(volume24h),
+              liquidity: parseDecimal(liquidity), 
+              fdv: parseDecimal(fdv),             
+              updated_at: new Date()
+            },
+            create: {
+              token_id: tokenRecord.id,
+              price: parseDecimal(currentPrice),
+              market_cap: parseDecimal(marketCap),
+              volume_24h: parseDecimal(volume24h),
+              liquidity: parseDecimal(liquidity), 
+              fdv: parseDecimal(fdv),             
+              updated_at: new Date()
+            }
+          }));
+        } // End inner for...of loop (batchAddresses)
+
+        if (i + TOKEN_DETAILS_BATCH_SIZE < addresses.length) {
+          logApi.info(`${formatLog.tag()} Token details sub-batch complete. Waiting ${DELAY_BETWEEN_TOKEN_DETAILS_BATCH_MS}ms...`);
+          await new Promise(r => setTimeout(r, DELAY_BETWEEN_TOKEN_DETAILS_BATCH_MS));
         }
-        const parseDecimal = (val) => (val !== undefined && val !== null && !isNaN(parseFloat(val))) ? parseFloat(val) : null;
-        upsertPromises.push(prisma.token_prices.upsert({
-          where: { token_id: tokenRecord.id },
-          update: {
-            price: parseDecimal(currentPrice),
-            market_cap: parseDecimal(marketCap),
-            volume_24h: parseDecimal(volume24h),
-            liquidity: parseDecimal(liquidity), // Placeholder
-            fdv: parseDecimal(fdv),             // Placeholder
-            updated_at: new Date()
-          },
-          create: {
-            token_id: tokenRecord.id,
-            price: parseDecimal(currentPrice),
-            market_cap: parseDecimal(marketCap),
-            volume_24h: parseDecimal(volume24h),
-            liquidity: parseDecimal(liquidity), // Placeholder
-            fdv: parseDecimal(fdv),             // Placeholder
-            updated_at: new Date()
-          }
-        }));
-        // Small delay between individual token API calls if processing many
-        if (addresses.length > 1) await new Promise(r => setTimeout(r, 100)); // 100ms delay, adjust as needed
-      }
+      } // End outer for loop (addresses in batches)
 
       if (upsertPromises.length > 0) {
         logApi.info(`${formatLog.tag()} Attempting to batch upsert metrics for ${upsertPromises.length} tokens into token_prices.`);
@@ -424,7 +428,7 @@ class TokenActivationService extends BaseService {
       }
     } catch (error) {
       logError(logApi, this.name, `Error in _refreshMetricsForTokens main try block: ${error.message}`, { count: addresses.length, firstAddress: addresses[0] });
-      throw error; // Re-throw to be caught by updateTokenStatuses's try/catch for CB handling
+      throw error; 
     }
   }
   

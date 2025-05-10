@@ -76,6 +76,8 @@ import vanityWalletService from '../../services/vanity-wallet/index.js';
 //   (6) Application Layer (New)
 import aiService from '../../services/ai-service/index.js';
 
+import { jupiterClient } from '../../services/solana-engine/jupiter-client.js';
+
 /**
  * ServiceInitializer class
  * 
@@ -197,7 +199,17 @@ class ServiceInitializer {
             logApi.info(`${fancyColors.ORANGE}┏━━━━━━━━━━━━━━━━━━━━━━━ Data Layer (2/4) ━━━━━━━━━━━━━━━━━━━━━━━┓${fancyColors.RESET}`);
         }
         
-        // tokenSyncService has been permanently removed
+        // Register JupiterClient Service first as other data services might depend on it
+        // We need a config flag for jupiter_client itself in config.services if we want to control its registration
+        // For now, assuming if other data services are on, jupiter_client should be registered.
+        // Ensure SERVICE_NAMES.JUPITER_CLIENT (='jupiter_client') is defined in service-constants
+        // and has metadata if it needs specific layer/criticality beyond default BaseService.
+        if (config.services.jupiter_client !== false) {
+            serviceManager.register(jupiterClient);
+            logApi.info(`${fancyColors.GREEN}Registered JupiterClient Service${fancyColors.RESET}`);
+        } else {
+            logApi.info(`${fancyColors.YELLOW}Skipping registration of jupiter_client - explicitly disabled in config${fancyColors.RESET}`);
+        }
         
         // Register market data service only if market_data service is enabled in config + what's in the service profile
         if (config.services.market_data) {

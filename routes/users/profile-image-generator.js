@@ -1,4 +1,5 @@
 // routes/users/profile-image-generator.js
+
 // Route handler for AI-generated user profile images
 
 import express from 'express';
@@ -13,7 +14,7 @@ const router = express.Router();
 
 /**
  * @swagger
- * /api/users/{walletAddress}/ai-profile-image:
+ * /api/profile-image/generate/{walletAddress}:
  *   post:
  *     summary: Generate an AI profile image for a user
  *     description: Generates a unique AI profile image for the user based on the specified style
@@ -62,7 +63,7 @@ const router = express.Router();
  *       500:
  *         description: Server error during image generation
  */
-router.post('/users/:walletAddress/ai-profile-image', requireAuth, async (req, res) => {
+router.post('/generate/:walletAddress', requireAuth, async (req, res) => {
   try {
     const { walletAddress } = req.params;
     const { 
@@ -189,7 +190,7 @@ router.post('/users/:walletAddress/ai-profile-image', requireAuth, async (req, r
 
 /**
  * @swagger
- * /api/profile-image-styles:
+ * /api/profile-image/styles:
  *   get:
  *     summary: Get available profile image styles
  *     description: Returns list of available styles for AI-generated profile images
@@ -216,7 +217,7 @@ router.post('/users/:walletAddress/ai-profile-image', requireAuth, async (req, r
  *                       description:
  *                         type: string
  */
-router.get('/profile-image-styles', async (req, res) => {
+router.get('/styles', async (req, res) => {
   try {
     const styles = AIApi.getProfileImageStyles();
     
@@ -238,7 +239,7 @@ router.get('/profile-image-styles', async (req, res) => {
 /**
  * Generate a test profile image for development purposes
  */
-router.post('/profile-image-test', async (req, res) => {
+router.post('/test', async (req, res) => {
   try {
     const { prompt, style = 'default' } = req.body;
     

@@ -16,7 +16,14 @@ export default class TokenRankAnalyzer {
    * @returns {Object} Token distribution statistics
    */
   analyzeTokenDistribution(tokens) {
-    // Initialize tier counters
+    // Guard clause for empty or invalid input
+    if (!tokens || !Array.isArray(tokens) || tokens.length === 0) {
+      return {
+        totalTokens: 0, activeInContests: 0, withPriceData: 0, withRankData: 0, withoutRefreshData: 0,
+        avgRefreshInterval: 0, totalRefreshIntervals: 0, tiers: {}, refreshDistribution: {}
+      };
+    }
+
     const tiers = {
       tier1: { count: 0, minRefresh: Infinity, maxRefresh: 0, avgRefresh: 0, totalRefresh: 0 },
       tier2: { count: 0, minRefresh: Infinity, maxRefresh: 0, avgRefresh: 0, totalRefresh: 0 },
@@ -26,7 +33,6 @@ export default class TokenRankAnalyzer {
       other: { count: 0, minRefresh: Infinity, maxRefresh: 0, avgRefresh: 0, totalRefresh: 0 }
     };
     
-    // Initialize counters for different categories
     const stats = {
       totalTokens: tokens.length,
       activeInContests: 0,
@@ -35,9 +41,7 @@ export default class TokenRankAnalyzer {
       withoutRefreshData: 0,
       avgRefreshInterval: 0,
       totalRefreshIntervals: 0,
-      // Add token refresh distribution by tier
       tiers: tiers,
-      // Distribution by refresh interval (buckets)
       refreshDistribution: {
         '15s_or_less': 0,
         '16s_to_30s': 0,
@@ -47,53 +51,48 @@ export default class TokenRankAnalyzer {
       }
     };
     
-    // Analyze each token
     for (const token of tokens) {
-      // Check contest activity
-      if (token.contest_portfolios && token.contest_portfolios.length > 0) {
+      if (!token) continue; // Skip if token object itself is null/undefined in the array
+
+      if (token.contest_portfolios && Array.isArray(token.contest_portfolios) && token.contest_portfolios.length > 0) {
         stats.activeInContests++;
       }
       
-      // Check price data
-      if (token.token_prices && token.token_prices.price) {
+      if (token.token_prices && token.token_prices.price !== null && token.token_prices.price !== undefined) {
         stats.withPriceData++;
       }
       
-      // Check rank data
-      const hasRankData = token.rank_history && token.rank_history.length > 0;
+      const hasRankData = token.rank_history && Array.isArray(token.rank_history) && token.rank_history.length > 0 && token.rank_history[0].rank !== null && token.rank_history[0].rank !== undefined;
       if (hasRankData) {
         stats.withRankData++;
       }
       
-      // Determine token tier based on rank
-      let tier;
+      let tierName = 'other'; // Default to 'other'
       if (hasRankData) {
         const rank = token.rank_history[0].rank;
-        if (rank <= 50) tier = 'tier1';
-        else if (rank <= 200) tier = 'tier2';
-        else if (rank <= 500) tier = 'tier3';
-        else if (rank <= 1000) tier = 'tier4';
-        else if (rank <= 3000) tier = 'tier5';
-        else tier = 'other';
-      } else {
-        tier = 'other';
+        if (rank <= 50) tierName = 'tier1';
+        else if (rank <= 200) tierName = 'tier2';
+        else if (rank <= 500) tierName = 'tier3';
+        else if (rank <= 1000) tierName = 'tier4';
+        else if (rank <= 3000) tierName = 'tier5';
+        // else it remains 'other'
       }
       
-      // Increment tier counter
-      tiers[tier].count++;
+      // Ensure the tier exists in the tiers object before trying to increment
+      if (stats.tiers[tierName]) {
+        stats.tiers[tierName].count++;
+      } else { // Should not happen if tiers object is comprehensive
+        stats.tiers.other.count++;
+      }
       
-      // Check refresh interval data
+      const currentTierStats = stats.tiers[tierName] || stats.tiers.other; // Fallback to other if tierName is somehow invalid
       const refreshInterval = token.refresh_interval_seconds;
-      if (refreshInterval) {
-        // Update tier stats
-        tiers[tier].minRefresh = Math.min(tiers[tier].minRefresh, refreshInterval);
-        tiers[tier].maxRefresh = Math.max(tiers[tier].maxRefresh, refreshInterval);
-        tiers[tier].totalRefresh += refreshInterval;
-        
-        // Update overall stats
+      if (refreshInterval !== null && refreshInterval !== undefined && !isNaN(refreshInterval)) {
+        currentTierStats.minRefresh = Math.min(currentTierStats.minRefresh, refreshInterval);
+        currentTierStats.maxRefresh = Math.max(currentTierStats.maxRefresh, refreshInterval);
+        currentTierStats.totalRefresh += refreshInterval;
         stats.totalRefreshIntervals += refreshInterval;
         
-        // Increment refresh distribution counters
         if (refreshInterval <= 15) stats.refreshDistribution['15s_or_less']++;
         else if (refreshInterval <= 30) stats.refreshDistribution['16s_to_30s']++;
         else if (refreshInterval <= 60) stats.refreshDistribution['31s_to_60s']++;
@@ -104,22 +103,23 @@ export default class TokenRankAnalyzer {
       }
     }
     
-    // Calculate averages
-    if (tokens.length > 0) {
-      stats.avgRefreshInterval = stats.totalRefreshIntervals / tokens.length;
-      
-      // Calculate tier averages
-      for (const tier in tiers) {
-        if (tiers[tier].count > 0) {
-          tiers[tier].avgRefresh = tiers[tier].totalRefresh / tiers[tier].count;
-        }
-        // Set min to 0 if no tokens in tier
-        if (tiers[tier].minRefresh === Infinity) {
-          tiers[tier].minRefresh = 0;
-        }
-      }
+    if (stats.totalTokens > 0 && stats.totalRefreshIntervals > 0) { // Avoid division by zero if no tokens had refresh data
+      stats.avgRefreshInterval = stats.totalRefreshIntervals / (stats.totalTokens - stats.withoutRefreshData);
+      if (isNaN(stats.avgRefreshInterval) || !isFinite(stats.avgRefreshInterval)) stats.avgRefreshInterval = 0; // Sanitize NaN/Infinity
+    } else {
+      stats.avgRefreshInterval = 0;
     }
     
+    for (const tierKey in stats.tiers) {
+      const tier = stats.tiers[tierKey];
+      if (tier.count > 0 && tier.totalRefresh > 0) {
+        tier.avgRefresh = tier.totalRefresh / tier.count;
+        if (isNaN(tier.avgRefresh) || !isFinite(tier.avgRefresh)) tier.avgRefresh = 0;
+      }
+      if (tier.minRefresh === Infinity) {
+        tier.minRefresh = 0;
+      }
+    }
     return stats;
   }
 

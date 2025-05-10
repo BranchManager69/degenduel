@@ -21,7 +21,7 @@
 
 // Service Suite
 import { BaseService } from '../utils/service-suite/base-service.js';
-import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
+import { SERVICE_NAMES, SERVICE_LAYERS, DEFAULT_CIRCUIT_BREAKER_CONFIG, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 // Prisma
 import { prisma } from '../config/prisma.js';
 // Solana Engine
@@ -93,12 +93,21 @@ let PRIORITY_TIERS = {
  */
 class TokenRefreshScheduler extends BaseService {
   constructor() {
+    // Use service constants for name and try to get metadata for description, layer, criticalLevel
+    const serviceName = SERVICE_NAMES.TOKEN_REFRESH_SCHEDULER;
+    const metadata = getServiceMetadata(serviceName) || {};
     super({
-      name: 'TokenRefreshScheduler',
-      description: 'Advanced token refresh scheduling system',
-      layer: 'DATA_PROCESSING',
-      criticalLevel: 'medium',
-      checkIntervalMs: 10000 // Health check every 10 seconds
+      name: serviceName,
+      description: metadata.description || 'Advanced token refresh scheduling system',
+      layer: metadata.layer || SERVICE_LAYERS.DATA, // Default to DATA layer if not in metadata
+      criticalLevel: metadata.criticalLevel || 'medium',
+      checkIntervalMs: 10000, // Health check every 10 seconds
+      circuitBreaker: { // ADDED/CORRECTED circuit breaker config
+        ...(DEFAULT_CIRCUIT_BREAKER_CONFIG), // Start with defaults
+        failureThreshold: 7, // Custom override example
+        resetTimeoutMs: 45000, // Custom override example
+        description: metadata.description || 'Manages token refresh scheduling'
+      }
     });
 
     // Configuration (will be loaded from db/env)
@@ -281,64 +290,51 @@ class TokenRefreshScheduler extends BaseService {
    * Load active tokens from database and initialize priority queue
    */
   async loadActiveTokens() {
+    logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} STEP 1: Attempting to load active tokens from DB...`);
+    let tokens = [];
     try {
-      // Get active tokens from database with their refresh settings
-      const tokens = await prisma.tokens.findMany({
-        where: {
-          is_active: true
-        },
+      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} STEP 2: Calling prisma.tokens.findMany (with MINIMAL select)...`);
+      tokens = await prisma.tokens.findMany({
+        where: { is_active: true },
+        take: 100,
         select: {
           id: true,
           address: true,
           symbol: true,
-          refresh_interval_seconds: true,
-          priority_score: true,
-          last_refresh_attempt: true,
-          last_refresh_success: true,
-          last_price_change: true,
-          token_prices: {
-            select: {
-              price: true,
-              updated_at: true,
-              volume_24h: true,
-              liquidity: true
-            }
-          },
-          // Select contest-related fields to determine activity
-          contest_portfolios: {
-            take: 1,
-            select: { id: true }
-          },
-          // Get latest rank from token_rank_history
-          rank_history: {
-            orderBy: {
-              timestamp: 'desc'
-            },
-            take: 1,
-            select: {
-              rank: true,
-              timestamp: true
-            }
-          }
         }
       });
-
+      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} STEP 3: Found ${tokens ? tokens.length : 'null object'} tokens marked is_active: true (after take: 100, minimal select).`);
       if (!tokens || tokens.length === 0) {
-        logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} No active tokens found in DB to load into priority queue.`);
+        logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} No active tokens in DB. Clearing queues by re-initializing.`);
         this.activeTokens.clear();
-        this.priorityQueue.clear(); // Assuming PriorityQueue has a clear method
+        this.priorityQueue = new PriorityQueue(this.config);
         this.prioritizationCache.clear();
-        return 0; // Return 0 if no active tokens
+        return 0;
       }
-
+      if (!this.priorityQueue) {
+        logApi.warn("[TokenRefreshSched] PriorityQueue was null in loadActiveTokens! Re-initializing.");
+        this.priorityQueue = new PriorityQueue(this.config);
+      } else {
+        this.priorityQueue = new PriorityQueue(this.config);
+        logApi.debug("[TokenRefreshSched] Cleared existing PriorityQueue by re-initializing before repopulating.");
+      }
+      if (!this.rankAnalyzer) {
+        logApi.warn("[TokenRefreshSched] TokenRankAnalyzer was null in loadActiveTokens! Re-initializing.");
+        this.rankAnalyzer = new TokenRankAnalyzer(this.config);
+      }
       this.activeTokens.clear();
-      this.priorityQueue.clear(); // Clear before repopulating
       this.prioritizationCache.clear();
       
-      for (const token of tokens) {
+      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} STEP 4: Processing ${tokens.length} active tokens for priority queue...`);
+      for (const [index, token] of tokens.entries()) {
+        if (!token || !token.id) {
+          logApi.warn(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Invalid token at index ${index}, skipping.`);
+          continue;
+        }
+        logApi.debug(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} LOOP START: Processing token ${index + 1}/${tokens.length}: ${token.symbol || token.address} (minimal data loaded)`);
         this.activeTokens.add(token.id);
-        const priorityData = this.calculateTokenPriority(token); // This now needs to be more robust
-        if (priorityData) { // Ensure priorityData is not null/undefined
+        const priorityData = this.calculateTokenPriority(token);
+        if (priorityData) {
           this.prioritizationCache.set(token.id, priorityData);
           this.priorityQueue.enqueue({
             id: token.id,
@@ -348,19 +344,24 @@ class TokenRefreshScheduler extends BaseService {
             nextRefreshTime: this.calculateNextRefreshTime(token, priorityData),
             interval: priorityData.refreshInterval
           });
+          logApi.debug(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} LOOP END: Enqueued ${token.symbol || token.address} with priority ${priorityData.score}`);
         } else {
-          logApi.warn(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Could not calculate priority for token ID ${token.id} (${token.symbol}), skipping enqueue.`);
+          logApi.warn(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} LOOP END: Could not calculate priority for token ID ${token.id} (${token.symbol || token.address}) with minimal data, skipping enqueue.`);
         }
       }
-      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Loaded ${this.priorityQueue.size()} active tokens into priority queue.`);
-      const tokenStats = this.rankAnalyzer.analyzeTokenDistribution(tokens);
-      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Token distribution analysis:`, tokenStats);
-      return this.activeTokens.size; // Return current count of active tokens processed
+      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} STEP 5: Loaded ${this.priorityQueue.size()} active tokens into priority queue.`);
+      if (tokens.length > 0 && this.rankAnalyzer) {
+        logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} STEP 6: Analyzing token distribution (with minimal data)...`);
+        const tokenStats = this.rankAnalyzer.analyzeTokenDistribution(tokens);
+        logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} STEP 7: Token distribution analysis complete:`, tokenStats);
+      } else if (!this.rankAnalyzer) {
+        logApi.warn("[TokenRefreshSched] RankAnalyzer not available for token distribution analysis.");
+      }
+      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} STEP 8: loadActiveTokens completed successfully (with minimal select).`);
+      return this.activeTokens.size;
     } catch (error) {
-      logApi.error(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Error loading active tokens:`, error);
-      // Do not re-throw here to allow scheduler to potentially recover or wait for data, but log it.
-      // Or, if this is critical for initialization, it should re-throw and be caught by initialize().
-      // For now, let initialize catch it if it bubbles up.
+      logApi.error(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} CRITICAL ERROR in loadActiveTokens:`, error);
+      logApi.error("[TokenRefreshSched] Error Stack:", error.stack); // Log stack trace
       throw error;
     }
   }
@@ -371,66 +372,77 @@ class TokenRefreshScheduler extends BaseService {
    * @returns {Object} Priority data including score and refresh interval
    */
   calculateTokenPriority(token) {
-    if (!token) return null; // Guard clause
-    let priorityScore = token.priority_score || 0;
-    let latestRank = token.rank_history && token.rank_history.length > 0 ? token.rank_history[0].rank : undefined;
-    let baseTier = null;
-    const tierNames = Object.keys(PRIORITY_TIERS);
-    const sortedTiers = [...tierNames].sort((a, b) => PRIORITY_TIERS[b].rank_threshold - PRIORITY_TIERS[a].rank_threshold);
-    
-    if (latestRank === undefined) {
-      baseTier = PRIORITY_TIERS[sortedTiers[0]] || PRIORITY_TIERS.MINIMAL; // Fallback to MINIMAL if sortedTiers[0] is somehow undefined
-    } else {
-      for (const tierName of sortedTiers) {
-        if (PRIORITY_TIERS[tierName] && latestRank <= PRIORITY_TIERS[tierName].rank_threshold) {
-          baseTier = PRIORITY_TIERS[tierName];
-        } else if (PRIORITY_TIERS[tierName]) { // Current rank is greater than this tier's threshold, so it must be in a lower (or this) tier
-          break;
-        } else { // Should not happen if PRIORITY_TIERS is correctly populated
-          logApi.warn(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Missing tier definition for: ${tierName} in PRIORITY_TIERS`);
+    if (!token || !token.id) { // Check for token and token.id early
+        logApi.warn("[TokenRefreshSched] calculateTokenPriority called with invalid token object");
+        return null;
+    }
+    try { // Add a try-catch within calculateTokenPriority for more granular error reporting
+        let priorityScore = token.priority_score || 0;
+        let latestRank = token.rank_history && token.rank_history.length > 0 && token.rank_history[0] ? token.rank_history[0].rank : undefined;
+
+        let baseTier = null;
+        const tierNames = Object.keys(PRIORITY_TIERS);
+        const sortedTiers = [...tierNames].sort((a, b) => (PRIORITY_TIERS[b]?.rank_threshold || 0) - (PRIORITY_TIERS[a]?.rank_threshold || 0));
+        
+        if (latestRank === undefined || latestRank === null) {
+            baseTier = PRIORITY_TIERS[sortedTiers[0]] || PRIORITY_TIERS.MINIMAL;
+        } else {
+            for (const tierName of sortedTiers) {
+                const tier = PRIORITY_TIERS[tierName];
+                if (tier && latestRank <= tier.rank_threshold) {
+                    baseTier = tier;
+                } else if (tier) {
+                    break;
+                } else {
+                    logApi.warn("[TokenRefreshSched] Missing tier definition for: " + tierName + " in PRIORITY_TIERS");
+                }
+            }
+            if (!baseTier) baseTier = PRIORITY_TIERS[sortedTiers[0]] || PRIORITY_TIERS.MINIMAL;
         }
-      }
-      if (!baseTier) baseTier = PRIORITY_TIERS[sortedTiers[0]] || PRIORITY_TIERS.MINIMAL; // Fallback
-    }
-    
-    if (!baseTier || !baseTier.score === undefined) { // Ensure baseTier is valid and has a score
-      logApi.warn(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Could not determine base tier for token ${token.id} (${token.symbol}). Using default priority.`);
-      baseTier = { name: 'DEFAULT_FALLBACK', score: 50, interval: 300, volatility_factor: 1.0 };
-    }
-    if (token.contest_portfolios && token.contest_portfolios.length > 0) {
-      const highTierName = tierNames.find(name => PRIORITY_TIERS[name].score >= 500) || 'HIGH'; // Find a high-ish tier
-      const highTier = PRIORITY_TIERS[highTierName] || baseTier; // Fallback to current baseTier if HIGH not found
-      if (baseTier.score < highTier.score) baseTier = highTier;
-      priorityScore += 300;
-    }
-    const tokenPriceData = token.token_prices; // This is an object, not an array
-    if (tokenPriceData && tokenPriceData.volume_24h !== null && tokenPriceData.volume_24h !== undefined) {
-      try {
-        const volume = parseFloat(tokenPriceData.volume_24h.toString());
-        if (!isNaN(volume)) {
-          if (volume > 1000000) priorityScore += 200;
-          else if (volume > 100000) priorityScore += 100;
-          else if (volume > 10000) priorityScore += 50;
+        
+        if (!baseTier || baseTier.score === undefined) {
+            logApi.warn(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Could not determine valid base tier for token ${token.id} (${token.symbol || token.address}). Using default priority.`);
+            baseTier = { name: 'DEFAULT_FALLBACK', score: 10, interval: 600, volatility_factor: 1.0, rank_threshold: 999999 }; // Ensure all fields for fallback
         }
-      } catch (e) { logApi.warn('Error parsing volume for priority calc', e); }
+        if (token.contest_portfolios && Array.isArray(token.contest_portfolios) && token.contest_portfolios.length > 0) {
+            const highTierName = tierNames.find(name => PRIORITY_TIERS[name]?.score >= 500) || 'HIGH';
+            const highTier = PRIORITY_TIERS[highTierName] || baseTier;
+            if (baseTier.score < highTier.score) baseTier = { ...highTier }; // Copy to avoid modifying original PRIORITY_TIERS
+            priorityScore += 300;
+        }
+        const tokenPriceData = token.token_prices;
+        if (tokenPriceData && tokenPriceData.volume_24h !== null && tokenPriceData.volume_24h !== undefined) {
+            try {
+                const volume = parseFloat(tokenPriceData.volume_24h.toString());
+                if (!isNaN(volume)) {
+                    if (volume > 1000000) priorityScore += 200;
+                    else if (volume > 100000) priorityScore += 100;
+                    else if (volume > 10000) priorityScore += 50;
+                }
+            } catch (e) { logApi.warn("[TokenRefreshSched] Error parsing volume for priority calc for token " + token.id + ": " + e.message); }
+        }
+        const volatilityFactor = this.calculateVolatilityFactor(token);
+        const baseInterval = token.refresh_interval_seconds || baseTier.interval || DEFAULT_MIN_INTERVAL_SECONDS;
+        let adjustedInterval = Math.max(
+            this.config.minIntervalSeconds || 15, // Ensure config value or default
+            Math.floor(baseInterval / (volatilityFactor * (baseTier.volatility_factor || 1.0)))
+        );
+        if (this.config.dynamicIntervalsEnabled) {
+            adjustedInterval = Math.min(adjustedInterval, baseTier.interval || (DEFAULT_MIN_INTERVAL_SECONDS * 20)); // Cap with a fallback
+        } else {
+            adjustedInterval = baseInterval;
+        }
+
+        return {
+            score: priorityScore + (baseTier.score || 0),
+            baseTier: baseTier.name || 'UNKNOWN',
+            refreshInterval: Math.max(this.config.minIntervalSeconds || 15, adjustedInterval),
+            volatilityFactor: volatilityFactor
+        };
+    } catch (calcError) {
+        logApi.error("[TokenRefreshSched] Error in calculateTokenPriority for token " + token?.id + " (" + token?.symbol + "):", calcError);
+        return null; // Return null if any error occurs during calculation
     }
-    const volatilityFactor = this.calculateVolatilityFactor(token);
-    const baseInterval = token.refresh_interval_seconds || baseTier.interval || DEFAULT_MIN_INTERVAL_SECONDS;
-    let adjustedInterval = Math.max(
-      this.config.minIntervalSeconds,
-      Math.floor(baseInterval / (volatilityFactor * (baseTier.volatility_factor || 1.0))
-    ));
-    if (this.config.dynamicIntervalsEnabled) {
-      adjustedInterval = Math.min(adjustedInterval, baseTier.interval || DEFAULT_MIN_INTERVAL_SECONDS * 10);
-    } else {
-      adjustedInterval = baseInterval;
-    }
-    return {
-      score: priorityScore + (baseTier.score || 0), // Add baseTier score to the calculated one
-      baseTier: baseTier.name || 'UNKNOWN',
-      refreshInterval: Math.max(this.config.minIntervalSeconds, adjustedInterval), // Ensure min interval
-      volatilityFactor: volatilityFactor
-    };
   }
 
   /**

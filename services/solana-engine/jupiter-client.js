@@ -27,6 +27,13 @@ import {
 } from '../../utils/service-suite/safe-service.js';
 import prisma from '../../config/prisma.js';
 
+// Define default circuit breaker config
+const DEFAULT_CIRCUIT_BREAKER_CONFIG = {
+  failureThreshold: 5,         // Number of failures before opening circuit
+  resetTimeout: 30000,         // Time in ms to wait before retrying after opening circuit
+  maxFailuresWindow: 60000,     // Time window for tracking failures in ms
+};
+
 // Debug flags
 const DEBUG_SHOW_BATCH_SAMPLE_TOKENS = false;
 
@@ -334,15 +341,12 @@ class JupiterClient extends BaseService {
       dependencies: [], // Can be empty if truly independent, or add [SERVICE_NAMES.SOLANA_ENGINE] if Helius/ConnectionManager is used by sub-services
       layer: 'DATA',
       criticalLevel: 'MEDIUM',
-      circuitBreaker: { 
-        enabled: true, 
-        failureThreshold: 5, 
-        resetTimeoutMs: 30000, 
-        healthCheckIntervalMs: 15000, // Added for completeness, BaseService uses it
-        description: 'Manages Jupiter API connectivity' 
+      circuitBreaker: {
+        ...DEFAULT_CIRCUIT_BREAKER_CONFIG,
+        description: 'Manages Jupiter API connectivity'
       }
     });
-    
+    logApi.info(`${formatLog.tag()} Constructor: After super(), isCircuitBreakerOpen type: ${typeof this.isCircuitBreakerOpen}`); // DEBUG LOG
     this.jupiterConfig = jupiterConfig;
     this.tokens = new TokenListService(this.jupiterConfig); // For fetching addresses
     this.prices = new PriceService(this.jupiterConfig);   // For fetching prices
@@ -375,7 +379,9 @@ class JupiterClient extends BaseService {
    * Initialize the Jupiter client
    */
   async initialize() {
+    logApi.info(`${formatLog.tag()} Initialize START: isCircuitBreakerOpen type: ${typeof this.isCircuitBreakerOpen}`); // DEBUG LOG
     await super.initialize(); // BaseService handles this.isInitialized = true on success
+    logApi.info(`${formatLog.tag()} Initialize END: After super.initialize(), isCircuitBreakerOpen type: ${typeof this.isCircuitBreakerOpen}`); // DEBUG LOG
     
     if (!this.jupiterConfig.apiKey) {
       logApi.warn(`${formatLog.tag()} ${formatLog.warning('Jupiter API key not configured. Market data features may be limited.')}`);

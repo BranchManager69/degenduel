@@ -365,25 +365,24 @@ class ConnectionManager {
             throw new Error('getFeeForMessage requires a V2 TransactionMessage or MessageV0 object.');
           }
           
-        case 'getMultipleAccounts': // V2 name, analogous to v1 getMultipleAccountsInfo
+        case 'getMultipleAccountsInfo': // Handle v1 name
+        case 'getMultipleAccounts':     // Handle v2 name
           if (!args[0] || !Array.isArray(args[0])) {
-            throw new Error('getMultipleAccounts requires an array of public key strings as its first argument.');
+            throw new Error('getMultipleAccounts(Info) requires an array of public key strings/PubKeys as its first argument.');
           }
           
-          // Convert any legacy PublicKey objects to address strings using the compat layer
           const publicKeyStrings = args[0].map(pk => toAddress(pk)).filter(Boolean);
-          if (publicKeyStrings.length === 0) throw new Error('No valid addresses for getMultipleAccounts');
+          if (publicKeyStrings.length === 0) throw new Error('No valid addresses for getMultipleAccounts(Info)');
           
           const getMultipleAccountsConfig = {
             commitment: (args[1] && args[1].commitment) || commitment,
-            encoding: (args[1] && args[1].encoding) || 'base64', // Default to base64 to get Buffer data
+            encoding: (args[1] && args[1].encoding) || 'base64',
             dataSlice: (args[1] && args[1].dataSlice) || undefined,
             minContextSlot: (args[1] && args[1].minContextSlot) || undefined,
           };
 
           const v2Results = await rpc.getMultipleAccounts(publicKeyStrings, getMultipleAccountsConfig).send();
           
-          // Process data according to encoding
           return v2Results.map(accountInfo => {
             if (!accountInfo) return null;
             

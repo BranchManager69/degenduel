@@ -214,7 +214,7 @@ class RedisManager {
             logApi.info(`[\x1b[38;5;208mRedis\x1b[0m] \x1b[38;5;46mDiagnostics:\x1b[0m`, JSON.stringify(diagnostics, null, 2));
             
             // Issue warnings for potential problems
-            if (usedMemory > 0.9 * (maxMemory && maxMemory[1] ? parseInt(maxMemory[1]) : Infinity)) {
+            if (maxMemory && maxMemory[1] && parseInt(maxMemory[1]) > 0 && usedMemory > 0.9 * parseInt(maxMemory[1])) {
                 logApi.warn(`[\x1b[38;5;208mRedis\x1b[0m] \x1b[38;5;226mWARNING: Redis memory usage is approaching limit (${usedMemoryHuman}/${diagnostics.memory.maxMemory})\x1b[0m`);
             }
             

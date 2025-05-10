@@ -18,14 +18,18 @@ import {
     isHealthy,  // why is this not being used?
     shouldReset,
     calculateBackoffDelay,
-    getCircuitBreakerStatus  // why is this not being used?
+    getCircuitBreakerStatus
 } from './circuit-breaker-config.js';
+import { DEFAULT_CIRCUIT_BREAKER_CONFIG } from './service-constants.js';
 import { EventEmitter } from 'events'; // why is this not being used?
 import serviceManager from './service-manager.js';
 import serviceEvents from './service-events.js';
 import { ServiceError } from './service-error.js';
 import { fancyColors, serviceColors, logColors } from '../colors.js';
 import ServiceConfigUtil from './service-config-util.js'; // why is this not being used?
+import { 
+    SERVICE_NAMES
+} from './service-constants.js';
 const VERBOSE_SERVICE_INIT = false;
 
 /**
@@ -55,6 +59,12 @@ export class BaseService {
         this.config = {
             ...BASE_SERVICE_CONFIG,
             ...config
+        };
+
+        // Ensure circuitBreaker config is robustly initialized
+        this.config.circuitBreaker = {
+            ...(DEFAULT_CIRCUIT_BREAKER_CONFIG || {}), // Ensure DEFAULT is defined
+            ...(config.circuitBreaker || {})
         };
 
         this.isOperational = false;
@@ -97,6 +107,12 @@ export class BaseService {
             }
         };
 
+        // Bind methods that rely on 'this' from BaseService if they might be called with a different context
+        // or if prototype chain isn't resolving as expected early on.
+        this.isCircuitBreakerOpen = this.isCircuitBreakerOpen.bind(this);
+        this.handleError = this.handleError.bind(this);
+        this.recordSuccess = this.recordSuccess.bind(this);
+        // Add any other BaseService methods that are called by subclasses and rely on 'this.config' or 'this.stats'
         this.interval = null;
         this.recoveryTimeout = null;
     }
@@ -542,8 +558,10 @@ export class BaseService {
         this.stats.circuitBreaker.failures++;
         this.stats.circuitBreaker.lastFailure = new Date().toISOString();
 
-        // Circuit breaker logic
-        if (this.stats.circuitBreaker.failures >= this.config.circuitBreaker.failureThreshold) {
+        // CRITICAL: Ensure this.config and this.config.circuitBreaker are defined before accessing failureThreshold
+        const cbConfig = this.config?.circuitBreaker || DEFAULT_CIRCUIT_BREAKER_CONFIG;
+
+        if (this.stats.circuitBreaker.failures >= (cbConfig.failureThreshold || DEFAULT_CIRCUIT_BREAKER_CONFIG.failureThreshold)) {
             logApi.warn(
                 `${fancyColors.BG_RED}${fancyColors.BOLD} SERVICE CIRCUIT BREAKER ${fancyColors.RESET}` +
                 ` ${serviceColors.failed}${this.name}${fancyColors.RESET}\n` +
@@ -710,6 +728,56 @@ export class BaseService {
         }
     }
 
+/**
+ * Get the current prices for a list of token IDs as a Map.
+ * Efficiently queries the token_prices table.
+ * @param {number[]} tokenIds - An array of token IDs to fetch prices for.
+ * @returns {Promise<Map<number, Decimal>>} - A Map where keys are token IDs and values are prices (Decimal).
+ */
+    async getCurrentPricesMap(tokenIds = []) {
+        if (!Array.isArray(tokenIds) || tokenIds.length === 0) {
+            return new Map(); // Return empty map if no IDs provided
+        }
+
+        try {
+            // Ensure service is healthy enough for a DB query
+            await this.checkServiceHealth(); 
+
+            const priceData = await prisma.token_prices.findMany({
+                where: {
+                    token_id: { in: tokenIds }
+                },
+                select: {
+                    token_id: true,
+                    price: true
+                }
+            });
+
+            // Convert the result array into a Map for easy lookup
+            const priceMap = new Map();
+            priceData.forEach(p => {
+                // Ensure price is a Decimal, default to 0 if null/invalid
+                const priceDecimal = p.price ? new Decimal(p.price) : new Decimal(0);
+                priceMap.set(p.token_id, priceDecimal);
+            });
+
+            // Add default 0 price for any requested token IDs not found in the table
+            tokenIds.forEach(id => {
+                if (!priceMap.has(id)) {
+                    priceMap.set(id, new Decimal(0));
+                }
+            });
+
+            return priceMap;
+
+        } catch (error) {
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error fetching current prices map:${fancyColors.RESET}`, error);
+            // Re-throw for now so the caller knows.
+            // Using string for error type as ServiceErrorTypes might not be in scope here.
+            throw new ServiceError('DATABASE_ERROR', `Failed to fetch current prices map: ${error.message}`);
+        }
+    }
+
     /**
      * Perform the service's main operation
      */
@@ -742,5 +810,12 @@ export class BaseService {
             await this.handleError(error);
             throw error;
         }
+    }
+
+    isCircuitBreakerOpen() {
+        // Ensure stats and circuitBreaker object exist, providing a default if not.
+        // This check should ideally not be needed if constructor always initializes them.
+        const cbStats = this.stats?.circuitBreaker || { isOpen: false };
+        return cbStats.isOpen;
     }
 } 
