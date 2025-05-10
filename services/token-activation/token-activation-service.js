@@ -28,6 +28,7 @@ const CRITERIA_MAX_AGE_HOURS_FOR_NEW = 24 * 3; // 3 days for "new" token auto-ac
 
 const TOKEN_DETAILS_BATCH_SIZE = 10; // How many tokens to fetch details for in one sub-batch
 const DELAY_BETWEEN_TOKEN_DETAILS_BATCH_MS = 5000; // 5 seconds delay
+const JUPITER_RATE_LIMIT_RETRY_DELAY_MS = 30000; // 30 seconds for Jupiter 429 errors
 
 const formatLog = {
   tag: () => `${serviceColors.tokenActivationService || fancyColors.PURPLE}[TokenActivationSvc]${fancyColors.RESET}`,
@@ -298,6 +299,8 @@ class TokenActivationService extends BaseService {
         const batchAddresses = addresses.slice(i, i + TOKEN_DETAILS_BATCH_SIZE);
         logApi.info(`${formatLog.tag()} Processing token details sub-batch ${Math.floor(i / TOKEN_DETAILS_BATCH_SIZE) + 1}/${Math.ceil(addresses.length / TOKEN_DETAILS_BATCH_SIZE)} (${batchAddresses.length} tokens)`);
 
+        let rateLimitHitInBatch = false;
+
         for (const address of batchAddresses) {
           processedCount++;
           const priceInfo = priceDataMap[address];
@@ -384,7 +387,11 @@ class TokenActivationService extends BaseService {
               }
             }
           } catch (tokenApiError) {
-            if (tokenApiError.message && tokenApiError.message.toLowerCase().includes('invalid url')) {
+            if (tokenApiError.response && tokenApiError.response.status === 429) {
+              logError(logApi, this.name, `Jupiter API RATE LIMIT (429) for ${address}. URL: '${tokenApiUrl}'. Backing off this sub-batch.`);
+              rateLimitHitInBatch = true; // Signal that a rate limit occurred in this sub-batch
+              break; // Break from inner loop (processing addresses in this sub-batch)
+            } else if (tokenApiError.message && tokenApiError.message.toLowerCase().includes('invalid url')) {
               logError(logApi, this.name, `Failed to fetch from Jupiter Token API for ${address} due to INVALID URL. Constructed URL was: '${tokenApiUrl}'`, tokenApiError.response ? tokenApiError.response.status : 'N/A');
             } else {
               logError(logApi, this.name, `Failed to fetch from Jupiter Token API for ${address}: ${tokenApiError.message}`.substring(0, 200), tokenApiError.response ? tokenApiError.response.status : 'N/A');
@@ -413,7 +420,12 @@ class TokenActivationService extends BaseService {
           }));
         } // End inner for...of loop (batchAddresses)
 
-        if (i + TOKEN_DETAILS_BATCH_SIZE < addresses.length) {
+        if (rateLimitHitInBatch) {
+          logApi.warn(`${formatLog.tag()} Jupiter API rate limit hit during sub-batch. Waiting ${JUPITER_RATE_LIMIT_RETRY_DELAY_MS}ms before next sub-batch or finishing.`);
+          await new Promise(r => setTimeout(r, JUPITER_RATE_LIMIT_RETRY_DELAY_MS));
+          // Optionally, you could choose to re-try the current sub-batch here by not incrementing `i` in the outer loop,
+          // but for simplicity, we'll just delay and move to the next sub-batch or finish.
+        } else if (i + TOKEN_DETAILS_BATCH_SIZE < addresses.length) {
           logApi.info(`${formatLog.tag()} Token details sub-batch complete. Waiting ${DELAY_BETWEEN_TOKEN_DETAILS_BATCH_MS}ms...`);
           await new Promise(r => setTimeout(r, DELAY_BETWEEN_TOKEN_DETAILS_BATCH_MS));
         }
