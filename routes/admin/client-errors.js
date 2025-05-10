@@ -7,7 +7,7 @@
 
 import express from 'express';
 import { logApi } from '../../utils/logger-suite/logger.js';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../config/prisma.js';
 import { 
   getRecentErrors, 
   resolveError, 
@@ -16,7 +16,6 @@ import {
 import AdminLogger from '../../utils/admin-logger.js';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 /**
  * Get a list of client errors with various filters

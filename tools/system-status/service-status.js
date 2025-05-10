@@ -15,11 +15,9 @@
  *   --json       Output in JSON format
  */
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../config/prisma.js';
 import chalk from 'chalk';
 import { formatDistance } from 'date-fns';
-
-const prisma = new PrismaClient();
 
 // Parse command line arguments
 const args = process.argv.slice(2);

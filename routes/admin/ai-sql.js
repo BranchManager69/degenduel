@@ -12,7 +12,6 @@ import { AIApi } from '../../api/aiApi.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import prisma from '../../config/prisma.js';
 import { requireAdmin, requireSuperAdmin } from '../../middleware/auth.js';
-import { PrismaClient } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
 

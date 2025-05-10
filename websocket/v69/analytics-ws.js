@@ -23,10 +23,7 @@
 import { BaseWebSocketServer } from './base-websocket.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../utils/colors.js';
-import { PrismaClient } from '@prisma/client';
-
-// Initialize Prisma client directly to avoid import issues
-const prisma = new PrismaClient();
+import prisma from '../../config/prisma.js';
 
 // Configuration
 const WSS_PATH = '/api/v69/ws/analytics';

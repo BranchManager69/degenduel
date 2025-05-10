@@ -23,7 +23,7 @@
 import { BaseService } from '../utils/service-suite/base-service.js';
 import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
 // Prisma
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../config/prisma.js';
 // Solana Engine
 import { jupiterClient, getJupiterClient } from './solana-engine/jupiter-client.js';
 import { heliusClient } from './solana-engine/helius-client.js';
@@ -39,9 +39,6 @@ import MetricsCollector from './token-refresh-scheduler/metrics-collector.js';
 
 // Config
 import { config } from '../config/config.js';
-
-// Initialize Prisma client
-const prisma = new PrismaClient();
 
 // Constants and configuration
 const DEFAULT_MAX_TOKENS_PER_BATCH = 500;  // Updated from 100 to 500 for better Jupiter batching

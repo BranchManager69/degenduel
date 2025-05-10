@@ -3,17 +3,23 @@
 /**
  * Connection Manager for Solana RPC endpoints
  * 
- * Manages a v2 RPC client for Solana interactions.
+ * @description Manages a v2 RPC client for Solana interactions.
+ *              Uses Solana v2 APIs exclusively.
+ * 
+ * @author BranchManager69
+ * @version 2.1.0
+ * @created 2025-05-10
+ * @updated 2025-05-10
  */
 
-// Import using the default export method as suggested by the runtime error
-import web3js from '@solana/web3.js';
-const { createSolanaRpc, PublicKey } = web3js;
-
+// Import proper V2 modules
+import { createSolanaRpc } from '@solana/rpc';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import { config } from '../../config/config.js';
-// PublicKey is now destructured from the web3js default import
 import { Buffer } from 'node:buffer';
+
+// Import compat layer that handles v1->v2 conversions
+import { toAddress, LAMPORTS_PER_SOL } from '../admin-wallet/utils/solana-compat.js';
 
 // Default commitment level
 const DEFAULT_COMMITMENT = 'confirmed';
@@ -30,7 +36,6 @@ class ConnectionManager {
     ConnectionManager.instance = this;
     
     // this.rpc will be an instance of the client returned by createSolanaRpc.
-    // Its type, for documentation, is Rpc<SolanaRpcApi>.
     this.rpc = null; 
     this.endpoint = null;
     this.initialized = false;
@@ -75,7 +80,7 @@ class ConnectionManager {
 
   /**
    * Get the Solana v2 RPC client
-   * @returns {import('@solana/web3.js').Rpc<import('@solana/web3.js').SolanaRpcApi>} - Solana v2 RPC client object
+   * @returns {Object} - Solana v2 RPC client object
    */
   getRpcClient() {
     if (!this.initialized || !this.rpc) {
@@ -141,7 +146,6 @@ class ConnectionManager {
   async executeSolanaRpcMethod(methodName, args = []) {
     const rpc = this.getRpcClient();
     const commitment = args.find(arg => typeof arg === 'object' && arg?.commitment)?.commitment || DEFAULT_COMMITMENT;
-    // const rpcConfig = { commitment }; // Not always used directly like this, config built per case
 
     logApi.debug(`Executing v2 RPC method: ${methodName} with args:`, args);
 
@@ -149,105 +153,113 @@ class ConnectionManager {
       switch (methodName) {
         case 'getSlot':
           return await rpc.getSlot().send();
+          
         case 'getLatestBlockhash':
           // Args[0] could be a config object in v1, in v2 it's a direct config
           return await rpc.getLatestBlockhash(args[0] || { commitment }).send();
+          
         case 'getBalance':
           if (!args[0]) throw new Error('getBalance requires a public key string argument.');
-          // Assumes args[0] is a publicKey string. @solana/rpc should handle string to Address.
-          return await rpc.getBalance(args[0], { commitment }).send();
+          // Convert any legacy PublicKey to address string using the compat layer
+          const balanceAddress = toAddress(args[0]);
+          return await rpc.getBalance(balanceAddress, { commitment }).send();
+          
         case 'getAccountInfo':
           if (!args[0]) throw new Error('getAccountInfo requires a public key string or PublicKey argument.');
-          const accountAddressString = typeof args[0] === 'string' ? args[0] : args[0].toBase58();
+          const accountAddressString = toAddress(args[0]);
+          
           const accountInfoConfig = {
             commitment: (args[1] && typeof args[1] === 'object' && args[1].commitment) || 
                         (typeof args[1] === 'string' ? args[1] : commitment),
             encoding: (args[1] && typeof args[1] === 'object' && args[1].encoding) || 'base64' 
           };
+          
           const v2AccountInfoResult = await rpc.getAccountInfo(accountAddressString, accountInfoConfig).send();
+          
+          // Process the result for compatibility
           if (v2AccountInfoResult.value) {
-            if (v2AccountInfoResult.value.data && typeof v2AccountInfoResult.value.data[0] === 'string' && accountInfoConfig.encoding === 'base64') {
+            // Convert data to Buffer if it's base64 encoded
+            if (v2AccountInfoResult.value.data && Array.isArray(v2AccountInfoResult.value.data) 
+                && typeof v2AccountInfoResult.value.data[0] === 'string' 
+                && accountInfoConfig.encoding === 'base64') {
               v2AccountInfoResult.value.data = Buffer.from(v2AccountInfoResult.value.data[0], 'base64');
             }
-            // Convert owner to PublicKey for compatibility
-            if (v2AccountInfoResult.value.owner && typeof v2AccountInfoResult.value.owner === 'string') {
-                v2AccountInfoResult.value.owner = new PublicKey(v2AccountInfoResult.value.owner);
-            }
           }
+          
           return v2AccountInfoResult.value;
 
         case 'getParsedAccountInfo':
           if (!args[0]) throw new Error('getParsedAccountInfo requires a public key string or PublicKey argument.');
-          const parsedAccountAddressString = typeof args[0] === 'string' ? args[0] : args[0].toBase58();
+          const parsedAccountAddressString = toAddress(args[0]);
+          
           const parsedAccountInfoConfig = {
             commitment: (args[1] && typeof args[1] === 'object' && args[1].commitment) || 
                         (typeof args[1] === 'string' ? args[1] : commitment),
             encoding: 'jsonParsed' // Always request jsonParsed for this method
           };
+          
           const v2ParsedResult = await rpc.getAccountInfo(parsedAccountAddressString, parsedAccountInfoConfig).send();
-          // The v2 rpc.getAccountInfo with encoding: 'jsonParsed' directly puts the parsed structure (or base64 data if not parsable) into `value.data`.
-          // If `value.data` is an array of strings (e.g. ["base64_string", "base64"]), it means it wasn't parsed by Helius, 
-          // so we should return it as a Buffer like v1 would if it couldn't parse.
+          
+          // Process the parsed data 
           if (v2ParsedResult.value) {
+            // Convert unparsed data (array format) to Buffer
             if (v2ParsedResult.value.data && Array.isArray(v2ParsedResult.value.data) && typeof v2ParsedResult.value.data[0] === 'string') {
               if (v2ParsedResult.value.data.length > 1 && typeof v2ParsedResult.value.data[1] === 'string' && 
                  (v2ParsedResult.value.data[1] === 'base64' || v2ParsedResult.value.data[1] === 'base58' || v2ParsedResult.value.data[1] === 'base64+zstd')) {
                 v2ParsedResult.value.data = Buffer.from(v2ParsedResult.value.data[0], v2ParsedResult.value.data[1] === 'base58' ? 'base58' : 'base64'); 
               }
             }
-            // Convert owner to PublicKey for compatibility
-            if (v2ParsedResult.value.owner && typeof v2ParsedResult.value.owner === 'string') {
-                v2ParsedResult.value.owner = new PublicKey(v2ParsedResult.value.owner);
-            }
           }
-          // If v2ParsedResult.value.data is already an object (parsed), it's good.
-          // The structure { program, parsed, space } is what v1 getParsedAccountInfo also aimed for in AccountInfo.data.
-          return v2ParsedResult.value; // Return AccountInfo object or null
+          
+          return v2ParsedResult.value;
 
         case 'getMinimumBalanceForRentExemption':
-          if (args[0] === undefined || typeof args[0] !== 'number') throw new Error('getMinimumBalanceForRentExemption requires a dataLength (number) argument.');
+          if (args[0] === undefined || typeof args[0] !== 'number') 
+            throw new Error('getMinimumBalanceForRentExemption requires a dataLength (number) argument.');
+          
           const dataLength = args[0];
           const rentExemptionConfig = { 
             commitment: (args[1] && typeof args[1] === 'string' ? args[1] : commitment)
           };
+          
           const resultBigInt = await rpc.getMinimumBalanceForRentExemption(dataLength, rentExemptionConfig).send();
           return Number(resultBigInt); // Convert bigint to number for v1 compatibility
 
         case 'requestAirdrop':
           if (!args[0]) throw new Error('requestAirdrop requires a publicKey (string or PublicKey) argument.');
-          if (args[1] === undefined || typeof args[1] !== 'number') throw new Error('requestAirdrop requires lamports (number) as the second argument.');
+          if (args[1] === undefined || typeof args[1] !== 'number') 
+            throw new Error('requestAirdrop requires lamports (number) as the second argument.');
           
-          const airdropAddressString = typeof args[0] === 'string' ? args[0] : args[0].toBase58();
+          const airdropAddressString = toAddress(args[0]);
+          
           const lamportsToAirdrop = BigInt(args[1]);
-          const airdropCommitment = (args[2] && typeof args[2] === 'string') ? args[2] : commitment; // v1 might pass commitment as 3rd arg
+          const airdropCommitment = (args[2] && typeof args[2] === 'string') ? args[2] : commitment;
           
           const airdropConfig = { commitment: airdropCommitment };
-
-          // The v2 requestAirdrop method is available directly on the rpc client.
           const signature = await rpc.requestAirdrop(airdropAddressString, lamportsToAirdrop, airdropConfig).send();
+          
           return signature;
 
         case 'getEpochInfo':
           // v1 commitment was args[0], v2 takes it in config.
           const epochInfoCommitment = (args[0] && typeof args[0] === 'string') ? args[0] : commitment;
           const epochInfoConfig = { commitment: epochInfoCommitment };
+          
           // The v2 getEpochInfo method is available directly on the rpc client.
-          // The return structure is compatible with v1 EpochInfo (fields are numbers/bigints).
           const epochInfo = await rpc.getEpochInfo(epochInfoConfig).send();
-          return epochInfo; // Directly return the v2 EpochInformation object
+          return epochInfo;
 
         case 'getProgramAccounts':
           if (!args[0]) throw new Error('getProgramAccounts requires a programId (string or PublicKey) argument.');
-          const programIdString = typeof args[0] === 'string' ? args[0] : args[0].toBase58();
+          const programIdString = toAddress(args[0]);
           
           let v2Filters = [];
           let v2Encoding = 'base64'; // Default to base64 like v1 to get Buffer data
           const v1ConfigOrCommitment = args[1];
 
           if (v1ConfigOrCommitment) {
-            if (typeof v1ConfigOrCommitment === 'string') { // v1: (programId, commitment)
-              // Commitment is handled by the main rpcConfig at the start of the function or can be overridden in v2Config
-              // No specific filter or encoding change here based on just commitment string.
+            if (typeof v1ConfigOrCommitment === 'string') { 
+              // v1: (programId, commitment) - handled by final config
             } else if (typeof v1ConfigOrCommitment === 'object') { // v1: (programId, config)
               if (v1ConfigOrCommitment.encoding) {
                 v2Encoding = v1ConfigOrCommitment.encoding; // e.g., 'jsonParsed', 'base64', 'base64+zstd'
@@ -283,18 +295,17 @@ class ConnectionManager {
 
           const v2ResultArray = await rpc.getProgramAccounts(programIdString, finalV2Config).send();
           
-          // Map results to closely match v1: pubkey as PublicKey, account.data as Buffer if base64
+          // Return array with data processed according to encoding
           return v2ResultArray.map(item => {
             let accountData = item.account.data;
             if (v2Encoding === 'base64' && Array.isArray(accountData) && typeof accountData[0] === 'string') {
               accountData = Buffer.from(accountData[0], 'base64');
             }
             return {
-              pubkey: new PublicKey(item.pubkey), // Convert string pubkey back to v1 PublicKey
+              pubkey: item.pubkey, // Already a string in V2
               account: {
                 ...item.account,
-                data: accountData,
-                owner: new PublicKey(item.account.owner) // Convert owner string to v1 PublicKey
+                data: accountData
               }
             };
           });
@@ -309,19 +320,27 @@ class ConnectionManager {
               preflightCommitment: sendOptions.preflightCommitment || commitment,
               maxRetries: sendOptions.maxRetries
             }).send();
-        case 'confirmTransaction': // Significantly different in v2; this is a simplified single status check
+            
+        case 'confirmTransaction': // Significantly different in v2; this is a simplified status check
           if (!args[0]) throw new Error('confirmTransaction requires a signature string argument.');
           // This is NOT a full confirmation loop. It's a one-time status check.
-          // True confirmation requires polling getSignatureStatuses.
           logApi.warn('confirmTransaction called on v2 ConnectionManager is a simplified status check, not full polling confirmation.');
           return await rpc.getSignatureStatuses([args[0]], {searchTransactionHistory: true}).send();
+          
         case 'getTransaction':
           if (!args[0]) throw new Error('getTransaction requires a signature string argument.');
           // Args[1] could be config object with commitment or encoding
-          const txConfig = args[1] || { commitment, encoding: 'jsonParsed', maxSupportedTransactionVersion: 0 };
+          const txConfig = args[1] || { 
+            commitment, 
+            encoding: 'jsonParsed', 
+            maxSupportedTransactionVersion: 0 
+          };
           return await rpc.getTransaction(args[0], txConfig).send();
+          
         case 'getSignaturesForAddress':
           if (!args[0]) throw new Error('getSignaturesForAddress requires a public key string argument.');
+          const sigsAddress = toAddress(args[0]);
+          
           // Args[1] could be options like {limit, before, until}
           // Args[2] could be commitment string
           const sigsForAddrConfig = args[1] || {};
@@ -329,41 +348,32 @@ class ConnectionManager {
           else if (args[2] && typeof args[2] === 'object') Object.assign(sigsForAddrConfig, args[2]);
           else if (!sigsForAddrConfig.commitment) sigsForAddrConfig.commitment = commitment;
 
-          return await rpc.getSignaturesForAddress(args[0], sigsForAddrConfig).send();
+          return await rpc.getSignaturesForAddress(sigsAddress, sigsForAddrConfig).send();
+          
         case 'getFeeForMessage':
           if (!args[0]) throw new Error('getFeeForMessage requires a message argument.');
           const messageInput = args[0];
           const feeCommitment = (args[1] && typeof args[1] === 'string') ? args[1] : commitment;
           
-          // Check if messageInput is likely a v2 TransactionMessage or compiled MessageV0
-          // (duck typing: v2 messages have a `version` property and an `instructions` array)
-          // A compiled MessageV0 (from compileTransaction(message).message) would also work here.
+          // V2 message handling
           if (typeof messageInput === 'object' && messageInput !== null && 
-              (messageInput.version !== undefined && Array.isArray(messageInput.instructions)) || // Uncompiled v2 TransactionMessage
-              (messageInput.header && messageInput.staticAccountKeys) ) {
-            logApi.debug('getFeeForMessage: Received v2-like message object.');
+              (messageInput.version !== undefined && Array.isArray(messageInput.instructions)) || 
+              (messageInput.header && messageInput.staticAccountKeys)) {
             return await rpc.getFeeForMessage(messageInput, { commitment: feeCommitment }).send();
-          } else if (messageInput.constructor && messageInput.constructor.name === 'Message') { // Heuristic for v1 Message
-            logApi.warn('getFeeForMessage: Received a v1 Message object. This path is deprecated and may be removed.');
-            // This assumes the v1 Message object is somehow directly passable or that the rpc client has some compat.
-            // This path is risky. Ideally, callers should send v2 messages.
-            // For true v1 Message object, one would need to serialize it and provide the wire format if the RPC method demands.
-            // However, Helius RPC might be more flexible. For now, trying to pass it as is.
-            return await rpc.getFeeForMessage(messageInput, { commitment: feeCommitment }).send(); 
-          } else if (Buffer.isBuffer(messageInput) || messageInput instanceof Uint8Array) {
-            // If it's raw bytes (e.g., from v1 message.serialize()), v2 getFeeForMessage expects a Message instance.
-            // This path would require deserializing into a v2 message or using a different RPC method if available for raw bytes.
-            logApi.error('getFeeForMessage: Received raw bytes. v2 getFeeForMessage expects a Message object. This is not supported directly.');
-            throw new Error('getFeeForMessage with raw bytes not directly supported; pass a v2 TransactionMessage or MessageV0 object.');
           } else {
-            logApi.error('getFeeForMessage: Unrecognized message format.', { messageInput });
-            throw new Error('getFeeForMessage received an unrecognized message format.');
+            logApi.error('getFeeForMessage: Unrecognized message format or legacy Message object.');
+            throw new Error('getFeeForMessage requires a V2 TransactionMessage or MessageV0 object.');
           }
+          
         case 'getMultipleAccounts': // V2 name, analogous to v1 getMultipleAccountsInfo
           if (!args[0] || !Array.isArray(args[0])) {
             throw new Error('getMultipleAccounts requires an array of public key strings as its first argument.');
           }
-          const publicKeyStrings = args[0];
+          
+          // Convert any legacy PublicKey objects to address strings using the compat layer
+          const publicKeyStrings = args[0].map(pk => toAddress(pk)).filter(Boolean);
+          if (publicKeyStrings.length === 0) throw new Error('No valid addresses for getMultipleAccounts');
+          
           const getMultipleAccountsConfig = {
             commitment: (args[1] && args[1].commitment) || commitment,
             encoding: (args[1] && args[1].encoding) || 'base64', // Default to base64 to get Buffer data
@@ -371,25 +381,25 @@ class ConnectionManager {
             minContextSlot: (args[1] && args[1].minContextSlot) || undefined,
           };
 
-          // The @solana/rpc client's getMultipleAccounts expects string addresses.
-          // No need to convert with toAddress() here as publicKeyStrings should already be strings.
           const v2Results = await rpc.getMultipleAccounts(publicKeyStrings, getMultipleAccountsConfig).send();
           
-          // v2Results is (AccountInfo | null)[]
-          // We need to map it to ensure data is Buffer and owner is PublicKey for compat
+          // Process data according to encoding
           return v2Results.map(accountInfo => {
             if (!accountInfo) return null;
+            
             let processedData = accountInfo.data;
-            if (getMultipleAccountsConfig.encoding === 'base64' && Array.isArray(accountInfo.data) && typeof accountInfo.data[0] === 'string') {
+            if (getMultipleAccountsConfig.encoding === 'base64' && 
+                Array.isArray(accountInfo.data) && 
+                typeof accountInfo.data[0] === 'string') {
               processedData = Buffer.from(accountInfo.data[0], 'base64');
             }
+            
             return {
               ...accountInfo,
-              data: processedData,
-              owner: new PublicKey(accountInfo.owner), // Convert owner string to v1 PublicKey
+              data: processedData
             };
           });
-        // Add other common methods here as needed
+          
         default:
           logApi.error(`Unsupported v2 RPC method in ConnectionManager: ${methodName}`);
           throw new Error(`Unsupported v2 RPC method: ${methodName}`);

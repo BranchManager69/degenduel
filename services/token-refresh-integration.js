@@ -20,15 +20,12 @@ import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import { fancyColors } from '../utils/colors.js';
 // Prisma
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../config/prisma.js';
 // Token Refresh Scheduler
 import tokenRefreshScheduler from './token-refresh-scheduler.js';
 
 // Config
 import { config } from '../config/config.js';
-
-// Initialize Prisma client
-const prisma = new PrismaClient(); // <--------- WRONG!!!
 
 // Service configuration
 const TOKEN_REFRESH_CONFIG = { // <------------- WRONG!!!

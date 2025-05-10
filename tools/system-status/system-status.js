@@ -19,10 +19,8 @@
  * ```
  */
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../config/prisma.js';
 import { formatDistance } from 'date-fns';
-
-const prisma = new PrismaClient();
 
 /**
  * Check system status

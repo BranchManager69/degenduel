@@ -3,12 +3,11 @@
 // ...
 
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../config/prisma.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import redisManager from '../../utils/redis-suite/redis-manager.js';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 const TOKENS_CACHE_KEY = 'dd_serv:tokens';
 const CACHE_TTL = 30; // 30 seconds
 

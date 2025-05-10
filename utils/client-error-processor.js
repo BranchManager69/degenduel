@@ -5,7 +5,7 @@
  * analysis, and proactive resolution.
  */
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../config/prisma.js';
 import crypto from 'crypto';
 import { logApi } from './logger-suite/logger.js';
 
@@ -72,8 +72,6 @@ function limitMetadataSize(metadata) {
   
   return result;
 }
-
-const prisma = new PrismaClient();
 
 /**
  * Generates a deterministic error ID based on error characteristics

@@ -11,7 +11,7 @@
 import { BaseService } from '../utils/service-suite/base-service.js';
 import { ServiceError } from '../utils/service-suite/service-error.js'; // why unused?
 import { logApi } from '../utils/logger-suite/logger.js';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../config/prisma.js';
 import serviceManager from '../utils/service-suite/service-manager.js'; // why unused?
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js'; // why getServiceMetadata unused?
 import { fancyColors, serviceSpecificColors } from '../utils/colors.js';
@@ -19,9 +19,6 @@ import serviceEvents from '../utils/service-suite/service-events.js';
 import { config } from '../config/config.js';
 import { dexscreenerClient } from './solana-engine/dexscreener-client.js';
 import solanaEngine from './solana-engine/index.js'; // why unused?
-
-// Initialize database client
-const prisma = new PrismaClient();
 
 // Formatting helpers for consistent logging
 const formatLog = {

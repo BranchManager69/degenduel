@@ -1,12 +1,15 @@
 // services/solana-engine/jupiter-client.js
 
 /**
- * This file contains the Jupiter API client for the solana-engine service.
+ * Jupiter API Client
+ * 
+ * @description This file contains the Jupiter API client for the solana-engine service. 
  * It includes functions for fetching token lists and prices from the Jupiter API.
  * 
  * @author @BranchManager69
- * @version 1.9.0
- * @since 2025-05-02
+ * @version 2.1.0
+ * @created 2025-05-10
+ * @updated 2025-05-10
  */
 
 import axios from 'axios';
@@ -43,6 +46,8 @@ const formatLog = {
   price: (price) => `${serviceSpecificColors.jupiterClient.price}${price || 0}${fancyColors.RESET}`,
   count: (num) => `${serviceSpecificColors.jupiterClient.count}${Number(num) || 0}${fancyColors.RESET}`,
 };
+
+// ------------------------------------------------------------------------------------------------
 
 /**
  * Base class for Jupiter API modules
@@ -93,8 +98,12 @@ class JupiterBase {
   }
 }
 
+// ------------------------------------------------------------------------------------------------
+
 /**
  * Token List service module
+ * 
+ * @extends JupiterBase
  */
 class TokenListService extends JupiterBase {
   constructor(config) {
@@ -141,6 +150,8 @@ class TokenListService extends JupiterBase {
 
 /**
  * Price service module
+ * 
+ * @extends JupiterBase
  */
 class PriceService extends JupiterBase {
   constructor(config) {
@@ -452,7 +463,7 @@ class PriceService extends JupiterBase {
         
         // Initialize progress tracker
         const progress = createBatchProgress({
-          name: 'Jupiter Token Batches',
+          name: 'Jupiter Batch',
           total: batches.length,
           service: SERVICE_NAMES.JUPITER_CLIENT,
           batchSize: 1, // Each batch is 1 unit for this tracker
@@ -745,6 +756,7 @@ class PriceService extends JupiterBase {
     }
   }
 }
+
 /**
  * Swap service module
  * 
@@ -1235,12 +1247,12 @@ class JupiterClient extends BaseService {
   }
 }
 
-// -----
+// ------------------------------------------------------------------------------------------------
 
 // Create and export a singleton instance
 let _instance = null;
 
-// Export the getJupiterClient function
+// Export the getJupiterClient 3 different fucking ways
 export function getJupiterClient() {
   if (!_instance) {
     _instance = new JupiterClient();

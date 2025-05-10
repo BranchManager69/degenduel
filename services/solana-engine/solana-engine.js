@@ -11,9 +11,9 @@
  *              with a more robust implementation using premium APIs.
  * 
  * @author BranchManager69
- * @version 1.9.0
- * @created 2025-05-05
- * @updated 2025-05-05
+ * @version 2.1.0
+ * @created 2025-05-10
+ * @updated 2025-05-10
  */
 
 import { BaseService } from '../../utils/service-suite/base-service.js';
@@ -43,8 +43,6 @@ import {
   compileTransaction,
   signTransaction
 } from '@solana/transactions';
-
-//import { fromLegacyInstruction, fromLegacyKeypair } from '@solana/compat'; // For converting v1 instructions/keypairs
 
 // Import Helius Kite
 import { connect as connectKite } from 'solana-kite';
@@ -163,8 +161,22 @@ class SolanaEngineService extends BaseService {
       try {
         const kiteRpcUrl = this.connectionManager.endpoint || config.rpc_urls.primary || config.rpc_urls.mainnet_http;
         if (kiteRpcUrl) {
-          this.kiteConnection = connectKite(kiteRpcUrl);
-          logApi.info(`${formatLog.tag()} ${formatLog.success('Helius Kite client initialized successfully with RPC:')} ${kiteRpcUrl}`);
+          const wsUrl = config.rpc_urls.mainnet_wss || 'wss://api.mainnet-beta.solana.com';
+          // Fix: Only initialize Kite with both URLs defined, use appropriate object structure
+          if (wsUrl) {
+            if (wsUrl === 'wss://api.mainnet-beta.solana.com') { 
+              logApi.warn(`${formatLog.tag()} ${formatLog.warning('Using default Helius Kite WebSocket URL:')} ${wsUrl}`); 
+            }
+            // Initialize Kite connection with both URLs
+            this.kiteConnection = connectKite({
+              httpUrl: kiteRpcUrl,
+              webSocketUrl: wsUrl,
+              connectionTimeoutMs: 10000
+            });
+            logApi.info(`${formatLog.tag()} ${formatLog.success('Helius Kite client initialized successfully with RPC:')} ${kiteRpcUrl} and WS: ${wsUrl}`);
+          } else {
+            logApi.warn(`${formatLog.tag()} ${formatLog.warning('No WebSocket URL found for Helius Kite initialization. Continuing without Kite features.')}`);
+          }
         } else {
           logApi.error(`${formatLog.tag()} ${formatLog.error('No RPC URL found for Helius Kite initialization.')}`);
           // this.kiteConnection will remain null
@@ -254,7 +266,7 @@ class SolanaEngineService extends BaseService {
   /**
    * Get a connection from the connection manager.
    * This simplified version just returns the single connection.
-   * @returns {import('@solana/web3.js').Rpc<import('@solana/web3.js').SolanaRpcApi>} The Solana v2 RPC client
+   * @returns {Object} The Solana v2 RPC client
    */
   getConnection() {
     return this.connectionManager.getRpcClient();

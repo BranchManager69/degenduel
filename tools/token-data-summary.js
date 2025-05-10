@@ -16,6 +16,7 @@ import { PrismaClient } from '@prisma/client';
 import chalk from 'chalk';
 import boxen from 'boxen';
 import gradient from 'gradient-string';
+const prisma = new PrismaClient();
 
 // Clear the console at startup
 console.clear();
@@ -55,8 +56,6 @@ for (let i = 0; i < args.length; i++) {
 if (isNaN(options.days) || options.days <= 0) options.days = 30;
 if (isNaN(options.limit) || options.limit <= 0) options.limit = 10;
 if (!['price', 'volume', 'liquidity', 'market_cap', 'all'].includes(options.metric)) options.metric = 'all';
-
-const prisma = new PrismaClient();
 
 /**
  * Exports token data to CSV file

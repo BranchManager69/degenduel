@@ -1,13 +1,13 @@
 // ServiceStatusMonitor.js
 // A reusable class to monitor service status
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../config/prisma.js';
 import { formatDistance } from 'date-fns';
 import { logApi } from '../../utils/logger-suite/logger.js';
 
 class ServiceStatusMonitor {
   constructor(options = {}) {
-    this.prisma = new PrismaClient();
+    this.prisma = prisma;
     this.options = {
       includeInactive: true,
       includeConfig: true,

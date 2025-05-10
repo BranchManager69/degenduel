@@ -6,13 +6,12 @@
  */
 
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../config/prisma.js';
 import { roleCheck } from '../../middleware/auth.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import tokenRefreshIntegration from '../../services/token-refresh-integration.js';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 /**
  * @swagger

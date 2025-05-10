@@ -8,14 +8,12 @@
  * to add comprehensive historical data tracking.
  */
 
-import { PrismaClient } from '@prisma/client';
 import { logApi } from '../utils/logger-suite/logger.js';
 import { fancyColors } from '../utils/colors.js';
 
-// Initialize direct connection to Database
-const marketDb = new PrismaClient({
-    datasourceUrl: process.env.DATABASE_URL
-});
+// Use the singleton Prisma client
+import prisma from '../config/prisma.js';
+const marketDb = prisma;
 
 /**
  * Records a batch of volume history records for multiple tokens

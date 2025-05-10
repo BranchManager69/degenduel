@@ -16,12 +16,12 @@
 
 import { logApi } from '../../utils/logger-suite/logger.js';
 import { fancyColors, serviceSpecificColors } from '../../utils/colors.js';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../config/prisma.js';
 import { dexscreenerClient } from '../solana-engine/dexscreener-client.js';
 import serviceEvents from '../../utils/service-suite/service-events.js';
 
-// Initialize database client
-const prisma = new PrismaClient();
+// Config
+import { config } from '../../config/config.js';
 
 // Formatting helpers for consistent logging
 const formatLog = {
