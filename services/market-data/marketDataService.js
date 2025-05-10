@@ -14,7 +14,6 @@
 import { BaseService } from '../../utils/service-suite/base-service.js';
 import { ServiceError } from '../../utils/service-suite/service-error.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
-import { PrismaClient } from '@prisma/client';
 import serviceManager from '../../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../../utils/service-suite/service-constants.js';
 import { getCircuitBreakerConfig } from '../../utils/service-suite/circuit-breaker-config.js';
@@ -27,6 +26,8 @@ import { getJupiterClient, jupiterClient } from '../solana-engine/jupiter-client
 import { dexscreenerClient } from '../solana-engine/dexscreener-client.js';
 import tokenHistoryFunctions from '../token-history-functions.js';
 import { Decimal } from 'decimal.js';
+import prisma from '../../config/prisma.js';
+
 
 // Import modular components
 import marketData from './index.js';
@@ -65,11 +66,6 @@ const SYNC_CONFIG = {
     // Maximum number of tokens to process per batch (to control memory usage)
     maxTokensPerBatch: 500
 }
-
-// Initialize direct connection to Database using DATABASE_URL (not the deprecated MARKET_DATABASE_URL)
-const marketDb = new PrismaClient({
-    datasourceUrl: process.env.DATABASE_URL
-});
 
 // Simplified configuration
 const MARKET_DATA_CONFIG = {
@@ -190,7 +186,7 @@ class MarketDataService extends BaseService {
             // Check market database connection
             logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Connecting to market database...`);
             try {
-                const tokenCount = await marketDb.tokens.count();
+                const tokenCount = await prisma.tokens.count();
                 this.marketStats.tokens.total = tokenCount;
                 this.lastTokenCount = tokenCount;
                 
@@ -281,7 +277,7 @@ class MarketDataService extends BaseService {
                 return false;
             }
             
-            return await rankTracker.checkFullSyncNeeded(marketDb, jupiterClient, options);
+            return await rankTracker.checkFullSyncNeeded(prisma, jupiterClient, options);
             
         } catch (error) {
             logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error checking token sync status:${fancyColors.RESET}`, error);
@@ -298,11 +294,11 @@ class MarketDataService extends BaseService {
         const startTime = Date.now();
         
         try {
-            const result = await rankTracker.checkAndAddNewTokens(jupiterTokens, marketDb);
+            const result = await rankTracker.checkAndAddNewTokens(jupiterTokens, prisma);
             
             // Update token count stats if tokens were added
             if (result.addedCount > 0) {
-                this.marketStats.tokens.total = await marketDb.tokens.count();
+                this.marketStats.tokens.total = await prisma.tokens.count();
                 
                 const elapsedMs = Date.now() - startTime;
                 logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} TOKEN ADD ${fancyColors.RESET} Added ${result.addedCount} new tokens in ${elapsedMs}ms (${result.skippedCount} skipped, ${result.errorCount} errors)`);
@@ -338,7 +334,7 @@ class MarketDataService extends BaseService {
             };
             
             // Delegate to repository module
-            const syncResult = await repository.syncAllTokenAddresses(jupiterClient, marketDb, {
+            const syncResult = await repository.syncAllTokenAddresses(jupiterClient, prisma, {
                 logPrefix: `${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET}`,
                 maxBatchesPerRun: 200,
                 batchSize: 100,
@@ -467,7 +463,7 @@ class MarketDataService extends BaseService {
         if (!this._lastDbCheck || now - this._lastDbCheck > 60000) { // Check at most once per minute
             try {
                 // Perform a simple ping test to the database
-                await marketDb.$queryRaw`SELECT 1 as ping`;
+                await prisma.$queryRaw`SELECT 1 as ping`;
                 this._lastDbCheck = now;
                 this._dbConnected = true;
             } catch (dbError) {
@@ -506,7 +502,7 @@ class MarketDataService extends BaseService {
                     const jupiterTokens = jupiterClient.tokenList || [];
                     
                     // Get database token count for comparison
-                    const dbTokenCount = await marketDb.tokens.count();
+                    const dbTokenCount = await prisma.tokens.count();
                     
                     if (jupiterTokens.length > 0) {
                         const coverage = ((dbTokenCount / jupiterTokens.length) * 100).toFixed(1);
@@ -533,7 +529,7 @@ class MarketDataService extends BaseService {
                         const jupiterTokens = jupiterClient.tokenList || [];
                         
                         // Get database token count for comparison
-                        const dbTokenCount = await marketDb.tokens.count();
+                        const dbTokenCount = await prisma.tokens.count();
                         
                         if (jupiterTokens.length > 0 && dbTokenCount < jupiterTokens.length) {
                             const coverage = ((dbTokenCount / jupiterTokens.length) * 100).toFixed(1);
@@ -660,11 +656,11 @@ class MarketDataService extends BaseService {
             
             try {
                 // Get current token count for stats
-                const tokenCount = await marketDb.tokens.count();
+                const tokenCount = await prisma.tokens.count();
                 this.marketStats.tokens.total = tokenCount;
                 
                 // Calculate some basic stats
-                const tokensWithMarketCap = await marketDb.tokens.count({
+                const tokensWithMarketCap = await prisma.tokens.count({
                     where: {
                         token_prices: {
                             market_cap: { not: null }
@@ -672,7 +668,7 @@ class MarketDataService extends BaseService {
                     }
                 });
                 
-                const tokensWithImages = await marketDb.tokens.count({
+                const tokensWithImages = await prisma.tokens.count({
                     where: {
                         image_url: { not: null }
                     }
@@ -750,7 +746,7 @@ class MarketDataService extends BaseService {
             await this.checkServiceHealth();
             
             // Delegate to repository module
-            const tokens = await repository.getAllTokens(marketDb);
+            const tokens = await repository.getAllTokens(prisma);
             
             // Format tokens for API response
             const formattedTokens = tokens.map(token => this.formatTokenData(token));
@@ -770,7 +766,7 @@ class MarketDataService extends BaseService {
             await this.checkServiceHealth();
             
             // Delegate to repository module
-            const token = await repository.getTokenBySymbol(symbol, marketDb);
+            const token = await repository.getTokenBySymbol(symbol, prisma);
 
             if (!token) {
                 return null;
@@ -789,7 +785,7 @@ class MarketDataService extends BaseService {
             await this.checkServiceHealth();
             
             // Delegate to repository module
-            const token = await repository.getTokenByAddress(address, marketDb);
+            const token = await repository.getTokenByAddress(address, prisma);
 
             if (!token) {
                 return null;
@@ -808,7 +804,7 @@ class MarketDataService extends BaseService {
      */
     async getTokenCount() {
         try {
-            return await marketDb.tokens.count();
+            return await prisma.tokens.count();
         } catch (error) {
             logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error getting token count:${fancyColors.RESET}`, error);
             return 0;
@@ -838,7 +834,7 @@ class MarketDataService extends BaseService {
             logApi.debug(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Processing manual price updates for ${Object.keys(priceData).length} tokens`);
             
             // Delegate to repository module
-            await repository.handlePriceUpdate(priceData, marketDb, (tokenId, price, source) => 
+            await repository.handlePriceUpdate(priceData, prisma, (tokenId, price, source) => 
                 this.recordPriceHistory(tokenId, price, source));
             
         } catch (error) {
@@ -863,7 +859,7 @@ class MarketDataService extends BaseService {
             
             // Create a new price history entry
             // Use a connection from the pool only briefly
-            await marketDb.token_price_history.create({
+            await prisma.token_price_history.create({
                 data: {
                     token_id: tokenId,
                     price: price,
@@ -888,7 +884,7 @@ class MarketDataService extends BaseService {
      * @returns {Promise<boolean>} - Whether the operation was successful
      */
     async recordPriceHistoryBatch(priceHistoryRecords) {
-        return await repository.recordPriceHistoryBatch(priceHistoryRecords, marketDb);
+        return await repository.recordPriceHistoryBatch(priceHistoryRecords, prisma);
     }
 
     // Update token data in the market database
@@ -920,7 +916,7 @@ class MarketDataService extends BaseService {
             // Delegate to modular components
             
             // 1. Process existing token map
-            const existingTokens = await repository.getExistingTokens(marketDb);
+            const existingTokens = await repository.getExistingTokens(prisma);
             const existingTokenMap = repository.createTokenMap(existingTokens);
             
             // 2. Process and sort tokens
@@ -928,12 +924,12 @@ class MarketDataService extends BaseService {
             const tokenSubset = sortedTokens.slice(0, MAX_TOKENS_TO_PROCESS);
             
             // 3. Track rank changes and log insights
-            const rankingResult = await rankTracker.trackRankChanges(tokenSubset, existingTokenMap, marketDb);
+            const rankingResult = await rankTracker.trackRankChanges(tokenSubset, existingTokenMap, prisma);
             
             // 4. Process tokens in batches
             const processResult = await batchProcessor.processBatches(
                 tokenSubset, 
-                marketDb, 
+                prisma, 
                 {
                     jupiterClient,
                     heliusClient,
@@ -1064,7 +1060,7 @@ class MarketDataService extends BaseService {
             await enricher.enhanceTokenData(
                 processResult.tokensToEnhance, 
                 dexscreenerClient, 
-                marketDb, 
+                prisma, 
                 `${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET}`
             );
             
@@ -1251,7 +1247,7 @@ class MarketDataService extends BaseService {
             // Ensure service is healthy enough for a DB query
             await this.checkServiceHealth(); 
 
-            const priceData = await marketDb.token_prices.findMany({
+            const priceData = await prisma.token_prices.findMany({
                 where: {
                     token_id: { in: tokenIds }
                 },
