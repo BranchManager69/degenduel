@@ -26,7 +26,7 @@ import crypto from 'crypto';
 // Other
 import { Decimal } from '@prisma/client/runtime/library';
 import { solanaEngine } from './solana-engine/index.js';
-import { createKeyPairSignerFromBytes } from '@solana/keys';
+import { createKeyPairSignerFromBytes } from '@solana/signers';
 import { address as v2Address, getAddressFromPublicKey } from '@solana/addresses';
 import { Buffer } from 'node:buffer';
 import { createSystemTransferInstruction } from '@solana/pay';

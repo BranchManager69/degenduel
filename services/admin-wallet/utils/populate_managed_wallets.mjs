@@ -10,9 +10,13 @@ import prisma from '../../../config/prisma.js';
 import { logApi } from '../../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../../utils/colors.js';
 // For the balance check part
-import { executeRpcMethod as executeRpcCompat, getLamportsFromRpcResult as getLamportsCompat, toAddress as toAddressCompat, LAMPORTS_PER_SOL as LAMPORTS_PER_SOL_COMPAT } from '../../../services/admin-wallet/utils/solana-compat.js';
+// import { executeRpcMethod as executeRpcCompat, getLamportsFromRpcResult as getLamportsCompat, toAddress as toAddressCompat, LAMPORTS_PER_SOL as LAMPORTS_PER_SOL_COMPAT } from '../../../services/admin-wallet/utils/solana-compat.js';
 // import { solanaEngine } from '../../../services/solana-engine/index.js'; // Not needed directly for balance checks if using direct rpc config
 import { config as globalConfig } from '../../../config/config.js'; // For RPC URL & Solscan base
+
+// ADD: Import connectionManager and the LAMPORTS_PER_SOL constant (can be from compat or defined locally)
+import connectionManager from '../../../services/solana-engine/connection-manager.js';
+import { LAMPORTS_PER_SOL } from '../../../services/admin-wallet/utils/solana-compat.js'; // Or define: const LAMPORTS_PER_SOL = 1_000_000_000;
 
 const BATCH_SIZE_GET_MULTIPLE_ACCOUNTS = 90; // Max items per getMultipleAccounts call
 
@@ -192,11 +196,21 @@ async function populateWallets() {
         });
 
         // --- Sanity Balance Check (Batched) ---
-        logApi.info(fancyColors.CYAN + '\n--- Performing Batched Sanity Balance Check on ALL Managed Wallets --- shallower --- ' + fancyColors.RESET);
+        logApi.info(fancyColors.CYAN + '\n--- Performing Batched Sanity Balance Check on ALL Managed Wallets (using ConnectionManager) --- ' + fancyColors.RESET);
         
-        const directRpcConfig = { url: globalConfig.rpc_urls.primary, commitment: 'confirmed' }; 
-        const solscanBaseUrl = globalConfig.solana?.explorer_urls?.solscan || 'https://solscan.io/account';
+        // Initialize ConnectionManager if not already (important for standalone scripts)
+        if (!connectionManager.initialized) {
+            logApi.info('[populate_managed_wallets] Initializing ConnectionManager for balance checks...');
+            await connectionManager.initialize();
+            if (!connectionManager.initialized) {
+                logApi.error('[populate_managed_wallets] Failed to initialize ConnectionManager. Cannot perform balance checks.');
+                // Decide if to exit or just skip balance checks
+                // For now, let's log and skip this part if CM fails to init.
+                return; 
+            }
+        }
 
+        const solscanBaseUrl = globalConfig.solana?.explorer_urls?.solscan || 'https://solscan.io/account';
         const allManagedWalletsInDb = await prisma.managed_wallets.findMany({
              orderBy: { created_at: 'asc' } 
         });
@@ -222,20 +236,22 @@ async function populateWallets() {
             logApi.debug(`Processing batch of ${batchPublicKeys.length} wallets for balance check (starts with ${batchPublicKeys[0]})`);
 
             try {
-                const accountsInfo = await executeRpcCompat(
-                    directRpcConfig, 
-                    'getMultipleAccountsInfo',
-                    batchPublicKeys,
-                    { commitment: 'confirmed' } // Pass commitment as options object
+                // Use ConnectionManager to get multiple accounts info
+                const accountsInfoResults = await connectionManager.executeSolanaRpcMethod(
+                    'getMultipleAccounts', 
+                    [batchPublicKeys, { commitment: 'confirmed', encoding: 'base64' }] // Args array
                 );
 
-                accountsInfo.forEach((accountInfo, indexInBatch) => {
+                // accountsInfoResults is (ProcessedAccountInfo | null)[]
+                // where ProcessedAccountInfo has data as Buffer and owner as PublicKeyV1
+                accountsInfoResults.forEach((accountInfo, indexInBatch) => {
                     const wallet = batchOfWallets[indexInBatch];
                     let solBalance = 0;
                     let errorMsg = null;
 
-                    if (accountInfo) {
-                        solBalance = accountInfo.lamports / LAMPORTS_PER_SOL_COMPAT;
+                    if (accountInfo && accountInfo.lamports !== undefined && accountInfo.lamports !== null) {
+                        // lamports should be a number (or bigint that gets handled by Number() okay)
+                        solBalance = Number(accountInfo.lamports) / LAMPORTS_PER_SOL; // Use our imported/defined LAMPORTS_PER_SOL
                         if (solBalance > 0) {
                             walletsWithBalance++;
                             totalSolAcrossWallets += solBalance;
@@ -243,10 +259,9 @@ async function populateWallets() {
                             walletsWithZeroBalance++;
                         }
                     } else {
-                        // Account might not exist on-chain yet or error fetching this specific one
-                        errorMsg = 'Account info not found or error for this public key in batch.';
-                        walletsWithZeroBalance++; // Treat as zero for summary, but flag
-                        logApi.warn(`No account info for ${wallet.public_key} in batch response.`);
+                        errorMsg = accountInfo ? 'Lamports missing in account info' : 'Account info not found or error for this public key in batch.';
+                        walletsWithZeroBalance++;
+                        logApi.warn(`No/invalid account info for ${wallet.public_key} in batch response. AccountInfo:`, accountInfo);
                     }
                     balanceData.push({
                         id: wallet.id,
@@ -333,6 +348,8 @@ async function populateWallets() {
         // walletsCreated would have been logged by progress.finish if it got that far
     } finally {
         await prisma.$disconnect();
+        // Optionally, consider if connectionManager should be stopped if this script exclusively initialized it.
+        // For now, assume it's a shared utility that might be used by others or managed by a service lifecycle.
         logApi.info(fancyColors.CYAN + 'Prisma client disconnected.' + fancyColors.RESET);
     }
 }

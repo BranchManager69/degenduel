@@ -23,7 +23,7 @@ import { fancyColors, serviceSpecificColors } from '../utils/colors.js';
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
 // Solana
-import { createKeyPairSignerFromBytes } from '@solana/keys';
+import { createKeyPairSignerFromBytes } from '@solana/signers';
 import { address as v2Address, getAddressFromPublicKey } from '@solana/addresses';
 import { Buffer } from 'node:buffer';
 import crypto from 'crypto';
@@ -33,7 +33,8 @@ import { solanaEngine } from './solana-engine/index.js';
 import { Decimal } from '@prisma/client/runtime/library';
 //import marketDataService from './marketDataService.js';
 import levelingService from './levelingService.js';
-import { createSystemTransferInstruction } from '@solana/pay'; // For v2 SOL transfer instruction
+//import { LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
+import { getTransferSolInstruction } from '@solana-program/system'; // Correct package for SOL transfer instructions
 
 const VERBOSE_CONTEST_EVALUATION_INIT = false;
 
@@ -462,16 +463,17 @@ class ContestEvaluationService extends BaseService {
 
             const lamportsToTransfer = BigInt(Math.round(amountSOL * LAMPORTS_PER_SOL_V2));
 
-            const transferInstruction_v2 = createSystemTransferInstruction({
-                fromAddress: fromSigner_v2.address,
-                toAddress: v2Address(recipientAddressString),
-                lamports: lamportsToTransfer
+            // Use getTransferSolInstruction from @solana-program/system
+            const transferInstruction_v2 = getTransferSolInstruction({
+                source: fromSigner_v2, // Pass the Signer object directly
+                destination: v2Address(recipientAddressString), // Ensure this is an Address type
+                amount: lamportsToTransfer
             });
             
             const result = await solanaEngine.sendTransaction(
                 [transferInstruction_v2],
-                fromSigner_v2.address, // Fee payer
-                [fromSigner_v2],       // Signers
+                fromSigner_v2.address, // Fee payer is the address of the signer
+                [fromSigner_v2],       // Signers array
                 { commitment: 'confirmed', skipPreflight: false, maxRetries: 3 }
             );
 

@@ -24,7 +24,8 @@ import crypto from 'crypto';
 import bs58 from 'bs58';
 // Other
 import LRUCache from 'lru-cache';
-import { generateKeyPair as generateKeyPairV2, createKeyPairSignerFromBytes } from '@solana/keys';
+import { generateKeyPair as generateKeyPairV2 } from '@solana/keys';
+import { createKeyPairSignerFromBytes } from '@solana/signers';
 import { getAddressFromPublicKey } from '@solana/addresses';
 import { Keypair as KeypairV1 } from '@solana/web3.js';
 

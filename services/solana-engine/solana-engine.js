@@ -43,7 +43,8 @@ import {
   compileTransaction,
   signTransaction
 } from '@solana/transactions';
-import { fromLegacyInstruction, fromLegacyKeypair } from '@solana/compat'; // For converting v1 instructions/keypairs
+
+//import { fromLegacyInstruction, fromLegacyKeypair } from '@solana/compat'; // For converting v1 instructions/keypairs
 
 // Import Helius Kite
 import { connect as connectKite } from 'solana-kite';
@@ -253,10 +254,10 @@ class SolanaEngineService extends BaseService {
   /**
    * Get a connection from the connection manager.
    * This simplified version just returns the single connection.
-   * @returns {SolanaRpcMethods} The Solana v2 RPC client // Type might differ based on exact v2 client chosen
+   * @returns {import('@solana/web3.js').Rpc<import('@solana/web3.js').SolanaRpcApi>} The Solana v2 RPC client
    */
   getConnection() {
-    return this.connectionManager.getRpcClient(); // Updated to call the v2 client getter
+    return this.connectionManager.getRpcClient();
   }
   
   /**

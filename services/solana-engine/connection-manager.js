@@ -6,11 +6,14 @@
  * Manages a v2 RPC client for Solana interactions.
  */
 
-import { createSolanaRpc } from '@solana/kit';
-import { SolanaRpcMethods } from '@solana/rpc-methods'; // This import might also come from @solana/kit or be unneeded if rpc client is not explicitly typed
+// Import using the default export method as suggested by the runtime error
+import web3js from '@solana/web3.js';
+const { createSolanaRpc, PublicKey } = web3js;
+
 import { logApi } from '../../utils/logger-suite/logger.js';
 import { config } from '../../config/config.js';
-import { PublicKeyV1 } from '@solana/web3.js';
+// PublicKey is now destructured from the web3js default import
+import { Buffer } from 'node:buffer';
 
 // Default commitment level
 const DEFAULT_COMMITMENT = 'confirmed';
@@ -26,7 +29,9 @@ class ConnectionManager {
     }
     ConnectionManager.instance = this;
     
-    this.rpc = null; // Will hold the v2 RPC client
+    // this.rpc will be an instance of the client returned by createSolanaRpc.
+    // Its type, for documentation, is Rpc<SolanaRpcApi>.
+    this.rpc = null; 
     this.endpoint = null;
     this.initialized = false;
   }
@@ -43,7 +48,6 @@ class ConnectionManager {
     try {
       logApi.info('Initializing ConnectionManager with v2 RPC client');
       
-      // Get RPC endpoint from config
       const rpcEndpoint = config.rpc_urls.mainnet_http || config.rpc_urls.primary;
       
       if (!rpcEndpoint) {
@@ -52,11 +56,9 @@ class ConnectionManager {
         return false;
       }
       
-      // Create v2 RPC client
-      this.rpc = createSolanaRpc({ url: rpcEndpoint });
+      this.rpc = createSolanaRpc(rpcEndpoint); // createSolanaRpc takes URL string
       
-      // Test the connection with a simple RPC call (v2 style)
-      await this.rpc.getSlot().send();
+      await this.rpc.getSlot().send(); // Test the connection
       
       this.endpoint = rpcEndpoint;
       this.initialized = true;
@@ -66,22 +68,17 @@ class ConnectionManager {
     } catch (error) {
       logApi.error(`Failed to initialize ConnectionManager with v2 RPC client: ${error.message}`, { error });
       this.initialized = false;
-      this.rpc = null; // Ensure rpc is null if initialization fails
+      this.rpc = null;
       return false;
     }
   }
 
   /**
    * Get the Solana v2 RPC client
-   * @returns {SolanaRpcMethods} - Solana v2 RPC client object (or the client instance)
+   * @returns {import('@solana/web3.js').Rpc<import('@solana/web3.js').SolanaRpcApi>} - Solana v2 RPC client object
    */
   getRpcClient() {
     if (!this.initialized || !this.rpc) {
-      // Attempt to initialize if not already
-      logApi.warn('ConnectionManager getRpcClient called before initialization or after a failed init. Attempting to initialize...');
-      // This path should ideally not be hit frequently if initialize is called at service startup.
-      // Consider if an immediate throw is better if !this.initialized.
-      // For now, let's stick to throwing if not initialized properly.
       throw new Error('ConnectionManager not initialized or initialization failed. Call initialize() first.');
     }
     return this.rpc;
@@ -142,27 +139,23 @@ class ConnectionManager {
    * @returns {Promise<any>} - Result of the method call
    */
   async executeSolanaRpcMethod(methodName, args = []) {
-    const rpc = this.getRpcClient(); // Ensures client is initialized or throws
+    const rpc = this.getRpcClient();
     const commitment = args.find(arg => typeof arg === 'object' && arg?.commitment)?.commitment || DEFAULT_COMMITMENT;
-    const rpcConfig = { commitment };
-
-    // Note: PublicKeys from v1 must be passed as base58 strings to v2 Address type automatically
-    // or converted explicitly using `address(publicKeyString)` from '@solana/addresses'.
-    // For simplicity, we'll assume addresses in `args` are strings where needed.
+    // const rpcConfig = { commitment }; // Not always used directly like this, config built per case
 
     logApi.debug(`Executing v2 RPC method: ${methodName} with args:`, args);
 
     try {
       switch (methodName) {
         case 'getSlot':
-          return await rpc.getSlot(rpcConfig).send();
+          return await rpc.getSlot().send();
         case 'getLatestBlockhash':
           // Args[0] could be a config object in v1, in v2 it's a direct config
-          return await rpc.getLatestBlockhash(args[0] || rpcConfig).send();
+          return await rpc.getLatestBlockhash(args[0] || { commitment }).send();
         case 'getBalance':
           if (!args[0]) throw new Error('getBalance requires a public key string argument.');
           // Assumes args[0] is a publicKey string. @solana/rpc should handle string to Address.
-          return await rpc.getBalance(args[0], rpcConfig).send();
+          return await rpc.getBalance(args[0], { commitment }).send();
         case 'getAccountInfo':
           if (!args[0]) throw new Error('getAccountInfo requires a public key string or PublicKey argument.');
           const accountAddressString = typeof args[0] === 'string' ? args[0] : args[0].toBase58();
@@ -176,9 +169,9 @@ class ConnectionManager {
             if (v2AccountInfoResult.value.data && typeof v2AccountInfoResult.value.data[0] === 'string' && accountInfoConfig.encoding === 'base64') {
               v2AccountInfoResult.value.data = Buffer.from(v2AccountInfoResult.value.data[0], 'base64');
             }
-            // Convert owner to PublicKeyV1 for compatibility
+            // Convert owner to PublicKey for compatibility
             if (v2AccountInfoResult.value.owner && typeof v2AccountInfoResult.value.owner === 'string') {
-                v2AccountInfoResult.value.owner = new PublicKeyV1(v2AccountInfoResult.value.owner);
+                v2AccountInfoResult.value.owner = new PublicKey(v2AccountInfoResult.value.owner);
             }
           }
           return v2AccountInfoResult.value;
@@ -202,9 +195,9 @@ class ConnectionManager {
                 v2ParsedResult.value.data = Buffer.from(v2ParsedResult.value.data[0], v2ParsedResult.value.data[1] === 'base58' ? 'base58' : 'base64'); 
               }
             }
-            // Convert owner to PublicKeyV1 for compatibility
+            // Convert owner to PublicKey for compatibility
             if (v2ParsedResult.value.owner && typeof v2ParsedResult.value.owner === 'string') {
-                v2ParsedResult.value.owner = new PublicKeyV1(v2ParsedResult.value.owner);
+                v2ParsedResult.value.owner = new PublicKey(v2ParsedResult.value.owner);
             }
           }
           // If v2ParsedResult.value.data is already an object (parsed), it's good.
@@ -297,11 +290,11 @@ class ConnectionManager {
               accountData = Buffer.from(accountData[0], 'base64');
             }
             return {
-              pubkey: new PublicKeyV1(item.pubkey), // Convert string pubkey back to v1 PublicKey
+              pubkey: new PublicKey(item.pubkey), // Convert string pubkey back to v1 PublicKey
               account: {
                 ...item.account,
                 data: accountData,
-                owner: new PublicKeyV1(item.account.owner) // Convert owner string to v1 PublicKey
+                owner: new PublicKey(item.account.owner) // Convert owner string to v1 PublicKey
               }
             };
           });
@@ -366,6 +359,36 @@ class ConnectionManager {
             logApi.error('getFeeForMessage: Unrecognized message format.', { messageInput });
             throw new Error('getFeeForMessage received an unrecognized message format.');
           }
+        case 'getMultipleAccounts': // V2 name, analogous to v1 getMultipleAccountsInfo
+          if (!args[0] || !Array.isArray(args[0])) {
+            throw new Error('getMultipleAccounts requires an array of public key strings as its first argument.');
+          }
+          const publicKeyStrings = args[0];
+          const getMultipleAccountsConfig = {
+            commitment: (args[1] && args[1].commitment) || commitment,
+            encoding: (args[1] && args[1].encoding) || 'base64', // Default to base64 to get Buffer data
+            dataSlice: (args[1] && args[1].dataSlice) || undefined,
+            minContextSlot: (args[1] && args[1].minContextSlot) || undefined,
+          };
+
+          // The @solana/rpc client's getMultipleAccounts expects string addresses.
+          // No need to convert with toAddress() here as publicKeyStrings should already be strings.
+          const v2Results = await rpc.getMultipleAccounts(publicKeyStrings, getMultipleAccountsConfig).send();
+          
+          // v2Results is (AccountInfo | null)[]
+          // We need to map it to ensure data is Buffer and owner is PublicKey for compat
+          return v2Results.map(accountInfo => {
+            if (!accountInfo) return null;
+            let processedData = accountInfo.data;
+            if (getMultipleAccountsConfig.encoding === 'base64' && Array.isArray(accountInfo.data) && typeof accountInfo.data[0] === 'string') {
+              processedData = Buffer.from(accountInfo.data[0], 'base64');
+            }
+            return {
+              ...accountInfo,
+              data: processedData,
+              owner: new PublicKey(accountInfo.owner), // Convert owner string to v1 PublicKey
+            };
+          });
         // Add other common methods here as needed
         default:
           logApi.error(`Unsupported v2 RPC method in ConnectionManager: ${methodName}`);

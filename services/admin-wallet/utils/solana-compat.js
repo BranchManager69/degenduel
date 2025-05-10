@@ -5,14 +5,13 @@
  *
  * @description Provides focused compatibility utilities for admin-wallet modules interacting with SolanaEngine.
  * @author BranchManager69
- * @version 2.1.0
+ * @version 2.2.0
  * @updated $(date +%Y-%m-%d)
  */
 
-import { PublicKey as PublicKeyV1, Keypair as KeypairV1 } from '@solana/web3.js';
 import { address, getAddressFromPublicKey } from '@solana/addresses';
-// REMOVE: import { createSolanaRpc } from '@solana/rpc'; // No longer making direct RPC calls from here
-import { fromLegacyKeypair } from '@solana/compat';
+import { createKeyPairSignerFromBytes } from '@solana/signers';
+import { Buffer } from 'node:buffer';
 
 // Constants
 export const LAMPORTS_PER_SOL = 1_000_000_000;
@@ -22,29 +21,37 @@ export const LAMPORTS_PER_SOL = 1_000_000_000;
 export function toAddress(publicKeyOrString) {
   if (typeof publicKeyOrString === 'string') {
     return address(publicKeyOrString);
-  } else if (publicKeyOrString instanceof PublicKeyV1) {
-    return getAddressFromPublicKey(publicKeyOrString);
   }
   return publicKeyOrString; 
 }
 
-export async function createKeypairFromPrivateKey(privateKeyBytes) {
+/**
+ * Creates a v2 `KeyPairSigner` from raw 64-byte v1 private key bytes by extracting the 32-byte seed.
+ * 
+ * @param {Uint8Array | Buffer | number[]} privateKeyBytes_64 - The raw 64-byte v1 private key.
+ * @returns {Promise<import('@solana/signers').KeyPairSigner>} - The v2 KeyPairSigner.
+ */
+export async function createKeypairFromPrivateKey(privateKeyBytes_64) {
   let keyBytesUint8;
-  if (privateKeyBytes instanceof Uint8Array) {
-    keyBytesUint8 = privateKeyBytes;
-  } else if (Buffer.isBuffer(privateKeyBytes)) {
-    keyBytesUint8 = Uint8Array.from(privateKeyBytes);
-  } else if (Array.isArray(privateKeyBytes)) {
-    keyBytesUint8 = Uint8Array.from(privateKeyBytes);
+  if (privateKeyBytes_64 instanceof Uint8Array) {
+    keyBytesUint8 = privateKeyBytes_64;
+  } else if (Buffer.isBuffer(privateKeyBytes_64)) {
+    keyBytesUint8 = Uint8Array.from(privateKeyBytes_64);
+  } else if (Array.isArray(privateKeyBytes_64)) {
+    keyBytesUint8 = Uint8Array.from(privateKeyBytes_64);
   } else {
-    throw new Error('Invalid private key input format. Expected Uint8Array, Buffer, or Array.');
+    throw new Error('Invalid private key input format for createKeypairFromPrivateKey. Expected Uint8Array, Buffer, or Array.');
   }
+
   if (keyBytesUint8.length !== 64) {
-      throw new Error(`Invalid private key length: ${keyBytesUint8.length}. Expected 64 bytes.`);
+      throw new Error(`Invalid private key length: ${keyBytesUint8.length}. Expected 64 bytes for v1 secret key format.`);
   }
-  const tempV1Keypair = KeypairV1.fromSecretKey(keyBytesUint8);
-  const cryptoKeyPair = await fromLegacyKeypair(tempV1Keypair);
-  return cryptoKeyPair;
+  
+  // Extract the first 32 bytes (the seed) from the 64-byte v1 secret key
+  const seed_32_bytes = keyBytesUint8.slice(0, 32);
+  
+  // Create a v2 KeyPairSigner directly from the 32-byte seed
+  return await createKeyPairSignerFromBytes(seed_32_bytes);
 }
 
 /**

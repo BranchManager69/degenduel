@@ -9,16 +9,19 @@ import chalk from 'chalk';
 import logApi from '../utils/logger-suite/logger.js';
 import prisma from '../config/prisma.js';
 import { requireAuth, requireSuperAdmin } from '../middleware/auth.js';
-import { Connection, PublicKey, Keypair, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { 
+    Connection, PublicKey, Keypair, 
+    Transaction, SystemProgram, 
+    LAMPORTS_PER_SOL
+} from '@solana/web3.js';
 // Route imports
 import walletMonitoringRouter from './admin-api/wallet-monitoring.js';
 // Services
 import walletGenerationService from '../services/walletGenerationService.js';
 import adminWalletService from '../services/admin-wallet/index.js';
-import { getContestWallet } from '../utils/solana-suite/solana-wallet.js';
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
-import ContestWalletService from '../../services/contest-wallet/contestWalletService.js';
+import ContestWalletService from '../services/contest-wallet/contestWalletService.js';
 ////import liquidityService from '../services/liquidityService.js';
 ////import userBalanceTrackingService from '../services/userBalanceTrackingService.js';
 

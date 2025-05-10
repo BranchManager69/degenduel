@@ -12,7 +12,8 @@
 
 // V2 Solana SDK Imports
 import { getAddressFromPublicKey, isAddress, address as v2Address } from '@solana/addresses';
-import { generateKeyPair, createKeyPairSignerFromBytes } from '@solana/keys'; 
+import { generateKeyPair } from '@solana/keys'; 
+import { createKeyPairSignerFromBytes } from '@solana/signers';
 import { createSystemTransferInstruction } from '@solana/pay';
 import { solanaEngine } from '../../services/solana-engine/index.js'; // Ensure path is correct
 import { Buffer } from 'node:buffer';

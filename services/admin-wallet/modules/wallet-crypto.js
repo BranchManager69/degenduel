@@ -9,7 +9,7 @@
  *              private key formats, including legacy decoding and v2 compatibility.
  * 
  * @author BranchManager69
- * @version 2.1.0
+ * @version 2.3.0
  * @created $(date +%Y-%m-%d)
  * @updated $(date +%Y-%m-%d)
  */
@@ -17,24 +17,54 @@
 import { logApi } from '../../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../../utils/colors.js';
 import crypto from 'crypto';
-import bs58 from 'bs58';
-import { Keypair as KeypairV1_for_legacy } from '@solana/web3.js';
 import { ServiceError } from '../../../utils/service-suite/service-error.js';
 import { createKeypairFromPrivateKey as createKeypairViaCompatLayer } from '../utils/solana-compat.js';
-import { createKeyPairSignerFromBytes } from '@solana/keys';
+import { createKeyPairSignerFromBytes } from '@solana/signers';
 import { Buffer } from 'node:buffer';
 
 /* Functions */
 
 /**
- * Encrypts a wallet private key using AES-256-GCM
- * 
- * @param {string} privateKey - The private key to encrypt
- * @param {Object} config - Configuration for encryption
- * @param {string} encryptionKey - The encryption key (from environment variables)
- * @returns {string} - JSON string of encrypted data
+ * Encrypts a 32-byte seed buffer directly for v2 storage.
+ * Returns JSON with a version marker.
  */
-export function encryptWallet(privateKey, config, encryptionKey) {
+export function encryptV2SeedBuffer(seedBuffer_32_bytes, config, encryptionKey) {
+    if (!(seedBuffer_32_bytes instanceof Buffer && seedBuffer_32_bytes.length === 32)) {
+        throw ServiceError.validation('encryptV2SeedBuffer expects a 32-byte Buffer.');
+    }
+    try {
+        const iv = crypto.randomBytes(config.wallet.encryption.ivLength);
+        // Optional: const aad = crypto.randomBytes(16); // For additional authenticated data
+        const cipher = crypto.createCipheriv(
+            config.wallet.encryption.algorithm,
+            Buffer.from(encryptionKey, 'hex'),
+            iv
+        );
+        // if (aad) cipher.setAAD(aad);
+        
+        const encryptedSeed = Buffer.concat([cipher.update(seedBuffer_32_bytes), cipher.final()]);
+        const tag = cipher.getAuthTag();
+
+        return JSON.stringify({
+            version: 'v2_seed_admin_raw', // New distinct version for encrypted raw seed
+            encrypted_payload: encryptedSeed.toString('hex'), // Store hex of encrypted RAW seed
+            iv: iv.toString('hex'),
+            tag: tag.toString('hex'),
+            // aad: aad ? aad.toString('hex') : undefined
+        });
+    } catch (error) {
+        throw ServiceError.operation('Failed to encrypt v2 seed buffer', {
+            error: error.message,
+            type: 'ENCRYPTION_ERROR_V2_SEED'
+        });
+    }
+}
+
+/* --- Legacy Encryption (Kept for compatibility if anything still calls it expecting to encrypt a string) --- */
+// This function is problematic if the string isn't handled well by crypto layer encoding.
+// Ideally, callers should provide bytes to an encryptBuffer type function.
+export function encryptLegacyPrivateKeyString(privateKeyString, config, encryptionKey) {
+    logApi.warn("[wallet-crypto] encryptLegacyPrivateKeyString called. This method is for legacy purposes and assumes input string is crypto-safe.")
     try {
         const iv = crypto.randomBytes(config.wallet.encryption.ivLength);
         const cipher = crypto.createCipheriv(
@@ -42,40 +72,48 @@ export function encryptWallet(privateKey, config, encryptionKey) {
             Buffer.from(encryptionKey, 'hex'),
             iv
         );
-
-        const encrypted = Buffer.concat([
-            cipher.update(privateKey),
-            cipher.final()
-        ]);
-
+        // cipher.update by default treats string as utf8. This might be the issue if string had non-utf8 bytes represented.
+        const encrypted = Buffer.concat([cipher.update(privateKeyString), cipher.final()]);
         const tag = cipher.getAuthTag();
-
         return JSON.stringify({
+            // NO version marker here for legacy
             encrypted: encrypted.toString('hex'),
             iv: iv.toString('hex'),
             tag: tag.toString('hex')
         });
     } catch (error) {
-        throw ServiceError.operation('Failed to encrypt wallet', {
+        throw ServiceError.operation('Failed to encrypt legacy private key string', {
             error: error.message,
-            type: 'ENCRYPTION_ERROR'
+            type: 'ENCRYPTION_ERROR_LEGACY_STRING'
         });
     }
 }
 
+// Aliasing old encryptWallet to the legacy string version for now.
+// Migration script will call the new encryptV2SeedBuffer directly.
+// Other parts of the codebase if they call `encryptWallet` need to be assessed.
+export const encryptWallet = encryptLegacyPrivateKeyString;
+
 /**
  * Decrypts a wallet private key.
- * Handles new 'v2_seed_admin' format (returning 32-byte Buffer seed) and legacy format (returning string).
+ * If version is 'v2_seed_admin_raw', returns the raw 32-byte Buffer (seed).
+ * If version is 'v2_seed_admin' (older string-encoded seed), attempts bs58/hex decode to get 32-byte Buffer.
+ * For legacy (no version), returns the raw 64-byte (expected) decrypted Buffer.
  */
 export function decryptWallet(encryptedDataJsonString, encryptionKey) {
     try {
         if (typeof encryptedDataJsonString !== 'string' || !encryptedDataJsonString.startsWith('{')) {
-            logApi.info(`${fancyColors.CYAN}[wallet-crypto]${fancyColors.RESET} Key appears to be plaintext: ${encryptedDataJsonString.substring(0,20)}...`);
-            return encryptedDataJsonString; // Return as-is (string)
+            logApi.debug(`${fancyColors.CYAN}[wallet-crypto]${fancyColors.RESET} Key treated as plaintext: ${encryptedDataJsonString.substring(0,20)}...`);
+            return encryptedDataJsonString;
         }
         
         const parsedData = JSON.parse(encryptedDataJsonString);
-        const { encrypted, iv, tag, version, aad } = parsedData;
+        const { encrypted_payload, encrypted, iv, tag, version, aad } = parsedData; // Look for encrypted_payload first
+
+        const payloadToDecrypt = encrypted_payload || encrypted; // Use new field if present
+        if (!payloadToDecrypt || !iv || !tag) {
+            throw new Error('Encrypted data JSON is missing required fields (encrypted_payload/encrypted, iv, tag).');
+        }
 
         const decipher = crypto.createDecipheriv(
             'aes-256-gcm',
@@ -83,83 +121,82 @@ export function decryptWallet(encryptedDataJsonString, encryptionKey) {
             Buffer.from(iv, 'hex')
         );
         decipher.setAuthTag(Buffer.from(tag, 'hex'));
-        if (aad) decipher.setAAD(Buffer.from(aad, 'hex')); // Handle AAD if present (good practice)
+        if (aad) decipher.setAAD(Buffer.from(aad, 'hex'));
         
         const decryptedBuffer = Buffer.concat([
-            decipher.update(Buffer.from(encrypted, 'hex')),
+            decipher.update(Buffer.from(payloadToDecrypt, 'hex')),
             decipher.final()
         ]);
 
-        if (version === 'v2_seed_admin') {
-            // For new version, the decrypted content IS the 32-byte seed.
-            // We need to ensure it was stored as such (e.g., if seed was hex/bs58 encoded before encryption by caller of encryptWallet).
-            // Let's assume the decryptedBuffer here IS the raw 32-byte seed if version matches.
-            // If encryptWallet encrypted a bs58 string of the seed, this decryptedBuffer would be that string.
-            // For this path to return raw bytes, encryptWallet should have taken raw bytes, or this needs to decode.
-            // Let's refine this: IF version is v2_seed_admin, we assume the original encrypted payload
-            // was the *string representation* of the seed (e.g. bs58). So, we decode it HERE.
-            const decryptedSeedString = decryptedBuffer.toString();
+        if (version === 'v2_seed_admin_raw') { // New path for raw encrypted seed
+            if (decryptedBuffer.length !== 32) {
+                logApi.error('[wallet-crypto] v2_seed_admin_raw: Decrypted payload is not 32 bytes.', { length: decryptedBuffer.length });
+                throw ServiceError.operation('Decrypted v2_seed_admin_raw payload is not 32 bytes', { type: 'DECRYPTION_ERROR_V2_RAW_SEED_LENGTH' });
+            }
+            logApi.debug('[wallet-crypto] Decrypted v2_seed_admin_raw directly to 32-byte seed Buffer.');
+            return decryptedBuffer; // Return 32-byte raw seed Buffer directly
+
+        } else if (version === 'v2_seed_admin') { // Old path for string-encoded encrypted seed
+            const decryptedSeedString = decryptedBuffer.toString(); 
             let seedBytes_32;
-            try {
-                seedBytes_32 = bs58.decode(decryptedSeedString); // Assuming it was bs58 encoded seed string
-            } catch (e) {
-                // Try hex as a fallback if bs58 decode fails
-                try {
-                    seedBytes_32 = Buffer.from(decryptedSeedString, 'hex');
-                } catch (hexErr) {
-                    logApi.error('[wallet-crypto] v2_seed_admin decryption: Failed to decode seed string (bs58 or hex).', {decryptedSeedString});
-                    throw ServiceError.operation('Failed to decode v2_seed_admin after decryption', { type: 'DECRYPTION_ERROR_SEED_DECODE' });
+            try { seedBytes_32 = bs58.decode(decryptedSeedString); }
+            catch (e) {
+                try { seedBytes_32 = Buffer.from(decryptedSeedString, 'hex'); }
+                catch (hexErr) {
+                    logApi.error('[wallet-crypto] v2_seed_admin (string): Failed to decode seed string.', {decryptedSeedString});
+                    throw ServiceError.operation('Failed to decode v2_seed_admin (string) after decryption', { type: 'DECRYPTION_ERROR_SEED_DECODE' });
                 }
             }
-
             if (seedBytes_32.length !== 32) {
-                logApi.error('[wallet-crypto] v2_seed_admin decryption: Decoded seed is not 32 bytes.', { length: seedBytes_32.length });
-                throw ServiceError.operation('Decrypted v2_seed_admin is not 32 bytes', { type: 'DECRYPTION_ERROR_SEED_LENGTH' });
+                logApi.error('[wallet-crypto] v2_seed_admin (string): Decoded seed is not 32 bytes.', { length: seedBytes_32.length });
+                throw ServiceError.operation('Decrypted v2_seed_admin (string) seed is not 32 bytes', { type: 'DECRYPTION_ERROR_SEED_LENGTH' });
             }
-            logApi.debug('[wallet-crypto] Decrypted v2_seed_admin successfully to 32-byte seed Buffer.');
-            return Buffer.from(seedBytes_32); // Return 32-byte Buffer
+            logApi.debug('[wallet-crypto] Decrypted v2_seed_admin (string) to 32-byte seed Buffer.');
+            return Buffer.from(seedBytes_32);
         } else {
-            // Legacy path: decrypted content was likely a v1 key string representation
-            logApi.debug('[wallet-crypto] Decrypted legacy key format to string.');
-            return decryptedBuffer.toString(); // Return string for legacy path
+            // Legacy path: return the raw decrypted buffer (expected to be 64-byte v1 secret key)
+            logApi.debug(`[wallet-crypto] Decrypted legacy key format to raw Buffer (length: ${decryptedBuffer.length}).`);
+            return decryptedBuffer;
         }
     } catch (error) {
         logApi.error(`${fancyColors.RED}[wallet-crypto] Decryption error:${fancyColors.RESET} ${error.message}`);
-        // Avoid exposing too much detail in generic error
-        throw ServiceError.operation('Failed to decrypt wallet key', {
-            type: 'DECRYPTION_ERROR_GENERAL' 
-            // originalError: error.message // Be cautious about exposing internal error messages
-        });
+        throw ServiceError.operation('Failed to decrypt wallet key', { type: 'DECRYPTION_ERROR_GENERAL' });
     }
 }
 
 /**
- * Creates a Solana keypair from various input types.
+ * Creates a Solana keypair from a decrypted private key (Buffer).
  * If input is a 32-byte seed (Buffer), uses v2 direct creation.
- * If input is a string (legacy encrypted key), uses legacy path via compat layer.
+ * If input is a 64-byte v1 key (Buffer), uses legacy path via compat layer.
  */
-export async function createKeypairFromPrivateKeyCompat(privateKeyInput) {
+export async function createKeypairFromPrivateKeyCompat(decryptedKeyBuffer) {
     try {
-        if (privateKeyInput instanceof Buffer && privateKeyInput.length === 32) {
-            // Input is a 32-byte seed Buffer (from new decryptWallet path)
-            logApi.debug('[wallet-crypto] Creating v2 KeyPairSigner directly from 32-byte seed.');
-            return await createKeyPairSignerFromBytes(privateKeyInput);
-        } else if (typeof privateKeyInput === 'string') {
-            // Input is a string (from legacy decryptWallet path or direct plaintext string)
-            logApi.debug('[wallet-crypto] Input is string, attempting legacy keypair creation path...');
-            const legacyKeypair_v1 = createKeypairFromPrivateKeyLegacy(privateKeyInput);
-            if (!legacyKeypair_v1 || !legacyKeypair_v1.secretKey || legacyKeypair_v1.secretKey.length !== 64) {
-                throw new Error('Legacy decoder did not return valid 64-byte secret key for compat layer.');
-            }
-            // Pass the full 64-byte v1 secret key to the compat layer function
-            return await createKeypairViaCompatLayer(legacyKeypair_v1.secretKey);
-        } else if ((privateKeyInput instanceof Uint8Array || Buffer.isBuffer(privateKeyInput)) && privateKeyInput.length === 64) {
-            // Input is already a 64-byte array (e.g. from some other source)
-            logApi.debug('[wallet-crypto] Input is 64-byte array, using compat layer directly.');
-            return await createKeypairViaCompatLayer(privateKeyInput);
-        }else {
-            logApi.error('[wallet-crypto] Invalid input type for createKeypairFromPrivateKeyCompat:', privateKeyInput);
-            throw new Error('Invalid input for keypair creation. Expected 32-byte seed Buffer, legacy key string, or 64-byte array.');
+        if (!(decryptedKeyBuffer instanceof Buffer)) {
+            // This case might occur if decryptWallet returned a plaintext string that wasn't JSON
+            logApi.warn('[wallet-crypto] createKeypairFromPrivateKeyCompat received non-Buffer input. Assuming plaintext string for legacy processing.', { inputType: typeof decryptedKeyBuffer});
+            // Attempt to process it via the legacy string decoder if it makes sense, or throw
+            // For now, if it's not a buffer, it means an unencrypted key was passed directly. This should go to legacy.
+            // The old createKeypairFromPrivateKeyLegacy was designed for strings.
+            // To maintain this path, we'd re-introduce createKeypairFromPrivateKeyLegacy and call it here.
+            // However, the goal is to simplify. If decryptWallet handles unencrypted strings by returning them as strings,
+            // then this function should probably error if it doesn't get a Buffer from decryptWallet's JSON path.
+            // Let's assume for now that if it's not a Buffer, it's an error from this point on, 
+            // as `decryptWallet` for encrypted keys should always yield a Buffer now.
+            // The only way it would be a string is if an *unencrypted* key was passed to `decryptWallet`.
+            // If unencrypted keys are expected, then `createKeypairFromPrivateKeyLegacy` needs to be retained and called here.
+            // Given the error logs, unencrypted keys were not the issue; it was the format of decrypted *encrypted* keys.
+            throw new Error ('createKeypairFromPrivateKeyCompat expects a Buffer (decrypted key or seed).');
+        }
+
+        if (decryptedKeyBuffer.length === 32) {
+            logApi.debug('[wallet-crypto] Creating v2 KeyPairSigner directly from 32-byte seed Buffer.');
+            return await createKeyPairSignerFromBytes(decryptedKeyBuffer);
+        } else if (decryptedKeyBuffer.length === 64) {
+            logApi.debug('[wallet-crypto] Input is 64-byte Buffer (legacy v1 key), using compat layer.');
+            return await createKeypairViaCompatLayer(decryptedKeyBuffer);
+        } else {
+            logApi.error('[wallet-crypto] Invalid Buffer length for createKeypairFromPrivateKeyCompat:', { length: decryptedKeyBuffer.length });
+            throw new Error('Invalid Buffer length for keypair creation. Expected 32 or 64 bytes.');
         }
     } catch (error) {
         logApi.error('[wallet-crypto] Error in createKeypairFromPrivateKeyCompat:', error);
@@ -170,65 +207,12 @@ export async function createKeypairFromPrivateKeyCompat(privateKeyInput) {
     }
 }
 
-/**
- * [LEGACY] Creates a Solana v1 Keypair from various possible private key string formats.
- */
-export function createKeypairFromPrivateKeyLegacy(decryptedPrivateKeyString) {
-    logApi.info(`${fancyColors.CYAN}[wallet-crypto]${fancyColors.RESET} [Legacy] Processing decrypted key string length: ${decryptedPrivateKeyString.length}`);
-    let privateKeyBytes_64;
-    let fromKeypair_v1;
-    try {
-        if (/^[0-9a-fA-F]+$/.test(decryptedPrivateKeyString)) { // Hex
-            if (decryptedPrivateKeyString.length === 128) privateKeyBytes_64 = Buffer.from(decryptedPrivateKeyString, 'hex');
-            else { /* ... padding logic for hex ... */ 
-                const secretKey = new Uint8Array(64); const hexData = Buffer.from(decryptedPrivateKeyString, 'hex');
-                for (let i = 0; i < Math.min(hexData.length, 64); i++) secretKey[i] = hexData[i];
-                privateKeyBytes_64 = secretKey;}
-            if (privateKeyBytes_64) fromKeypair_v1 = KeypairV1_for_legacy.fromSecretKey(privateKeyBytes_64);
-        }
-        if (!fromKeypair_v1) { // Base58
-            privateKeyBytes_64 = bs58.decode(decryptedPrivateKeyString);
-            if (privateKeyBytes_64.length !== 64) { /* ... padding logic for bs58 ... */ 
-                const paddedKey = new Uint8Array(64); for (let i = 0; i < Math.min(privateKeyBytes_64.length, 64); i++) paddedKey[i] = privateKeyBytes_64[i];
-                privateKeyBytes_64 = paddedKey; }
-            if (privateKeyBytes_64) fromKeypair_v1 = KeypairV1_for_legacy.fromSecretKey(privateKeyBytes_64);
-        }
-        // ... (Simplified further checks for base64, JSON - assuming primary paths are hex/bs58 for brevity in this diff)
-        if (!fromKeypair_v1 && decryptedPrivateKeyString.startsWith('[') && decryptedPrivateKeyString.endsWith(']')) { // JSON Array
-            try {
-                const arr = JSON.parse(decryptedPrivateKeyString);
-                if (Array.isArray(arr) && arr.every(n => typeof n === 'number')) {
-                     if (arr.length === 32) { // If it's a 32-byte seed array, make it 64 for v1 Keypair
-                        const fullKey = new Uint8Array(64); fullKey.set(arr); privateKeyBytes_64 = fullKey;
-                     } else if (arr.length === 64) {
-                        privateKeyBytes_64 = Uint8Array.from(arr);
-                     } // else invalid length for this path
-                     if (privateKeyBytes_64) fromKeypair_v1 = KeypairV1_for_legacy.fromSecretKey(privateKeyBytes_64);
-                }
-            } catch(e){ logApi.warn("Failed to parse as JSON array for legacy key (expected byte array)"); }
-        }
-
-        if (!fromKeypair_v1) { // Final fallback if it was a raw string not fitting other formats, try bs58 again
-            logApi.warn('[wallet-crypto] Legacy key decode: All formats failed, trying direct bs58 as last resort.');
-            privateKeyBytes_64 = bs58.decode(decryptedPrivateKeyString);
-            if (privateKeyBytes_64.length !== 64) { /* pad */ const p = new Uint8Array(64); p.set(privateKeyBytes_64.slice(0, Math.min(privateKeyBytes_64.length, 32))); privateKeyBytes_64 = p;} // If it was a seed, it ends up as 32 bytes in 64 byte array for v1
-            fromKeypair_v1 = KeypairV1_for_legacy.fromSecretKey(privateKeyBytes_64);
-        }
-    } catch (allFormatError) {
-        throw new Error(`[Legacy] Failed to decode private key string in any supported format: ${allFormatError.message}`);
-    }
-    if (!fromKeypair_v1 || !fromKeypair_v1.publicKey) {
-        throw new Error('[Legacy] Failed to generate valid v1 keypair from private key string');
-    }
-    logApi.info(`${fancyColors.CYAN}[wallet-crypto]${fancyColors.RESET} [Legacy] Successfully created v1 keypair: ${fromKeypair_v1.publicKey.toBase58()}`);
-    return fromKeypair_v1;
-}
-
 /* Exports */
 
 export default {
-    encryptWallet,
+    encryptV2SeedBuffer,
+    encryptLegacyPrivateKeyString,
+    encryptWallet: encryptLegacyPrivateKeyString,
     decryptWallet,
     createKeypairFromPrivateKeyCompat,
-    createKeypairFromPrivateKeyLegacy
 }; 

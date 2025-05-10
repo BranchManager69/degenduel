@@ -17,7 +17,8 @@ import { SERVICE_NAMES, getServiceMetadata } from '../../utils/service-suite/ser
 import { solanaEngine } from '../../services/solana-engine/index.js'; 
 import TreasuryCertifier from './treasury-certifier.js';
 import VanityApiClient from '../../services/vanity-wallet/vanity-api-client.js';
-import { generateKeyPair as generateKeyPairV2, createKeyPairSignerFromBytes } from '@solana/keys';
+import { generateKeyPair as generateKeyPairV2 } from '@solana/keys';
+import { createKeyPairSignerFromBytes } from '@solana/signers';
 import { getAddressFromPublicKey, address as v2Address } from '@solana/addresses';
 import { Buffer } from 'node:buffer';
 import { createSystemTransferInstruction } from '@solana/pay';
