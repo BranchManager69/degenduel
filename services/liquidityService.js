@@ -220,14 +220,15 @@ class LiquidityService extends BaseService {
                 this.wallet = wallet;
                 // Get balance via solanaEngine, passing string address
                 const balanceResult = await solanaEngine.executeConnectionMethod('getBalance', wallet.wallet_address);
-                const fetchedBalance = balanceResult.value; // Renamed to avoid conflict
+                const fetchedBalanceLamports = balanceResult.value; // This is BigInt
+                const fetchedBalanceSol = fetchedBalanceLamports !== null ? Number(fetchedBalanceLamports) / LAMPORTS_PER_SOL_V2 : 0;
                 
                 this.liquidityStats.wallets.total = 1;
                 this.liquidityStats.wallets.active = 1;
-                this.liquidityStats.wallets.balance_total = fetchedBalance / LAMPORTS_PER_SOL_V2; // Use a V2 constant
+                this.liquidityStats.wallets.balance_total = fetchedBalanceSol;
                 this.liquidityStats.wallets.by_purpose.liquidity = {
                     count: 1,
-                    balance: fetchedBalance / LAMPORTS_PER_SOL_V2
+                    balance: fetchedBalanceSol
                 };
                 
                 // Update ServiceManager state
@@ -241,7 +242,7 @@ class LiquidityService extends BaseService {
                 );
                 
                 // Log the wallet in use
-                logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET}${fancyColors.BG_LIGHT_CYAN}${fancyColors.BOLD_GREEN} Using wallet: ${wallet.wallet_address} ${fancyColors.RESET}`, {
+                logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET}${fancyColors.BG_LIGHT_CYAN}${fancyColors.BOLD_GREEN} Using wallet: ${wallet.wallet_address} (Balance: ${fetchedBalanceSol.toFixed(4)} SOL) ${fancyColors.RESET}`, {
                 //    balance: this.liquidityStats.wallets.balance_total
                 });
 
@@ -281,21 +282,22 @@ class LiquidityService extends BaseService {
                 
                 // Get initial balance
                 const balanceResult = await solanaEngine.executeConnectionMethod('getBalance', mostRecentWallet.wallet_address);
-                const reactivatedBalance = balanceResult.value; // Renamed
+                const reactivatedBalanceLamports = balanceResult.value; // This is BigInt
+                const reactivatedBalanceSol = reactivatedBalanceLamports !== null ? Number(reactivatedBalanceLamports) / LAMPORTS_PER_SOL_V2 : 0;
                 
                 // Update stats
                 this.liquidityStats.wallets.total = 1;
                 this.liquidityStats.wallets.active = 1;
-                this.liquidityStats.wallets.balance_total = reactivatedBalance / LAMPORTS_PER_SOL_V2; // Use V2 constant
+                this.liquidityStats.wallets.balance_total = reactivatedBalanceSol;
                 this.liquidityStats.wallets.by_purpose.liquidity = {
                     count: 1,
-                    balance: reactivatedBalance / LAMPORTS_PER_SOL_V2
+                    balance: reactivatedBalanceSol
                 };
                 
                 // Log success with detailed information
                 logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} ${fancyColors.ORANGE}REACTIVATED WALLET:${fancyColors.RESET} ${fancyColors.GREEN}Using existing wallet instead of creating new one${fancyColors.RESET}`, {
                     wallet: mostRecentWallet.wallet_address,
-                    balance: reactivatedBalance / LAMPORTS_PER_SOL_V2,
+                    balance: reactivatedBalanceSol,
                     created: new Date(mostRecentWallet.created_at).toLocaleString()
                 });
                 
@@ -438,23 +440,28 @@ class LiquidityService extends BaseService {
             
             // Check balance via solanaEngine
             const balanceResultOp = await solanaEngine.executeConnectionMethod('getBalance', this.wallet.wallet_address);
-            const currentBalance = balanceResultOp.value; // Renamed
+            const currentBalanceLamports = balanceResultOp.value; // This is BigInt
+            const currentBalanceSol = currentBalanceLamports !== null ? Number(currentBalanceLamports) / LAMPORTS_PER_SOL_V2 : 0;
             
             // Update stats
-            this.liquidityStats.wallets.balance_total = currentBalance / LAMPORTS_PER_SOL_V2; // Use V2 constant
+            this.liquidityStats.wallets.balance_total = currentBalanceSol;
             this.liquidityStats.wallets.by_purpose.liquidity = {
                 count: 1,
-                balance: currentBalance / LAMPORTS_PER_SOL_V2
+                balance: currentBalanceSol
             };
             this.liquidityStats.operations.total++;
             this.liquidityStats.operations.successful++;
             
             // Update performance metrics
             this.liquidityStats.performance.last_operation_time_ms = Date.now() - startTime;
-            this.liquidityStats.performance.average_operation_time_ms = 
-                (this.liquidityStats.performance.average_operation_time_ms * 
-                (this.liquidityStats.operations.total - 1) + 
-                (Date.now() - startTime)) / this.liquidityStats.operations.total;
+            if (this.liquidityStats.operations.total > 1) { // Avoid division by zero if total is 1 and successful is 0 or 1 from current op
+                this.liquidityStats.performance.average_operation_time_ms = 
+                    (this.liquidityStats.performance.average_operation_time_ms * 
+                    (this.liquidityStats.operations.total - 1) + 
+                    (this.liquidityStats.performance.last_operation_time_ms)) / this.liquidityStats.operations.total;
+            } else {
+                 this.liquidityStats.performance.average_operation_time_ms = this.liquidityStats.performance.last_operation_time_ms;
+            }
 
             // Update ServiceManager state
             await serviceManager.updateServiceHeartbeat(

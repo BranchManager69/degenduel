@@ -323,39 +323,44 @@ class TokenRefreshScheduler extends BaseService {
         }
       });
 
-      // Clear and rebuild token set
-      this.activeTokens.clear();
-      this.prioritizationCache.clear();
-      
-      // Add tokens to priority queue
-      for (const token of tokens) {
-        this.activeTokens.add(token.id);
-        
-        // Calculate token score/priority based on rank, activity, etc.
-        const priorityData = this.calculateTokenPriority(token);
-        this.prioritizationCache.set(token.id, priorityData);
-        
-        // Add to priority queue with calculated score
-        this.priorityQueue.enqueue({
-          id: token.id,
-          address: token.address,
-          symbol: token.symbol,
-          priority: priorityData.score,
-          nextRefreshTime: this.calculateNextRefreshTime(token, priorityData),
-          interval: priorityData.refreshInterval
-        });
+      if (!tokens || tokens.length === 0) {
+        logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} No active tokens found in DB to load into priority queue.`);
+        this.activeTokens.clear();
+        this.priorityQueue.clear(); // Assuming PriorityQueue has a clear method
+        this.prioritizationCache.clear();
+        return 0; // Return 0 if no active tokens
       }
 
-      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Loaded ${tokens.length} active tokens into priority queue`);
+      this.activeTokens.clear();
+      this.priorityQueue.clear(); // Clear before repopulating
+      this.prioritizationCache.clear();
       
-      // Analyze token distribution 
+      for (const token of tokens) {
+        this.activeTokens.add(token.id);
+        const priorityData = this.calculateTokenPriority(token); // This now needs to be more robust
+        if (priorityData) { // Ensure priorityData is not null/undefined
+          this.prioritizationCache.set(token.id, priorityData);
+          this.priorityQueue.enqueue({
+            id: token.id,
+            address: token.address,
+            symbol: token.symbol,
+            priority: priorityData.score,
+            nextRefreshTime: this.calculateNextRefreshTime(token, priorityData),
+            interval: priorityData.refreshInterval
+          });
+        } else {
+          logApi.warn(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Could not calculate priority for token ID ${token.id} (${token.symbol}), skipping enqueue.`);
+        }
+      }
+      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Loaded ${this.priorityQueue.size()} active tokens into priority queue.`);
       const tokenStats = this.rankAnalyzer.analyzeTokenDistribution(tokens);
       logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Token distribution analysis:`, tokenStats);
-
-      // Return count of active tokens
-      return tokens.length;
+      return this.activeTokens.size; // Return current count of active tokens processed
     } catch (error) {
       logApi.error(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Error loading active tokens:`, error);
+      // Do not re-throw here to allow scheduler to potentially recover or wait for data, but log it.
+      // Or, if this is critical for initialization, it should re-throw and be caught by initialize().
+      // For now, let initialize catch it if it bubbles up.
       throw error;
     }
   }
@@ -366,106 +371,64 @@ class TokenRefreshScheduler extends BaseService {
    * @returns {Object} Priority data including score and refresh interval
    */
   calculateTokenPriority(token) {
-    // Start with base priority score from database
+    if (!token) return null; // Guard clause
     let priorityScore = token.priority_score || 0;
-    
-    // Get latest rank
-    let latestRank = token.rank_history?.[0]?.rank;
-    
-    // Determine base tier from rank using database tier definitions
+    let latestRank = token.rank_history && token.rank_history.length > 0 ? token.rank_history[0].rank : undefined;
     let baseTier = null;
     const tierNames = Object.keys(PRIORITY_TIERS);
+    const sortedTiers = [...tierNames].sort((a, b) => PRIORITY_TIERS[b].rank_threshold - PRIORITY_TIERS[a].rank_threshold);
     
-    // Sort tiers by rank_threshold in descending order to find the appropriate tier
-    const sortedTiers = [...tierNames].sort((a, b) => 
-      PRIORITY_TIERS[b].rank_threshold - PRIORITY_TIERS[a].rank_threshold
-    );
-    
-    // Default to lowest tier if no rank
     if (latestRank === undefined) {
-      // Get tier with highest rank threshold (lowest priority)
-      baseTier = PRIORITY_TIERS[sortedTiers[0]];
+      baseTier = PRIORITY_TIERS[sortedTiers[0]] || PRIORITY_TIERS.MINIMAL; // Fallback to MINIMAL if sortedTiers[0] is somehow undefined
     } else {
-      // Find appropriate tier based on rank
       for (const tierName of sortedTiers) {
-        const tier = PRIORITY_TIERS[tierName];
-        if (latestRank <= tier.rank_threshold) {
-          baseTier = tier;
-        } else {
-          break; // Stop once we've found the correct tier
+        if (PRIORITY_TIERS[tierName] && latestRank <= PRIORITY_TIERS[tierName].rank_threshold) {
+          baseTier = PRIORITY_TIERS[tierName];
+        } else if (PRIORITY_TIERS[tierName]) { // Current rank is greater than this tier's threshold, so it must be in a lower (or this) tier
+          break;
+        } else { // Should not happen if PRIORITY_TIERS is correctly populated
+          logApi.warn(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Missing tier definition for: ${tierName} in PRIORITY_TIERS`);
         }
       }
-      
-      // Fallback to lowest priority tier if no match found
-      if (!baseTier) {
-        baseTier = PRIORITY_TIERS[sortedTiers[0]];
-      }
+      if (!baseTier) baseTier = PRIORITY_TIERS[sortedTiers[0]] || PRIORITY_TIERS.MINIMAL; // Fallback
     }
     
-    // If no valid tier was found, use a default
-    if (!baseTier) {
-      baseTier = {
-        name: 'DEFAULT',
-        score: 50,
-        interval: 300,
-        volatility_factor: 1.0
-      };
-      logApi.warn(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} No valid tier found for token ${token.id} (${token.symbol}), using defaults.`);
+    if (!baseTier || !baseTier.score === undefined) { // Ensure baseTier is valid and has a score
+      logApi.warn(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Could not determine base tier for token ${token.id} (${token.symbol}). Using default priority.`);
+      baseTier = { name: 'DEFAULT_FALLBACK', score: 50, interval: 300, volatility_factor: 1.0 };
     }
-    
-    // Apply bonus for tokens used in contests - ensure at least HIGH priority
     if (token.contest_portfolios && token.contest_portfolios.length > 0) {
-      const highTier = Object.values(PRIORITY_TIERS)
-        .find(tier => tier.name === 'HIGH' || tier.score >= 500);
-      
-      if (highTier && baseTier.score < highTier.score) {
-        baseTier = highTier;
-      }
-      
-      priorityScore += 300; // Substantial bonus for contest usage
+      const highTierName = tierNames.find(name => PRIORITY_TIERS[name].score >= 500) || 'HIGH'; // Find a high-ish tier
+      const highTier = PRIORITY_TIERS[highTierName] || baseTier; // Fallback to current baseTier if HIGH not found
+      if (baseTier.score < highTier.score) baseTier = highTier;
+      priorityScore += 300;
     }
-    
-    // Adjust based on token trading volume (if available)
-    if (token.token_prices?.volume_24h) {
-      const volume = parseFloat(token.token_prices.volume_24h.toString());
-      if (volume > 1000000) { // $1M+ daily volume
-        priorityScore += 200;
-      } else if (volume > 100000) { // $100K+ daily volume
-        priorityScore += 100;
-      } else if (volume > 10000) { // $10K+ daily volume
-        priorityScore += 50;
-      }
+    const tokenPriceData = token.token_prices; // This is an object, not an array
+    if (tokenPriceData && tokenPriceData.volume_24h !== null && tokenPriceData.volume_24h !== undefined) {
+      try {
+        const volume = parseFloat(tokenPriceData.volume_24h.toString());
+        if (!isNaN(volume)) {
+          if (volume > 1000000) priorityScore += 200;
+          else if (volume > 100000) priorityScore += 100;
+          else if (volume > 10000) priorityScore += 50;
+        }
+      } catch (e) { logApi.warn('Error parsing volume for priority calc', e); }
     }
-    
-    // Adjust for price volatility (frequency of price changes)
     const volatilityFactor = this.calculateVolatilityFactor(token);
-    
-    // Calculate final refresh interval based on tier and adjustments
-    const baseInterval = token.refresh_interval_seconds || baseTier.interval;
-    
-    // Apply volatility adjustment but respect minimum interval
+    const baseInterval = token.refresh_interval_seconds || baseTier.interval || DEFAULT_MIN_INTERVAL_SECONDS;
     let adjustedInterval = Math.max(
       this.config.minIntervalSeconds,
-      Math.floor(baseInterval / (volatilityFactor * baseTier.volatility_factor))
-    );
-    
-    // Cap the interval to ensure it doesn't exceed the tier's base interval
+      Math.floor(baseInterval / (volatilityFactor * (baseTier.volatility_factor || 1.0))
+    ));
     if (this.config.dynamicIntervalsEnabled) {
-      adjustedInterval = Math.min(adjustedInterval, baseTier.interval);
+      adjustedInterval = Math.min(adjustedInterval, baseTier.interval || DEFAULT_MIN_INTERVAL_SECONDS * 10);
     } else {
-      // If dynamic intervals disabled, use the stored/tier interval directly
       adjustedInterval = baseInterval;
     }
-    
-    // Extract tier name from baseTier (either name property or the key itself)
-    const tierName = baseTier.name || 
-                   Object.keys(PRIORITY_TIERS).find(key => PRIORITY_TIERS[key] === baseTier) || 
-                   'UNKNOWN';
-    
     return {
-      score: priorityScore,
-      baseTier: tierName,
-      refreshInterval: adjustedInterval,
+      score: priorityScore + (baseTier.score || 0), // Add baseTier score to the calculated one
+      baseTier: baseTier.name || 'UNKNOWN',
+      refreshInterval: Math.max(this.config.minIntervalSeconds, adjustedInterval), // Ensure min interval
       volatilityFactor: volatilityFactor
     };
   }

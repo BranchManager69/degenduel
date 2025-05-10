@@ -159,9 +159,16 @@ class SolanaEngineService extends BaseService {
       
       // Initialize Helius Kite connection
       try {
-        const kiteRpcUrl = this.connectionManager.endpoint || config.rpc_urls.primary || config.rpc_urls.mainnet_http;
+        const kiteRpcUrl = this.connectionManager.endpoint || config.rpc_urls.mainnet_http;
         if (kiteRpcUrl) {
+          const httpUrl = kiteRpcUrl;
           const wsUrl = config.rpc_urls.mainnet_wss || 'wss://api.mainnet-beta.solana.com';
+          
+          // Log the URLs
+          console.log('Connecting...');
+          console.log('  Kite httpUrl:', httpUrl);
+          console.log('  Kite wsUrl  :', wsUrl);
+          
           // Fix: Only initialize Kite with both URLs defined, use appropriate object structure
           if (wsUrl) {
             if (wsUrl === 'wss://api.mainnet-beta.solana.com') { 
@@ -169,7 +176,7 @@ class SolanaEngineService extends BaseService {
             }
             // Initialize Kite connection with both URLs
             this.kiteConnection = connectKite({
-              httpUrl: kiteRpcUrl,
+              httpUrl: httpUrl,
               webSocketUrl: wsUrl,
               connectionTimeoutMs: 10000
             });
