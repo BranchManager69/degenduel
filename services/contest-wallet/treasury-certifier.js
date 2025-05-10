@@ -14,7 +14,7 @@
 import { getAddressFromPublicKey, isAddress, address as v2Address } from '@solana/addresses';
 import { generateKeyPair } from '@solana/keys'; 
 import { createKeyPairSignerFromBytes } from '@solana/signers';
-import { createSystemTransferInstruction } from '@solana/pay';
+import { getTransferSolInstruction } from '@solana-program/system'; // Correct import for SOL transfer
 import { solanaEngine } from '../../services/solana-engine/index.js'; // Ensure path is correct
 import { Buffer } from 'node:buffer';
 import BN from 'bn.js'; 
@@ -124,10 +124,10 @@ class TreasuryCertifier {
                 return null;
             }
 
-            const transferInstruction_v2 = createSystemTransferInstruction({
-                fromAddress: sourceSigner_v2.address,
-                toAddress: v2Address(destinationAddressString),
-                lamports: lamportsToTransfer
+            const transferInstruction_v2 = getTransferSolInstruction({
+                source: sourceSigner_v2, // Pass the Signer object directly
+                destination: v2Address(destinationAddressString),
+                amount: lamportsToTransfer
             });
             
             const result = await this.solanaEngine.sendTransaction(

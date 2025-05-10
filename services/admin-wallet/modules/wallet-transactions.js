@@ -25,7 +25,7 @@ import {
   getLamportsFromRpcResult
 } from '../utils/solana-compat.js';
 import { createTransactionMessage } from '@solana/transaction-messages';
-import { createSystemTransferInstruction } from '@solana/pay';
+import { getTransferSolInstruction } from '@solana-program/system';
 
 /* Functions */
 
@@ -83,10 +83,10 @@ export async function transferSOL(fromWalletEncrypted, toAddressString, amount, 
         let estimatedFee = 5000n; // Default fallback as BigInt
         try {
             const { blockhash } = await executeRpcMethod(solanaEngine, 'getLatestBlockhash');
-            const v2InstructionForFeeEst = createSystemTransferInstruction({
-                fromAddress: feePayerAddress_v2_string,
-                toAddress: toAddr_v2String, // Use v2 string address
-                lamports: transferAmountLamports 
+            const v2InstructionForFeeEst = getTransferSolInstruction({
+                source: fromSigner_v2.address,
+                destination: toAddr_v2String,
+                amount: transferAmountLamports 
             });
             const v2MessageForFeeEst = createTransactionMessage({
                 version: 0,
@@ -143,10 +143,10 @@ export async function transferSOL(fromWalletEncrypted, toAddressString, amount, 
         } else {
             logApi.warn(`${fancyColors.CYAN}[wallet-transactions]${fancyColors.RESET} Helius Kite not available for SOL transfer, using SolanaEngine directly...`);
             const instructions_v2 = [
-                createSystemTransferInstruction({
-                    fromAddress: feePayerAddress_v2_string,
-                    toAddress: toAddr_v2String,
-                    lamports: transferAmountLamports
+                getTransferSolInstruction({
+                    source: fromSigner_v2.address,
+                    destination: toAddr_v2String,
+                    amount: transferAmountLamports
                 })
             ];
             const result = await solanaEngine.sendTransaction(
