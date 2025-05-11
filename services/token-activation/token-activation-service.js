@@ -584,6 +584,24 @@ class TokenActivationService extends BaseService {
       }
     };
   }
+
+  // Added to satisfy ServiceManager and provide a periodic operation hook
+  async onPerformOperation() {
+    if (!this.isOperational) {
+      logApi.debug(`${formatLog.tag()} Service not operational, skipping operation.`);
+      return true;
+    }
+    try {
+      logApi.debug(`${formatLog.tag()} [onPerformOperation] Performing scheduled token status update...`);
+      // This is the main periodic task of this service
+      await this.updateTokenStatuses(); 
+      return true;
+    } catch (error) {
+      logError(logApi, this.name, 'Error during onPerformOperation (token status update)', error);
+      await this.handleError(error); // Let BaseService handle circuit breaker logic
+      throw error; // Re-throw to ensure failure is noted by ServiceManager if necessary
+    }
+  }
 }
 
 export default new TokenActivationService(); 

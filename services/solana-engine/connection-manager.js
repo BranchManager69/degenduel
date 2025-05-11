@@ -377,7 +377,10 @@ class ConnectionManager {
           const getMultipleAccountsConfig = {
             commitment: (args[1] && args[1].commitment) || commitment,
             encoding: (args[1] && args[1].encoding) || 'base64',
-            dataSlice: (args[1] && args[1].dataSlice) || undefined,
+            dataSlice: (args[1] && args[1].dataSlice) ? {
+              offset: Number(args[1].dataSlice.offset),
+              length: Number(args[1].dataSlice.length)
+            } : undefined,
             minContextSlot: (args[1] && args[1].minContextSlot !== undefined) ? Number(args[1].minContextSlot) : undefined,
           };
 
