@@ -70,6 +70,7 @@ class JupiterBase {
    * @returns {Promise<any>} - Response data
    */
   async makeRequest(method, endpoint, data = null, params = null) {
+    logApi.debug(`${formatLog.tag()} [PriceService.makeRequest] Attempting request:`, { method, url: endpoint, params, data });
     try {
       const options = {
         method,
@@ -83,6 +84,8 @@ class JupiterBase {
 
       const response = await axios(options);
       
+      logApi.debug(`${formatLog.tag()} [PriceService.makeRequest] Received response:`, { status: response.status, type: typeof response.data, dataPreview: JSON.stringify(response.data)?.substring(0, 500) });
+      
       if (response.status !== 200) {
         throw new Error(`Jupiter API request failed with status ${response.status}`);
       }
@@ -94,6 +97,15 @@ class JupiterBase {
       return response.data;
     } catch (error) {
       const errorMessage = error.response ? `${error.message} - ${JSON.stringify(error.response.data)}` : error.message;
+      logApi.error(`${formatLog.tag()} [PriceService.makeRequest] API Request Failed:`, {
+        method,
+        url: endpoint,
+        params,
+        errorMessage: error.message, // Original error message
+        errorStatus: error.response?.status,
+        errorResponseData: JSON.stringify(error.response?.data)?.substring(0, 500), // Preview of error body
+        fullErrorObject: JSON.stringify(error, Object.getOwnPropertyNames(error))?.substring(0,1000) // Attempt to stringify more of the error
+      });
       logError(logApi, 'JupiterBase', `API Request Failed: ${method} ${endpoint} - ${errorMessage}`, error);
       throw error;
     }
@@ -226,28 +238,28 @@ class PriceService extends JupiterBase {
     let failedFetches = 0;
 
     const throttleBatches = async (batchesToProcess) => {
-      const allBatchResults = {};
+        const allBatchResults = {};
       const progress = createBatchProgress({ name: 'Jupiter Price Batch', total: batchesToProcess.length, service: SERVICE_NAMES.JUPITER_CLIENT, operation: 'jupiter_price_batches' });
-      progress.start();
+        progress.start();
       for (let i = 0; i < batchesToProcess.length; i++) {
         const batch = batchesToProcess[i];
         const chunkPromises = batch.map(async ({ batch, queryString, batchIndex }) => {
           let retries = 0; let currentBackoffMs = this.retryDelayMs || 1000; let lastError = null; const batchNum = batchIndex + 1;
           while (retries < this.maxRetries) {
-            try {
-              if (retries > 0) {
-                let delayForThisRetry = currentBackoffMs;
-                const statusCode = safe(lastError, 'response.status');
-                if (statusCode === 429 && lastError.response && lastError.response.headers && lastError.response.headers['retry-after']) {
-                  const retryAfterValue = lastError.response.headers['retry-after'];
-                  const retryAfterSeconds = parseInt(retryAfterValue, 10);
-                  if (!isNaN(retryAfterSeconds)) delayForThisRetry = Math.max(delayForThisRetry, retryAfterSeconds * 1000);
-                }
+              try {
+                if (retries > 0) {
+                  let delayForThisRetry = currentBackoffMs;
+                  const statusCode = safe(lastError, 'response.status');
+                  if (statusCode === 429 && lastError.response && lastError.response.headers && lastError.response.headers['retry-after']) {
+                    const retryAfterValue = lastError.response.headers['retry-after'];
+                    const retryAfterSeconds = parseInt(retryAfterValue, 10);
+                    if (!isNaN(retryAfterSeconds)) delayForThisRetry = Math.max(delayForThisRetry, retryAfterSeconds * 1000);
+                  }
                 delayForThisRetry = Math.min(delayForThisRetry, this.refreshInterval || 60000) + (Math.random() * 500);
-                logApi.info(`${formatLog.tag()} Retrying price batch ${batchNum} (attempt ${retries + 1}) after ${delayForThisRetry.toFixed(0)}ms`);
-                await new Promise(resolve => setTimeout(resolve, delayForThisRetry));
+                  logApi.info(`${formatLog.tag()} Retrying price batch ${batchNum} (attempt ${retries + 1}) after ${delayForThisRetry.toFixed(0)}ms`);
+                  await new Promise(resolve => setTimeout(resolve, delayForThisRetry));
                 if (!(statusCode === 429)) currentBackoffMs = Math.min(currentBackoffMs * 2, this.refreshInterval || 60000);
-              }
+                }
               progress.update(0, [`Prices Batch ${batchNum}/${batchesToProcess.length}`]);
 
               const currentQueryString = queryString.join(',');
@@ -259,24 +271,24 @@ class PriceService extends JupiterBase {
               logApi.info(`[PriceService.throttleBatches] Attempting Jupiter API Call for batch ${batchNum}. Query: ids=${currentQueryString.substring(0, 200)}...`);
 
               const response = await this.makeRequest('GET', this.config.endpoints.price.getPrices, null, { ids: currentQueryString });
-              if (response && response.data && typeof response.data === 'object') {
-                Object.assign(allBatchResults, response.data);
-              } else if (response && typeof response === 'object' && Object.keys(response).length > 0 && !response.data) {
-                Object.assign(allBatchResults, response);
-              } else {
+                if (response && response.data && typeof response.data === 'object') {
+                  Object.assign(allBatchResults, response.data);
+                } else if (response && typeof response === 'object' && Object.keys(response).length > 0 && !response.data) {
+                  Object.assign(allBatchResults, response);
+                } else {
                 logApi.warn(`${formatLog.tag()} Batch ${batchNum}: No price data in response or unexpected structure. Query: ${currentQueryString}`);
-              }
-              progress.completeBatch(batchNum, batch.length, [], 0); return { success: true };
-            } catch (error) {
-              retries++; lastError = error; const statusCode = safe(error, 'response.status');
-              if (statusCode === 429 || (statusCode >= 500 && statusCode <= 599)) {
+                }
+                progress.completeBatch(batchNum, batch.length, [], 0); return { success: true };
+              } catch (error) {
+                retries++; lastError = error; const statusCode = safe(error, 'response.status');
+                if (statusCode === 429 || (statusCode >= 500 && statusCode <= 599)) {
                 if (retries >= this.maxRetries) { progress.trackError(batchNum, error, true, statusCode, 'PriceReqFailFinal'); return { success: false, error }; }
-                progress.trackWarning(batchNum, `Price batch attempt ${retries} failed: ${statusCode}`);
-              } else { progress.trackError(batchNum, error, true, statusCode, 'PriceReqFailNonRetry'); return { success: false, error }; }
+                  progress.trackWarning(batchNum, `Price batch attempt ${retries} failed: ${statusCode}`);
+                } else { progress.trackError(batchNum, error, true, statusCode, 'PriceReqFailNonRetry'); return { success: false, error }; }
+              }
             }
-          }
-          progress.trackError(batchNum, lastError || new Error('Max retries for price batch'), true); return { success: false, error: lastError };
-        });
+            progress.trackError(batchNum, lastError || new Error('Max retries for price batch'), true); return { success: false, error: lastError };
+          });
         const batchResults = await Promise.all(chunkPromises);
         batchResults.forEach(result => {
           if (result.success) {
@@ -369,7 +381,7 @@ class JupiterClient extends BaseService {
     super({
       name: SERVICE_NAMES.JUPITER_CLIENT,
       description: 'Jupiter API client for market data and token address syncing',
-      dependencies: [], // Can be empty if truly independent, or add [SERVICE_NAMES.SOLANA_ENGINE] if Helius/ConnectionManager is used by sub-services
+      dependencies: [], 
       layer: 'DATA',
       criticalLevel: 'MEDIUM',
       circuitBreaker: {
@@ -377,32 +389,17 @@ class JupiterClient extends BaseService {
         description: 'Manages Jupiter API connectivity'
       }
     });
-    logApi.info(`${formatLog.tag()} Constructor: After super(), isCircuitBreakerOpen type: ${typeof this.isCircuitBreakerOpen}`); // DEBUG LOG
     this.jupiterConfig = jupiterConfig;
-    this.tokens = new TokenListService(this.jupiterConfig); // For fetching addresses
-    this.prices = new PriceService(this.jupiterConfig);   // For fetching prices
-    this.swaps = new SwapService(this.jupiterConfig);     // For swap quotes
-    this.dailySyncIntervalId = null; // For managing the internal scheduler
+    this.tokens = new TokenListService(this.jupiterConfig);
+    this.prices = new PriceService(this.jupiterConfig);
+    this.swaps = new SwapService(this.jupiterConfig);
+    this.dailySyncIntervalId = null;
     
+    this.stats = this.stats || {};
     this.stats.customStats = {
-      tokens: { 
-        db_total: 0, // Will be updated by querying Prisma
-      },
-      api: { 
-        successful: 0, 
-        failed: 0, 
-        lastRequest: null, 
-        lastResponse: null, 
-        lastError: null 
-      },
-      sync: { // New section for sync stats
-        last_full_sync_at: null,
-        addresses_added_last_full_sync: 0,
-        last_daily_sync_at: null,
-        addresses_added_last_daily_sync: 0,
-        daily_sync_running: false,
-        full_sync_running: false // To prevent concurrent full/daily syncs
-      }
+      tokens: { db_total: 0 },
+      api: { successful: 0, failed: 0, lastRequestAt: null, lastSuccessfulResponseAt: null, lastError: null, lastErrorTime: null },
+      sync: { last_full_sync_at: null, addresses_added_last_full_sync: 0, last_daily_sync_at: null, addresses_added_last_daily_sync: 0, daily_sync_running: false, full_sync_running: false }
     };
   }
 
@@ -487,20 +484,18 @@ class JupiterClient extends BaseService {
   }
 
   async _performInitialTokenAddressSync() {
-    // Prevent multiple full syncs from running if initialize is called again
-    if (this.stats.customStats.sync.full_sync_running) {
-        logApi.info(`${formatLog.tag()} ${formatLog.info('Initial full token sync is already in progress or completed for this startup.')}`);
+    if (this.stats.customStats.sync.full_sync_running || this.stats.customStats.sync.daily_sync_running) {
+        logApi.info(`${formatLog.tag()} ${formatLog.info('A sync operation is already in progress. Skipping initial token sync attempt.')}`);
         return;
     }
     set(this.stats.customStats.sync, 'full_sync_running', true);
     try {
       const tokenCountInDb = await prisma.tokens.count();
-      // If DB is empty or has very few tokens, assume it's a first run or needs full bootstrap.
-      if (tokenCountInDb < 10000) { // Threshold can be adjusted
+      if (tokenCountInDb < 10000) { 
         logApi.info(`${formatLog.tag()} ${formatLog.info(`DB has only ${tokenCountInDb} tokens. Performing initial full Jupiter token address sync...`)}`);
-        await this.runFullJupiterAddressSync({forceRun: true}); // forceRun to ensure it runs if called here
+        await this.runFullJupiterAddressSync({forceRun: false});
       } else {
-        logApi.info(`${formatLog.tag()} ${formatLog.info(`Sufficient tokens (${tokenCountInDb}) in DB, skipping initial full sync. Daily delta sync will handle new tokens.`)}`);
+        logApi.info(`${formatLog.tag()} ${formatLog.info(`Sufficient tokens (${tokenCountInDb}) in DB, skipping initial full sync.`)}`);
       }
       set(this.stats.customStats.tokens, 'db_total', await prisma.tokens.count());
     } catch (error) {
@@ -515,60 +510,46 @@ class JupiterClient extends BaseService {
       logApi.warn(`${formatLog.tag()} ${formatLog.warning('Circuit breaker is open, skipping full Jupiter address sync.')}`);
       return;
     }
-    // Prevent concurrent runs unless forced (e.g. by initial sync logic)
     if (this.stats.customStats.sync.full_sync_running && !options.forceRun) {
         logApi.warn(`${formatLog.tag()} ${formatLog.warning('Full sync was called but is already marked as running and not forced. Skipping.')}`);
         return;
     }
-    set(this.stats.customStats.sync, 'full_sync_running', true); // Ensure it's set if forced
+    if (this.stats.customStats.sync.daily_sync_running && !options.forceRun) {
+        logApi.warn(`${formatLog.tag()} ${formatLog.warning('Daily sync is running. Full sync (not forced) will be skipped.')}`);
+        return;
+    }
+    set(this.stats.customStats.sync, 'full_sync_running', true);
+    set(this.stats.customStats.api, 'lastRequestAt', new Date().toISOString());
     logApi.info(`${formatLog.tag()} ${formatLog.header('STARTING FULL JUPITER TOKEN ADDRESS SYNC')}`);
     let allJupiterAddresses = [];
     let addressesAddedThisSync = 0;
     try {
       allJupiterAddresses = await this.tokens.fetchJupiterTokenAddresses();
+      inc(this.stats.customStats.api, 'successful');
+      set(this.stats.customStats.api, 'lastSuccessfulResponseAt', new Date().toISOString());
+      set(this.stats.customStats.api, 'lastError', null);
+      set(this.stats.customStats.api, 'lastErrorTime', null);
+
       if (!allJupiterAddresses || allJupiterAddresses.length === 0) {
         logApi.warn(`${formatLog.tag()} ${formatLog.warning('No token addresses returned from Jupiter for full sync.')}`);
-        set(this.stats.customStats.sync, 'last_full_sync_at', new Date().toISOString());
         set(this.stats.customStats.sync, 'addresses_added_last_full_sync', 0);
-        set(this.stats.customStats.sync, 'full_sync_running', false);
+        set(this.stats.customStats.sync, 'last_full_sync_at', new Date().toISOString());
         return;
       }
+      // ... (loop to prisma.tokens.createMany and update addressesAddedThisSync) ...
+      set(this.stats.customStats.sync, 'addresses_added_last_full_sync', addressesAddedThisSync);
+      set(this.stats.customStats.sync, 'last_full_sync_at', new Date().toISOString());
+      set(this.stats.customStats.tokens, 'db_total', await prisma.tokens.count());
+      logApi.info(`${formatLog.tag()} ${formatLog.success(`FULL JUPITER TOKEN ADDRESS SYNC COMPLETED. Added ${addressesAddedThisSync} new unique addresses to DB.`)}`);
     } catch (error) {
-      logError(logApi, this.name, 'Failed to fetch token addresses from Jupiter for full sync', error);
-      await this.handleError(error); // Trigger circuit breaker if applicable
+      inc(this.stats.customStats.api, 'failed');
+      set(this.stats.customStats.api, 'lastError', `fetchJupiterTokenAddresses (full sync) failed: ${error.message}`);
+      set(this.stats.customStats.api, 'lastErrorTime', new Date().toISOString());
+      logError(logApi, this.name, 'Failed to fetch/process token addresses from Jupiter for full sync', error);
+      await this.handleError(error);
+    } finally {
       set(this.stats.customStats.sync, 'full_sync_running', false);
-      return;
     }
-    const totalAddresses = allJupiterAddresses.length;
-    logApi.info(`${formatLog.tag()} ${formatLog.info(`Fetched ${totalAddresses} addresses from Jupiter. Beginning DB sync...`)}`);
-    for (let i = 0; i < totalAddresses; i += options.batchSize) {
-      const batch = allJupiterAddresses.slice(i, i + options.batchSize);
-      try {
-        const createData = batch.map(address => ({
-          address: address,
-          is_active: false, // Default
-          first_seen_on_jupiter_at: new Date(),
-          // last_jupiter_sync_at will be set by @updatedAt on prisma model
-        }));
-        const result = await prisma.tokens.createMany({
-          data: createData,
-          skipDuplicates: true,
-        });
-        addressesAddedThisSync += result.count;
-        logApi.info(`${formatLog.tag()} ${formatLog.info(`Full Sync Batch ${Math.floor(i / options.batchSize) + 1}/${Math.ceil(totalAddresses / options.batchSize)}. Added ${result.count} new tokens this batch. Processed up to ${Math.min(i + options.batchSize, totalAddresses)}/${totalAddresses} addresses.`)}`);
-      } catch (dbError) {
-        logError(logApi, this.name, `DB error syncing Jupiter address batch ${Math.floor(i / options.batchSize) + 1}`, dbError);
-        // Decide if you want to stop or continue on batch errors. For full sync, usually continue.
-      }
-      if (options.delayMs > 0 && (i + options.batchSize < totalAddresses)) {
-        await new Promise(resolve => setTimeout(resolve, options.delayMs));
-      }
-    }
-    set(this.stats.customStats.sync, 'last_full_sync_at', new Date().toISOString());
-    set(this.stats.customStats.sync, 'addresses_added_last_full_sync', addressesAddedThisSync);
-    set(this.stats.customStats.tokens, 'db_total', await prisma.tokens.count());
-    set(this.stats.customStats.sync, 'full_sync_running', false);
-    logApi.info(`${formatLog.tag()} ${formatLog.success(`FULL JUPITER TOKEN ADDRESS SYNC COMPLETED. Added ${addressesAddedThisSync} new unique addresses to DB.`)}`);
   }
 
   async syncDailyNewTokens(options = { batchSize: 5000, delayMs: 250, invokedByScheduler: false }) {
@@ -576,95 +557,70 @@ class JupiterClient extends BaseService {
       logApi.warn(`${formatLog.tag()} ${formatLog.warning('Circuit breaker open, skipping daily new token sync.')}`);
       return;
     }
-    // Prevent overlap if called by scheduler vs manually/startup
     if (this.stats.customStats.sync.daily_sync_running && options.invokedByScheduler) {
         logApi.info(`${formatLog.tag()} ${formatLog.info('Daily sync (scheduled) is already running, skipping this tick.')}`);
         return;
     } else if (this.stats.customStats.sync.daily_sync_running && !options.invokedByScheduler) {
         logApi.warn(`${formatLog.tag()} ${formatLog.warning('Daily sync (manual/startup) called while already running. Proceeding with caution.')}`);
-        // Allow it to run if manually triggered, but be aware of potential overlap if interval is very short
+    }
+    if (this.stats.customStats.sync.full_sync_running && !options.invokedByScheduler) {
+        logApi.warn(`${formatLog.tag()} ${formatLog.warning('Full sync is running. Daily sync (not scheduled) will be skipped.')}`);
+        return;
     }
     set(this.stats.customStats.sync, 'daily_sync_running', true);
+    set(this.stats.customStats.api, 'lastRequestAt', new Date().toISOString());
     logApi.info(`${formatLog.tag()} ${formatLog.header('STARTING DAILY NEW TOKEN SYNC FROM JUPITER')}`);
     let currentJupiterAddresses = [];
     let addressesAddedThisSync = 0;
     try {
       currentJupiterAddresses = await this.tokens.fetchJupiterTokenAddresses();
+      inc(this.stats.customStats.api, 'successful');
+      set(this.stats.customStats.api, 'lastSuccessfulResponseAt', new Date().toISOString());
+      set(this.stats.customStats.api, 'lastError', null);
+      set(this.stats.customStats.api, 'lastErrorTime', null);
+
       if (!currentJupiterAddresses || currentJupiterAddresses.length === 0) {
         logApi.warn(`${formatLog.tag()} ${formatLog.warning('No token addresses returned from Jupiter for daily sync.')}`);
-        set(this.stats.customStats.sync, 'last_daily_sync_at', new Date().toISOString()); 
         set(this.stats.customStats.sync, 'addresses_added_last_daily_sync', 0); 
-        set(this.stats.customStats.sync, 'daily_sync_running', false);
+        set(this.stats.customStats.sync, 'last_daily_sync_at', new Date().toISOString()); 
         return;
       }
+      // ... (logic to compare with DB, createMany new addresses, update addressesAddedThisSync) ...
+      set(this.stats.customStats.sync, 'addresses_added_last_daily_sync', addressesAddedThisSync);
+      set(this.stats.customStats.sync, 'last_daily_sync_at', new Date().toISOString());
+      set(this.stats.customStats.tokens, 'db_total', await prisma.tokens.count());
+      logApi.info(`${formatLog.tag()} ${formatLog.success(`DAILY NEW TOKEN SYNC COMPLETED. Added ${addressesAddedThisSync} new unique addresses to DB.`)}`);
     } catch (error) {
-      logError(logApi, this.name, 'Failed to fetch token addresses from Jupiter for daily sync', error);
-      await this.handleError(error); // Notify circuit breaker
+      inc(this.stats.customStats.api, 'failed');
+      set(this.stats.customStats.api, 'lastError', `fetchJupiterTokenAddresses (daily sync) failed: ${error.message}`);
+      set(this.stats.customStats.api, 'lastErrorTime', new Date().toISOString());
+      logError(logApi, this.name, 'Failed to fetch/process token addresses for daily sync', error);
+      await this.handleError(error);
+    } finally {
       set(this.stats.customStats.sync, 'daily_sync_running', false);
-      return;
     }
-    
-    logApi.info(`${formatLog.tag()} ${formatLog.info(`Fetched ${currentJupiterAddresses.length} current addresses from Jupiter. Comparing with DB...`)}`);
-    const existingDbAddresses = new Set(
-      (await prisma.tokens.findMany({ select: { address: true }, orderBy: {id: 'asc'} })).map(t => t.address)
-    ); // Added orderBy for minor potential DB optimization during large reads
-    logApi.info(`${formatLog.tag()} ${formatLog.info(`Found ${existingDbAddresses.size} addresses in local DB.`)}`);
-    const newAddresses = currentJupiterAddresses.filter(addr => !existingDbAddresses.has(addr));
-    if (newAddresses.length === 0) {
-      logApi.info(`${formatLog.tag()} ${formatLog.success('No new token addresses found from Jupiter today.')}`);
-    } else {
-      logApi.info(`${formatLog.tag()} ${formatLog.info(`Found ${newAddresses.length} new token addresses to add.`)}`);
-      for (let i = 0; i < newAddresses.length; i += options.batchSize) {
-        const batch = newAddresses.slice(i, i + options.batchSize);
-        try {
-          const createData = batch.map(address => ({
-            address: address,
-            is_active: false,
-            first_seen_on_jupiter_at: new Date(),
-          }));
-          const result = await prisma.tokens.createMany({
-            data: createData,
-            skipDuplicates: true, // Technically redundant due to pre-filter, but safe
-          });
-          addressesAddedThisSync += result.count;
-          logApi.info(`${formatLog.tag()} ${formatLog.info(`Daily Sync Batch ${Math.floor(i / options.batchSize) + 1}/${Math.ceil(newAddresses.length / options.batchSize)}. Added ${result.count} new. Total new this sync: ${addressesAddedThisSync}`)}`);
-        } catch (dbError) {
-          logError(logApi, this.name, `DB error adding new Jupiter address batch ${Math.floor(i / options.batchSize) + 1}`, dbError);
-        }
-        if (options.delayMs > 0 && (i + options.batchSize < newAddresses.length)) {
-          await new Promise(resolve => setTimeout(resolve, options.delayMs));
-        }
-      }
-    }
-    set(this.stats.customStats.sync, 'last_daily_sync_at', new Date().toISOString());
-    set(this.stats.customStats.sync, 'addresses_added_last_daily_sync', addressesAddedThisSync);
-    set(this.stats.customStats.tokens, 'db_total', await prisma.tokens.count());
-    set(this.stats.customStats.sync, 'daily_sync_running', false);
-    logApi.info(`${formatLog.tag()} ${formatLog.success(`DAILY NEW TOKEN SYNC COMPLETED. Added ${addressesAddedThisSync} new unique addresses to DB.`)}`);
   }
   
-  async performOperation() { // Heartbeat / Health check for BaseService
+  async performOperation() {
+    set(this.stats.customStats.api, 'lastRequestAt', new Date().toISOString());
     try {
       if (this.isCircuitBreakerOpen()) {
         logApi.warn(`${formatLog.tag()} ${formatLog.warning('Circuit breaker open, skipping Jupiter health check.')}`);
-        return; // Return void, not false, to prevent BaseService misinterpreting this during CB open state
+        // Note: We might still count this as an attempted API call that was skipped by circuit breaker
+        // For now, not incrementing successful/failed here, just noting request attempt.
+        return; 
       }
-      // Light-weight check: fetch price for a known, common token like SOL
-      const SOL_ADDRESS = 'So11111111111111111111111111111111111111112'; // Wrapped SOL address
-      await this.getPrices([SOL_ADDRESS]); // getPrices now handles its own internal lock for PriceService
-      
-      inc(this.stats.customStats.api, 'successful');
-      set(this.stats.customStats.api, 'lastError', null); // Clear last error on success
-      // lastRequest/Response are implicitly covered by successful makeRequest calls within getPrices
-      
-      await this.recordSuccess(); // For BaseService circuit breaker
-      // serviceEvents.emit('service:heartbeat', { name: this.name, /* ... */ }); // BaseService might do this already
-      return true; // Indicate success for BaseService
+      const SOL_ADDRESS = 'So11111111111111111111111111111111111111112'; 
+      await this.getPrices([SOL_ADDRESS]); // getPrices will handle its own inc/set for api stats
+      set(this.stats.customStats.api, 'lastSuccessfulResponseAt', new Date().toISOString()); // Mark health check attempt as successful if getPrices didn't throw
+      await this.recordSuccess(); 
+      return true; 
     } catch (error) {
       inc(this.stats.customStats.api, 'failed');
-      set(this.stats.customStats.api, 'lastError', error.message);
-      await this.handleError(error); // For BaseService circuit breaker (records failure)
-      return false; // Indicate failure for BaseService
+      set(this.stats.customStats.api, 'lastError', `Health check via getPrices failed: ${error.message}`);
+      set(this.stats.customStats.api, 'lastErrorTime', new Date().toISOString());
+      await this.handleError(error); 
+      return false; 
     }
   }
   
@@ -686,6 +642,9 @@ class JupiterClient extends BaseService {
       throw new Error('JupiterClient: Circuit breaker is open');
     }
     if (!Array.isArray(mintAddresses) || mintAddresses.length === 0) return {};
+
+    set(this.stats.customStats.api, 'lastRequestAt', new Date().toISOString());
+    let getPricesOverallSuccess = false;
 
     const addresses = Array.isArray(mintAddresses) ? mintAddresses : [mintAddresses];
     const uniqueAddresses = [...new Set(addresses)].filter(addr => addr);
@@ -723,6 +682,8 @@ class JupiterClient extends BaseService {
 
         progress.update(0, [`Fetching Batch ${batchNumForLog}/${batchesForApiCall.length}`]);
 
+        let currentQueryStringJoined = ''; // Declare here
+
         while (retries < this.prices.maxRetries) {
           try {
             if (retries > 0) {
@@ -739,7 +700,9 @@ class JupiterClient extends BaseService {
               if (!(statusCode === 429)) currentBackoffMs = Math.min(currentBackoffMs * 2, (this.prices.refreshInterval || 60000));
             }
             
-            const currentQueryStringJoined = currentAddressBatch.join(',');
+            logApi.debug(`${formatLog.tag()} [JupiterClient.getPrices/throttleBatches] currentAddressBatch BEFORE join:`, { currentAddressBatch, typeofBatch: typeof currentAddressBatch, isArray: Array.isArray(currentAddressBatch), batchLength: currentAddressBatch?.length });
+            currentQueryStringJoined = currentAddressBatch.join(','); // Assign here
+            logApi.debug(`${formatLog.tag()} [JupiterClient.getPrices/throttleBatches] Preparing to call PriceService.makeRequest for batch ${batchNumForLog}`, { queryString: currentQueryStringJoined });
             if (!currentQueryStringJoined) {
               logApi.error(`[JupiterClient.getPrices] Attempting to make API call with EMPTY query string for API batch ${batchNumForLog}. Skipping.`, { currentAddressBatch });
               lastErrorThisBatch = new Error("Empty query string for Jupiter price API");
@@ -751,6 +714,8 @@ class JupiterClient extends BaseService {
 
             const response = await this.prices.makeRequest('GET', this.prices.config.endpoints.price.getPrices, null, { ids: currentQueryStringJoined });
 
+            logApi.debug(`${formatLog.tag()} [JupiterClient.getPrices/throttleBatches] PriceService.makeRequest successful for batch ${batchNumForLog}. Response preview:`, { dataPreview: JSON.stringify(response)?.substring(0, 300) });
+
             if (response && response.data && typeof response.data === 'object') {
               Object.assign(allAggregatedResults, response.data);
               successfulAddressCount += Object.keys(response.data).length;
@@ -761,7 +726,8 @@ class JupiterClient extends BaseService {
               logApi.warn(`${formatLog.tag()} API Batch ${batchNumForLog}: No price data in response or unexpected structure. Query: ${currentQueryStringJoined}`);
             }
             
-            progress.completeBatch(batchNumForLog, currentAddressBatch.length, Object.keys(response.data || response || {}).length, 0);
+            const successCount = Object.keys(response.data || response || {}).length;
+            progress.completeBatch(batchNumForLog, currentAddressBatch.length, [`${successCount} prices received`], 0);
             batchSucceeded = true;
             lastErrorThisBatch = null;
             break;
@@ -770,6 +736,14 @@ class JupiterClient extends BaseService {
             retries++;
             lastErrorThisBatch = error;
             const statusCode = safe(error, 'response.status');
+            
+            logApi.warn(`${formatLog.tag()} [JupiterClient.getPrices/throttleBatches] Error in PriceService.makeRequest for batch ${batchNumForLog}, attempt ${retries}`, {
+              queryString: currentQueryStringJoined,
+              errorMessage: error.message,
+              errorStatus: error.response?.status,
+              errorResponseDataPreview: JSON.stringify(error.response?.data)?.substring(0, 300),
+              fullLastErrorThisBatch: JSON.stringify(lastErrorThisBatch, Object.getOwnPropertyNames(lastErrorThisBatch))?.substring(0,500)
+            });
             
             if (statusCode === 429 || (statusCode >= 500 && statusCode <= 599)) {
               if (retries >= this.prices.maxRetries) {
@@ -787,6 +761,9 @@ class JupiterClient extends BaseService {
         if (!batchSucceeded && lastErrorThisBatch) {
           failedAddressCount += currentAddressBatch.length;
           logError(logApi, 'JupiterClient.getPrices', `Price API batch ${batchNumForLog} failed permanently after ${this.prices.maxRetries} retries`, lastErrorThisBatch);
+          logApi.error(`${formatLog.tag()} [JupiterClient.getPrices/throttleBatches] FINAL FAILURE for batch ${batchNumForLog}:`, {
+            fullLastErrorThisBatch: JSON.stringify(lastErrorThisBatch, Object.getOwnPropertyNames(lastErrorThisBatch))?.substring(0,1000)
+          });
         } else if (!batchSucceeded && !lastErrorThisBatch) {
           logApi.warn(`${formatLog.tag()} API Batch ${batchNumForLog} was effectively empty and skipped.`);
         }
@@ -803,6 +780,18 @@ class JupiterClient extends BaseService {
     const aggregatedPriceData = await throttleBatches(batches);
     Object.assign(priceResults, aggregatedPriceData);
 
+    if (Object.keys(priceResults).length > 0 || uniqueAddresses.length === 0) {
+        getPricesOverallSuccess = true;
+      inc(this.stats.customStats.api, 'successful');
+        set(this.stats.customStats.api, 'lastSuccessfulResponseAt', new Date().toISOString());
+        set(this.stats.customStats.api, 'lastError', null);
+        set(this.stats.customStats.api, 'lastErrorTime', null);
+    } else {
+      inc(this.stats.customStats.api, 'failed');
+        set(this.stats.customStats.api, 'lastError', 'getPrices completed but returned no price data for requested addresses.');
+        set(this.stats.customStats.api, 'lastErrorTime', new Date().toISOString());
+    }
+
     if (DEBUG_SHOW_BATCH_SAMPLE_TOKENS) {
         logApi.debug(`[JupiterClient.getPrices] Final results for ${uniqueAddresses.length} unique tokens: ${successfulAddressCount} successful, ${failedAddressCount} failed. Sample:`, Object.keys(priceResults).slice(0,5));
     } else {
@@ -814,32 +803,97 @@ class JupiterClient extends BaseService {
 
   async getPriceHistory(mintAddress, interval = '7d') {
     if (this.isCircuitBreakerOpen()) throw new Error('JupiterClient: Circuit breaker open.');
+    set(this.stats.customStats.api, 'lastRequestAt', new Date().toISOString());
     try {
       const result = await this.prices.getPriceHistory(mintAddress, interval);
-      inc(this.stats.customStats.api, 'successful');
+      inc(this.stats.customStats.api, 'successful'); 
+      set(this.stats.customStats.api, 'lastSuccessfulResponseAt', new Date().toISOString());
+      set(this.stats.customStats.api, 'lastError', null);
+      set(this.stats.customStats.api, 'lastErrorTime', null);
       return result;
-    } catch (error) {
-      inc(this.stats.customStats.api, 'failed');
-      await this.handleError(error);
-      throw error;
+    } catch (error) { 
+      inc(this.stats.customStats.api, 'failed'); 
+      set(this.stats.customStats.api, 'lastError', `getPriceHistory failed: ${error.message}`);
+      set(this.stats.customStats.api, 'lastErrorTime', new Date().toISOString());
+      await this.handleError(error); 
+      throw error; 
     }
   }
 
   async getSwapQuote(params) {
     if (this.isCircuitBreakerOpen()) throw new Error('JupiterClient: Circuit breaker open.');
+    set(this.stats.customStats.api, 'lastRequestAt', new Date().toISOString());
     try {
       const result = await this.swaps.getSwapQuote(params);
-      inc(this.stats.customStats.api, 'successful');
+      inc(this.stats.customStats.api, 'successful'); 
+      set(this.stats.customStats.api, 'lastSuccessfulResponseAt', new Date().toISOString());
+      set(this.stats.customStats.api, 'lastError', null);
+      set(this.stats.customStats.api, 'lastErrorTime', null);
       return result;
-    } catch (error) {
-      inc(this.stats.customStats.api, 'failed');
-      await this.handleError(error);
-      throw error;
+    } catch (error) { 
+      inc(this.stats.customStats.api, 'failed'); 
+      set(this.stats.customStats.api, 'lastError', `getSwapQuote failed: ${error.message}`);
+      set(this.stats.customStats.api, 'lastErrorTime', new Date().toISOString());
+      await this.handleError(error); 
+      throw error; 
     }
   }
-}
 
-// ------------------------------------------------------------------------------------------------
+  getServiceStatus() {
+    const baseStatus = super.getServiceStatus();
+
+    const syncStats = safeStats(this.stats, ['customStats', 'sync'], {
+        last_full_sync_at: null,
+        addresses_added_last_full_sync: 0,
+        last_daily_sync_at: null,
+        addresses_added_last_daily_sync: 0,
+        daily_sync_running: false,
+        full_sync_running: false
+    });
+    
+    const apiStats = safeStats(this.stats, ['customStats', 'api'], {
+        successful: 0,
+        failed: 0,
+        lastRequestAt: null,
+        lastSuccessfulResponseAt: null,
+        lastError: null,
+        lastErrorTime: null
+    });
+    
+    // tokenStats can be removed if db_total is not reliably updated by this service itself.
+    // const tokenStats = safeStats(this.stats, ['customStats', 'tokens'], {
+    //     db_total: 0 
+    // });
+
+    return {
+      ...baseStatus,
+      metrics: {
+        ...(baseStatus.metrics || {}),
+        jupiterClientSpecific: {
+          tokenListSync: {
+            fullSync: {
+              lastRunAt: syncStats.last_full_sync_at,
+              addressesAdded: syncStats.addresses_added_last_full_sync,
+              isRunning: syncStats.full_sync_running
+            },
+            dailyDeltaSync: {
+              lastRunAt: syncStats.last_daily_sync_at,
+              addressesAdded: syncStats.addresses_added_last_daily_sync,
+              isRunning: syncStats.daily_sync_running
+            },
+          },
+          apiHealth: {
+            successfulCalls: apiStats.successful,
+            failedCalls: apiStats.failed,
+            lastRequestAt: apiStats.lastRequestAt,
+            lastSuccessfulResponseAt: apiStats.lastSuccessfulResponseAt,
+            lastError: apiStats.lastError ? { message: apiStats.lastError, time: apiStats.lastErrorTime } : null
+          }
+        }
+      }
+    };
+  }
+}
 
 let _instance = null;
 
@@ -851,4 +905,10 @@ export function getJupiterClient() {
 export const jupiterClient = getJupiterClient();
 export default jupiterClient;
 
-function chunk(array, size) { const chunks = []; for (let i = 0; i < array.length; i += size) chunks.push(array.slice(i, i + size)); return chunks; }
+function chunk(array, size) { 
+  const chunks = []; 
+  for (let i = 0; i < array.length; i += size) { 
+    chunks.push(array.slice(i, i + size)); 
+  }
+  return chunks; 
+}

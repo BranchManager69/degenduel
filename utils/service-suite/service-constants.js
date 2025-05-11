@@ -68,7 +68,8 @@ export const SERVICE_NAMES = {
     SOLANA_ENGINE: 'solana_engine_service', // Solana Engine service
     SYSTEM_SETTINGS: 'system_settings_service', // New System Settings service
     AI_SERVICE: 'ai_service', // AI Analysis and Processing Service
-    
+    DIALECT: 'dialect_service', // Dialect integration service (Blinks)
+
     // Notification Services
     NOTIFICATION: 'notification_service', // General notification service
     DISCORD_NOTIFICATION: 'discord_notification_service', // Discord integration service
@@ -322,6 +323,15 @@ export const SERVICE_METADATA = {
         updateFrequency: 'event-based',
         criticalLevel: 'low',
         dependencies: []
+    },
+
+    // Dialect service metadata
+    [SERVICE_NAMES.DIALECT]: {
+        layer: SERVICE_LAYERS.INFRASTRUCTURE,
+        description: 'Dialect integrations for Blinks (Solana Actions)',
+        updateFrequency: 'on demand',
+        criticalLevel: 'medium',
+        dependencies: [SERVICE_NAMES.SOLANA_ENGINE]
     },
 
     // Launch Event service metadata

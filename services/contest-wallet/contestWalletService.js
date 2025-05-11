@@ -1692,7 +1692,7 @@ class ContestWalletService extends BaseService {
                 throw ServiceError.operation('Decryption did not yield a Buffer, which is unexpected for encrypted keys.');
             }
             return decryptedBuffer;
-        } catch (error) {
+            } catch (error) {
             this.logApi.error(`${formatLog.tag()} Error in decryptPrivateKey: ${error.message}`, { error });
             if (error instanceof ServiceError) throw error;
             throw ServiceError.operation(`Decryption failed: ${error.message}`, { originalError: error });
@@ -1725,7 +1725,7 @@ class ContestWalletService extends BaseService {
             } else if (decryptedKeyOrSeed.length === 64) {
                 this.logApi.debug(`${formatLog.tag()} Decrypted a 64-byte legacy key. Creating signer with createSignerFromLegacyKey (compat layer).`);
                 signer = await createSignerFromLegacyKey(decryptedKeyOrSeed);
-            } else {
+                } else {
                 const errMsg = `Decrypted key/seed has an unexpected length: ${decryptedKeyOrSeed.length}. Expected 32 or 64 bytes.`;
                 this.logApi.error(`${formatLog.tag()} ${errMsg}`);
                 throw ServiceError.operation(errMsg, { type: 'KEY_MATERIAL_LENGTH_ERROR' });

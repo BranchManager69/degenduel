@@ -361,7 +361,7 @@ class SolanaEngineService extends BaseService {
         const signature = await rpc.sendTransaction(
           signedTransaction, 
           {
-            encoding: 'base64', 
+            encoding: 'base64',
             skipPreflight: options.skipPreflight || false,
             preflightCommitment: commitment, 
             maxRetries: options.maxRetries || 0, 

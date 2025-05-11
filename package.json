@@ -202,6 +202,8 @@
   "dependencies": {
     "@branchmanager69/degenduel-shared": "^1.0.7",
     "@coral-xyz/anchor": "^0.31.0",
+    "@dialectlabs/sdk": "^2.0.0-beta.2",
+    "@dialectlabs/web3": "^0.3.2",
     "@faker-js/faker": "^9.4.0",
     "@logtail/node": "^0.5.2",
     "@logtail/winston": "^0.5.2",

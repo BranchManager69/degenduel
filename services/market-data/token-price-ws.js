@@ -582,26 +582,26 @@ class TokenPriceWebSocketService {
     handleTokenMintUpdate(subInfo, accountData) {
         try {
             const tokenInfo = this.monitoredTokens.get(subInfo.address);
-
+            
             if (!tokenInfo) {
                 return;
             }
-
+            
             logApi.debug(`${formatLog.tag()} ${formatLog.header('TOKEN UPDATE')} Mint ${subInfo.address} for ${tokenInfo.symbol} updated`);
-
+            
             // Extract token supply from mint account data and track it locally
-            if (accountData.value && accountData.value.data && accountData.value.data.parsed &&
+            if (accountData.value && accountData.value.data && accountData.value.data.parsed && 
                 accountData.value.data.parsed.info && accountData.value.data.parsed.info.supply) {
                 const supply = new Decimal(accountData.value.data.parsed.info.supply);
-
+                
                 // Update local token info with new supply (for potential market cap calculations)
                 this.monitoredTokens.set(subInfo.address, {
                     ...tokenInfo,
                     lastSupply: supply
                 });
-
+                
                 logApi.debug(`${formatLog.tag()} ${formatLog.header('SUPPLY UPDATE')} ${tokenInfo.symbol} supply changed: ${supply.toString()} (tracked locally)`);
-
+                
                 // Note: We no longer update the database with supply changes.
                 // Supply updates are now handled by the TokenActivationService
                 // which properly updates both raw_supply and total_supply fields
@@ -755,13 +755,26 @@ class TokenPriceWebSocketService {
      * @returns {Object} - Current stats
      */
     getStats() {
+        // Convert Maps to arrays of addresses/details for the stats output
+        const monitoredTokenDetails = Array.from(this.monitoredTokens.entries()).map(([address, data]) => ({
+            address: address,
+            symbol: data.symbol,
+            // lastPrice: data.lastPrice, // Could be too verbose for a summary, uncomment if needed
+        }));
+        const monitoredPoolAddresses = Array.from(this.monitoredPools.keys());
+
         return {
             ...this.stats,
             connected: this.wsConnected,
+            
             tokenCount: this.monitoredTokens.size,
+            monitoredTokenDetails: monitoredTokenDetails, // Array of {address, symbol}
+
             poolCount: this.monitoredPools.size,
+            monitoredPoolAddresses: monitoredPoolAddresses,   // Array of pool addresses
+            
             minimumPriorityScore: this.minimumPriorityScore,
-            now: new Date()
+            now: new Date().toISOString() // Standardized ISO string format
         };
     }
 

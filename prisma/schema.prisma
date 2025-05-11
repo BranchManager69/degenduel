@@ -1961,10 +1961,38 @@ model qr_auth_sessions {
   created_at    DateTime  @default(now())
   completed_at  DateTime?
   user_id       Int?
-  
+
   user          users?    @relation("UserQrAuthSessions", fields: [user_id], references: [id], onDelete: SetNull)
-  
+
   @@index([expires_at], name: "qr_auth_sessions_expires_at_idx")
   @@index([status], name: "qr_auth_sessions_status_idx")
   @@map("qr_auth_sessions")
+}
+
+// Dialect Blinks authentication tokens
+model dialect_auth_tokens {
+  id             Int      @id @default(autoincrement())
+  wallet_address String
+  access_token   String
+  refresh_token  String
+  expires_at     DateTime
+  created_at     DateTime @default(now())
+
+  @@index([wallet_address])
+  @@index([expires_at])
+}
+
+// Dialect Blinks usage tracking
+model dialect_blinks_usage {
+  id                    Int       @id @default(autoincrement())
+  blink_id              String    // ID of the blink that was used
+  wallet_address        String    // User who triggered the blink
+  timestamp             DateTime  @default(now())
+  success               Boolean   @default(true)
+  transaction_signature String?   // Solana transaction signature if applicable
+  metadata              Json?     // Additional metadata about the usage
+
+  @@index([blink_id])
+  @@index([wallet_address])
+  @@index([timestamp])
 }

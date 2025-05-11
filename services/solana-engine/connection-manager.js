@@ -381,8 +381,17 @@ class ConnectionManager {
             minContextSlot: (args[1] && args[1].minContextSlot) || undefined,
           };
 
+          logApi.debug('[ConnectionManager] getMultipleAccounts: About to call RPC with config:', getMultipleAccountsConfig);
           const v2Results = await rpc.getMultipleAccounts(publicKeyStrings, getMultipleAccountsConfig).send();
+          logApi.debug('[ConnectionManager] getMultipleAccounts: RPC call returned. Typeof v2Results:', typeof v2Results, 'IsArray:', Array.isArray(v2Results));
           
+          if (!Array.isArray(v2Results)) {
+            const resultType = typeof v2Results;
+            const resultPreview = JSON.stringify(v2Results)?.substring(0, 500);
+            logApi.error('[ConnectionManager] getMultipleAccounts CRITICAL_ERROR_PATH: Expected an array from RPC call, but received type: ' + resultType + '. Preview: ' + resultPreview, { v2Results });
+            throw new Error('FATAL_UNEXPECTED_RPC_RESPONSE_TYPE [getMultipleAccounts]: Received type \'' + resultType + '\' instead of array. Preview: ' + resultPreview);
+          }
+
           return v2Results.map(accountInfo => {
             if (!accountInfo) return null;
             

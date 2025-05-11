@@ -14,6 +14,9 @@
 import express from "express";
 import prisma from "../config/prisma.js";
 import { logApi } from "../utils/logger-suite/logger.js";
+import tokenPriceWs from '../services/market-data/token-price-ws.js';
+import { jupiterClient } from '../services/solana-engine/jupiter-client.js';
+import tokenActivationService from '../services/token-activation/token-activation-service.js';
 
 const router = express.Router();
 
@@ -351,6 +354,242 @@ router.get("/countdown", async (req, res) => {
       ip: req.ip,
     });
     return res.status(500).json({ error: "Failed to get countdown status" });
+  }
+});
+
+/**
+ * @swagger
+ * /api/status/token-price-ws:
+ *   get:
+ *     summary: Get real-time stats from the TokenPriceWebSocketService
+ *     tags: [Status, Metrics]
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved stats from TokenPriceWebSocketService.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 serviceName:
+ *                   type: string
+ *                   example: TokenPriceWebSocketService
+ *                 currentServerTime:
+ *                   type: string
+ *                   format: date-time
+ *                 statusSummary:
+ *                   type: string
+ *                   example: "Connected, monitoring X pools for Y tokens."
+ *                 connected:
+ *                   type: boolean
+ *                 lastConnectionTime:
+ *                   type: string
+ *                   format: date-time
+ *                   nullable: true
+ *                 reconnections:
+ *                   type: number
+ *                 tokenCount:
+ *                   type: number
+ *                   description: "Number of unique tokens being targeted for price monitoring."
+ *                 monitoredTokenDetails:
+ *                   type: array
+ *                   description: "Details of tokens being monitored (address, symbol)."
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       address:
+ *                         type: string
+ *                       symbol:
+ *                         type: string
+ *                 poolCount:
+ *                   type: number
+ *                   description: "Number of distinct liquidity pools actively being monitored via WebSocket."
+ *                 monitoredPoolAddresses:
+ *                   type: array
+ *                   description: "Addresses of liquidity pools being monitored."
+ *                   items:
+ *                     type: string
+ *                     example: "abcdef1234567890..."
+ *                 priceUpdates:
+ *                   type: number
+ *                 lastActivity:
+ *                   type: string
+ *                   format: date-time
+ *                   nullable: true
+ *                 errors:
+ *                   type: number
+ *                 minimumPriorityScore:
+ *                   type: number
+ *                 now:
+ *                   type: string
+ *                   format: date-time
+ *       500:
+ *         description: Server error while trying to retrieve stats.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                 details:
+ *                   type: string
+ */
+router.get("/token-price-ws", async (req, res) => {
+  try {
+    if (!tokenPriceWs || typeof tokenPriceWs.getStats !== 'function') {
+      logApi.error("[API /status/token-price-ws] TokenPriceWs service or getStats method is not available.");
+      return res.status(500).json({ error: "TokenPriceWs service is currently unavailable." });
+    }
+
+    const stats = tokenPriceWs.getStats();
+    
+    const responsePayload = {
+      serviceName: "TokenPriceWebSocketService",
+      currentServerTime: new Date().toISOString(),
+      statusSummary: stats.connected ? `Connected, monitoring ${stats.poolCount} pools for ${stats.tokenCount} tokens.` : "Not connected",
+      ...stats 
+    };
+
+    res.json(responsePayload);
+
+  } catch (error) {
+    logApi.error("[API /status/token-price-ws] Failed to get TokenPriceWs stats:", { 
+        errorMessage: error.message,
+        // errorStack: process.env.NODE_ENV === "development" ? error.stack : undefined, // Optional: include stack in dev
+    });
+    res.status(500).json({ 
+        error: "Failed to retrieve TokenPriceWs stats.",
+        details: error.message 
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/status/token-data-pipeline:
+ *   get:
+ *     summary: Get a comprehensive overview of the DegenDuel Token Data Pipeline.
+ *     tags: [Status, Metrics, Pipeline]
+ *     description: |
+ *       Provides aggregated status and metrics from key services involved in token data discovery, 
+ *       enrichment, activation, and real-time monitoring. This includes:
+ *       - JupiterClient: For new token discovery and list synchronization.
+ *       - TokenActivationService: For metadata enrichment (DexScreener, Helius) and setting `is_active` status.
+ *       - TokenPriceWebSocketService: For real-time price/pool monitoring (Helius WebSockets).
+ *       - Overall database counts for tokens.
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved the comprehensive pipeline status.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 overview:
+ *                   type: object
+ *                   properties:
+ *                     lastRefreshed:
+ *                       type: string
+ *                       format: date-time
+ *                     description:
+ *                       type: string
+ *                       example: "Aggregated status of the DegenDuel Token Data Pipeline."
+ *                 databaseCounts:
+ *                   type: object
+ *                   properties:
+ *                     totalTokensInDB:
+ *                       type: integer
+ *                     activeTokensInDB:
+ *                       type: integer
+ *                     tokensWithPriceData:
+ *                       type: integer
+ *                 jupiterClient:
+ *                   type: object
+ *                   description: "Status and metrics from JupiterClient."
+ *                 tokenActivationService:
+ *                   type: object
+ *                   description: "Status and metrics from TokenActivationService."
+ *                 tokenPriceWebSocketService:
+ *                   type: object
+ *                   description: "Status and metrics from TokenPriceWebSocketService."
+ *       500:
+ *         description: Server error while trying to retrieve pipeline status.
+ */
+router.get("/token-data-pipeline", async (req, res) => {
+  const fullReport = {
+    overview: {
+      lastRefreshed: new Date().toISOString(),
+      description: "Aggregated status of the DegenDuel Token Data Pipeline."
+    },
+    databaseCounts: { error: "Failed to fetch database counts" },
+    jupiterClient: { status: "unavailable", error: "Service instance or getServiceStatus method not found." },
+    tokenActivationService: { status: "unavailable", error: "Service instance or getServiceStatus method not found." },
+    tokenPriceWebSocketService: { status: "unavailable", error: "Service instance or getStats method not found." },
+  };
+
+  try {
+    // 1. Database Counts
+    try {
+      const [totalTokens, activeTokens, tokensWithPrices] = await prisma.$transaction([
+        prisma.tokens.count(),
+        prisma.tokens.count({ where: { is_active: true } }),
+        prisma.token_prices.count({ where: { price: { not: null } } })
+      ]);
+      fullReport.databaseCounts = {
+        totalTokensInDB: totalTokens,
+        activeTokensInDB: activeTokens,
+        tokensWithPriceData: tokensWithPrices,
+      };
+    } catch (dbError) {
+      logApi.error("[API /token-data-pipeline] Error fetching DB counts:", dbError);
+      fullReport.databaseCounts = { error: dbError.message || "Unknown DB error" };
+    }
+
+    // 2. JupiterClient Status
+    if (jupiterClient && typeof jupiterClient.getServiceStatus === 'function') {
+      try {
+        fullReport.jupiterClient = jupiterClient.getServiceStatus();
+      } catch (e) {
+        logApi.error("[API /token-data-pipeline] Error getting JupiterClient status:", e);
+        fullReport.jupiterClient = { status: "error_fetching", error: e.message };
+      }
+    } else {
+      logApi.warn("[API /token-data-pipeline] JupiterClient or its getServiceStatus is not available.");
+    }
+
+    // 3. TokenActivationService Status
+    if (tokenActivationService && typeof tokenActivationService.getServiceStatus === 'function') {
+      try {
+        fullReport.tokenActivationService = tokenActivationService.getServiceStatus();
+      } catch (e) {
+        logApi.error("[API /token-data-pipeline] Error getting TokenActivationService status:", e);
+        fullReport.tokenActivationService = { status: "error_fetching", error: e.message };
+      }
+    } else {
+      logApi.warn("[API /token-data-pipeline] TokenActivationService or its getServiceStatus is not available.");
+    }
+
+    // 4. TokenPriceWebSocketService Stats
+    if (tokenPriceWs && typeof tokenPriceWs.getStats === 'function') {
+      try {
+        fullReport.tokenPriceWebSocketService = tokenPriceWs.getStats();
+      } catch (e) {
+        logApi.error("[API /token-data-pipeline] Error getting TokenPriceWs stats:", e);
+        fullReport.tokenPriceWebSocketService = { status: "error_fetching", error: e.message };
+      }
+    } else {
+      logApi.warn("[API /token-data-pipeline] TokenPriceWs or its getStats is not available.");
+    }
+
+    res.json(fullReport);
+
+  } catch (error) {
+    logApi.error("[API /token-data-pipeline] Critical error constructing pipeline status:", { errorMessage: error.message, stack: error.stack });
+    res.status(500).json({ 
+        error: "Failed to retrieve complete token data pipeline status.",
+        details: error.message 
+    });
   }
 });
 

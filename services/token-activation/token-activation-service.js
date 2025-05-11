@@ -14,7 +14,7 @@
 
 import axios from 'axios';
 import { BaseService } from '../../utils/service-suite/base-service.js';
-import { SERVICE_NAMES } from '../../utils/service-suite/service-constants.js';
+import { SERVICE_NAMES, getServiceMetadata, DEFAULT_CIRCUIT_BREAKER_CONFIG } from '../../utils/service-suite/service-constants.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import { fancyColors, serviceColors } from '../../utils/colors.js';
 import prisma from '../../config/prisma.js';
@@ -54,22 +54,43 @@ const formatLog = {
 
 class TokenActivationService extends BaseService {
   constructor() {
+    const serviceName = SERVICE_NAMES.TOKEN_ACTIVATION; // Will be added to service-constants
+    const metadata = getServiceMetadata(serviceName) || {};
     super({
-      name: SERVICE_NAMES.TOKEN_ACTIVATION, // Will be added to service-constants
-      description: 'Manages the active status of tokens based on dynamic criteria.',
+      name: serviceName,
+      description: metadata.description || 'Manages the active status of tokens based on dynamic criteria.',
       dependencies: [SERVICE_NAMES.JUPITER_CLIENT], // Needs Jupiter for price/volume data
-      layer: 'DATA', // Operates on token data
-      criticalLevel: 'MEDIUM',
+      layer: metadata.layer || 'DATA', // Operates on token data
+      criticalLevel: metadata.criticalLevel || 'MEDIUM',
       checkIntervalMs: DEFAULT_CHECK_INTERVAL_MS,
       circuitBreaker: {
-        enabled: true,
-        failureThreshold: 3,
-        resetTimeoutMs: 10 * 60 * 1000, // 10 minutes
-        healthCheckIntervalMs: 2 * 60 * 1000, // 2 minutes
+        ...(metadata.circuitBreaker || DEFAULT_CIRCUIT_BREAKER_CONFIG), // Start with defaults, allow override
+        enabled: metadata.circuitBreaker?.enabled !== undefined ? metadata.circuitBreaker.enabled : true,
+        failureThreshold: metadata.circuitBreaker?.failureThreshold || 3,
+        resetTimeoutMs: metadata.circuitBreaker?.resetTimeoutMs || 10 * 60 * 1000, 
+        healthCheckIntervalMs: metadata.circuitBreaker?.healthCheckIntervalMs || 2 * 60 * 1000,
       }
     });
     this.updateTimeoutId = null;
     this.isProcessing = false;
+
+    // Ensure this.stats is initialized by BaseService, then add lastCycleDetails
+    this.stats = this.stats || {}; // Should be initialized by super()
+    this.stats.lastCycleDetails = {
+        startTime: null,
+        endTime: null,
+        durationMs: 0,
+        status: 'idle', // idle, selecting_candidates, refreshing_metrics, evaluating_status, completed, failed
+        candidatesSelected: 0,
+        metricsRefreshedCount: 0, // Number of tokens for which metrics were attempted to be refreshed
+        dbTokensUpdated: 0,
+        dbPricesUpserted: 0,
+        dbSocialsUpdated: 0,
+        dbWebsitesUpdated: 0,
+        activatedInCycle: 0,
+        deactivatedInCycle: 0,
+        errorMessage: null,
+    };
   }
 
   async initialize() {
@@ -185,36 +206,49 @@ class TokenActivationService extends BaseService {
   async updateTokenStatuses() {
     logApi.info(`${formatLog.tag()} ${formatLog.header('UPDATE CYCLE')} Starting token active status evaluation...`);
     inc(this.stats.operations, 'total');
-    const startTime = Date.now();
+    const cycleStartTime = Date.now();
+    
+    set(this.stats.lastCycleDetails, {
+        startTime: new Date(cycleStartTime).toISOString(),
+        endTime: null,
+        durationMs: 0,
+        status: 'selecting_candidates',
+        candidatesSelected: 0,
+        metricsRefreshedCount: 0,
+        dbTokensUpdated: 0,
+        dbPricesUpserted: 0,
+        dbSocialsUpdated: 0,
+        dbWebsitesUpdated: 0,
+        activatedInCycle: 0,
+        deactivatedInCycle: 0,
+        errorMessage: null,
+    });
 
     try {
       const candidateAddresses = await this._selectCandidateTokenAddresses();
+      set(this.stats.lastCycleDetails, 'candidatesSelected', candidateAddresses.length);
+      set(this.stats.lastCycleDetails, 'status', 'refreshing_metrics');
+
       if (candidateAddresses.length > 0) {
-        await this._refreshMetricsForTokens(candidateAddresses);
+        await this._refreshMetricsForTokens(candidateAddresses, this.stats.lastCycleDetails);
       } else {
         logApi.info(`${formatLog.tag()} No candidate tokens needed metric refresh in this cycle.`);
       }
 
+      set(this.stats.lastCycleDetails, 'status', 'evaluating_status');
       const now = new Date();
-      // Defines the cutoff for "New" tokens (e.g., anything seen within the last 24 hours)
       const newThresholdDate = new Date(now.getTime() - CRITERIA_MAX_AGE_HOURS_FOR_NEW * 60 * 60 * 1000);
-      // Defines the cutoff for "Recent" tokens (e.g., anything seen within the last 7 days)
-      // "Established" tokens are older than this.
       const recentThresholdDate = new Date(now.getTime() - CRITERIA_MAX_AGE_HOURS_FOR_NEW * 24 * 60 * 60 * 1000);
 
-      // Make sure to use Prisma's recommended way for $executeRaw or $queryRaw with template literals
-      // if not using $executeRawUnsafe for very specific reasons.
-      // The $1, $2, etc. are placeholders for parameters.
-      const updatedCount = await prisma.$executeRawUnsafe(
+      const activeBefore = await prisma.tokens.count({ where: { is_active: true } });
+
+      const updatedCountRawSql = await prisma.$executeRawUnsafe(
         `UPDATE tokens t
          SET
            is_active = CASE
              WHEN t.manually_activated = TRUE THEN TRUE
-             -- Tier 1: New Tokens (seen more recently than newThresholdDate)
              WHEN t.first_seen_on_jupiter_at >= $1 AND tp.market_cap >= $2 AND tp.volume_24h >= $3 THEN TRUE
-             -- Tier 2: Recent Tokens (seen more recently than recentThresholdDate but not newer than newThresholdDate)
              WHEN t.first_seen_on_jupiter_at < $1 AND t.first_seen_on_jupiter_at >= $4 AND tp.market_cap >= $5 AND tp.volume_24h >= $6 THEN TRUE
-             -- Tier 3: Established Tokens (seen older than recentThresholdDate)
              WHEN t.first_seen_on_jupiter_at < $4 AND tp.market_cap >= $7 AND tp.volume_24h >= $8 THEN TRUE
              ELSE FALSE
            END,
@@ -231,68 +265,29 @@ class TokenActivationService extends BaseService {
              END
            ) OR t.last_is_active_evaluation_at IS NULL OR t.last_is_active_evaluation_at < (NOW() - INTERVAL '${METRIC_STALE_THRESHOLD_HOURS} hours')
          );`,
-        newThresholdDate,               // $1
-        CRITERIA_TIER1_MIN_MARKET_CAP,  // $2 - Tier 1 Market Cap ($50k)
-        CRITERIA_TIER1_MIN_VOLUME_24H,  // $3 - Tier 1 Volume ($100k)
-        recentThresholdDate,            // $4
-        CRITERIA_TIER2_MIN_MARKET_CAP,  // $5 - Tier 2 Market Cap ($100k)
-        CRITERIA_TIER2_MIN_VOLUME_24H,  // $6 - Tier 2 Volume ($100k)
-        CRITERIA_TIER3_MIN_MARKET_CAP,  // $7 - Tier 3 Market Cap ($250k)
-        CRITERIA_TIER3_MIN_VOLUME_24H   // $8 - Tier 3 Volume ($100k)
+        newThresholdDate, CRITERIA_TIER1_MIN_MARKET_CAP, CRITERIA_TIER1_MIN_VOLUME_24H,
+        recentThresholdDate, CRITERIA_TIER2_MIN_MARKET_CAP, CRITERIA_TIER2_MIN_VOLUME_24H,
+        CRITERIA_TIER3_MIN_MARKET_CAP, CRITERIA_TIER3_MIN_VOLUME_24H
       );
+      
+      const activeAfter = await prisma.tokens.count({ where: { is_active: true } });
+      const changedCount = Math.abs(activeAfter - activeBefore);
+      set(this.stats.lastCycleDetails, 'activatedInCycle', Math.max(0, activeAfter - activeBefore));
+      set(this.stats.lastCycleDetails, 'deactivatedInCycle', Math.max(0, activeBefore - activeAfter));
 
-      // After updating, log tokens that changed status for detailed tracking
-      if (updatedCount > 0) {
-        try {
-          // Get details of tokens that just changed status
-          const statusChanges = await prisma.$queryRaw`
-            SELECT
-              t.id, t.address, t.symbol, t.name, t.is_active,
-              tp.market_cap, tp.volume_24h,
-              t.first_seen_on_jupiter_at,
-              CASE
-                WHEN t.first_seen_on_jupiter_at >= ${newThresholdDate} THEN 'Tier 1 (New)'
-                WHEN t.first_seen_on_jupiter_at < ${newThresholdDate} AND t.first_seen_on_jupiter_at >= ${recentThresholdDate} THEN 'Tier 2 (Recent)'
-                ELSE 'Tier 3 (Established)'
-              END as tier
-            FROM tokens t
-            JOIN token_prices tp ON t.id = tp.token_id
-            WHERE t.last_is_active_evaluation_at > NOW() - INTERVAL '1 minute'
-            AND t.last_is_active_evaluation_at < NOW()
-            ORDER BY t.is_active DESC, tp.market_cap DESC
-            LIMIT 100
-          `;
-
-          if (statusChanges && statusChanges.length > 0) {
-            const activated = statusChanges.filter(t => t.is_active);
-            const deactivated = statusChanges.filter(t => !t.is_active);
-
-            if (activated.length > 0) {
-              logApi.info(`${formatLog.tag()} TOKENS ACTIVATED: ${activated.length} tokens now active`);
-              activated.forEach(token => {
-                logApi.info(`${formatLog.tag()} ACTIVATED: ${token.symbol || token.address} (${token.tier}) - MC: $${Math.round(token.market_cap)}, Vol: $${Math.round(token.volume_24h)}`);
-              });
-            }
-
-            if (deactivated.length > 0) {
-              logApi.info(`${formatLog.tag()} TOKENS DEACTIVATED: ${deactivated.length} tokens now inactive`);
-              deactivated.forEach(token => {
-                logApi.info(`${formatLog.tag()} DEACTIVATED: ${token.symbol || token.address} (${token.tier}) - MC: $${Math.round(token.market_cap)}, Vol: $${Math.round(token.volume_24h)}`);
-              });
-            }
-          }
-        } catch (logError) {
-          logApi.error(`${formatLog.tag()} Error generating detailed status change logs: ${logError.message}`);
-        }
-      }
-
-      logApi.info(`${formatLog.tag()} Token active status evaluation complete. ${updatedCount} records potentially updated.`);
+      logApi.info(`${formatLog.tag()} Token active status evaluation complete. ${updatedCountRawSql} records potentially evaluated by SQL, ${changedCount} status changes detected.`);
       inc(this.stats.operations, 'successful');
-      this.stats.performance.lastOperationTimeMs = Date.now() - startTime;
+      set(this.stats.performance, 'lastOperationTimeMs', Date.now() - cycleStartTime);
       await this.recordSuccess();
+      set(this.stats.lastCycleDetails, 'status', 'completed');
     } catch (error) {
       logError(logApi, this.name, 'Error in updateTokenStatuses cycle', error);
+      set(this.stats.lastCycleDetails, 'status', 'failed');
+      set(this.stats.lastCycleDetails, 'errorMessage', error.message);
       await this.handleError(error);
+    } finally {
+      set(this.stats.lastCycleDetails, 'endTime', new Date().toISOString());
+      set(this.stats.lastCycleDetails, 'durationMs', Date.now() - cycleStartTime);
     }
   }
 
@@ -338,19 +333,33 @@ class TokenActivationService extends BaseService {
    * Refreshes key metrics (price, volume, market_cap) for the given token addresses
    * and updates the `token_prices` table.
    */
-  async _refreshMetricsForTokens(addresses) {
+  async _refreshMetricsForTokens(addresses, lastCycleDetailsRef) {
     if (!addresses || addresses.length === 0) {
       logApi.debug(`${formatLog.tag()} No addresses provided to _refreshMetricsForTokens.`);
+      if (lastCycleDetailsRef) {
+        set(lastCycleDetailsRef, 'metricsRefreshedCount', 0);
+        set(lastCycleDetailsRef, 'dbTokensUpdated', 0);
+        set(lastCycleDetailsRef, 'dbPricesUpserted', 0);
+        set(lastCycleDetailsRef, 'dbSocialsUpdated', 0);
+        set(lastCycleDetailsRef, 'dbWebsitesUpdated', 0);
+      }
       return;
     }
     logApi.info(`${formatLog.tag()} Refreshing metrics for ${addresses.length} tokens using DexScreener and Helius...`);
+    
+    if (lastCycleDetailsRef) {
+        set(lastCycleDetailsRef, 'metricsRefreshedCount', addresses.length); 
+        set(lastCycleDetailsRef, 'dbTokensUpdated', 0);
+        set(lastCycleDetailsRef, 'dbPricesUpserted', 0);
+        set(lastCycleDetailsRef, 'dbSocialsUpdated', 0);
+        set(lastCycleDetailsRef, 'dbWebsitesUpdated', 0);
+        set(lastCycleDetailsRef, 'errorMessage', null);
+    }
 
     try {
-      // Fetch data from DexScreener (already handles internal batching)
       const dexScreenerResultsMap = await dexScreenerCollector.getTokensByAddressBatch(addresses);
       logApi.info(`${formatLog.tag()} Fetched DexScreener data for ${Object.keys(dexScreenerResultsMap).length} addresses.`);
 
-      // Fetch data from Helius (already handles internal batching)
       const heliusRawResults = await heliusClient.tokens.getTokensMetadata(addresses);
       const heliusResultsMap = new Map();
       heliusRawResults.forEach(item => {
@@ -360,12 +369,11 @@ class TokenActivationService extends BaseService {
       });
       logApi.info(`${formatLog.tag()} Fetched Helius metadata for ${heliusResultsMap.size} addresses.`);
 
-      const tokenUpdates = [];
-      const tokenPriceUpserts = [];
-      const allNewSocials = [];
-      const allNewWebsites = []; // Assuming a separate table or distinct handling
-
-      const processedTokenIds = []; // For batch deleting socials/websites
+      const tokenUpdateOps = [];
+      const tokenPriceUpsertOps = [];
+      const allNewSocialsOps = [];
+      const allNewWebsitesOps = [];
+      const processedTokenIdsForSocials = [];
 
       for (const address of addresses) {
         const dexData = dexScreenerResultsMap[address];
@@ -376,16 +384,16 @@ class TokenActivationService extends BaseService {
           continue;
         }
 
-        const tokenRecord = await prisma.tokens.findUnique({
-          where: { address },
-          select: { id: true, symbol: true, name: true, decimals: true, total_supply: true, coingeckoId: true }
-        });
+          const tokenRecord = await prisma.tokens.findUnique({
+            where: { address },
+            select: { id: true, symbol: true, name: true, decimals: true, total_supply: true, coingeckoId: true }
+          });
 
-        if (!tokenRecord) {
-          logApi.warn(`${formatLog.tag()} Token record not found in DB for address: ${address} during metric refresh.`);
-          continue;
-        }
-        processedTokenIds.push(tokenRecord.id);
+          if (!tokenRecord) {
+            logApi.warn(`${formatLog.tag()} Token record not found in DB for address: ${address} during metric refresh.`);
+            continue;
+          }
+        processedTokenIdsForSocials.push(tokenRecord.id);
 
         // Prepare token table update data
         const tokenUpdateData = {
@@ -395,18 +403,14 @@ class TokenActivationService extends BaseService {
         // Decimals: Prioritize Helius
         if (heliusData && heliusData.decimals !== undefined && heliusData.decimals !== null) {
           tokenUpdateData.decimals = heliusData.decimals;
-        } else if (dexData && dexData.baseToken && dexData.baseToken.decimals !== undefined ) { // Check if DexScreener has decimals (unlikely for current collector)
-           // logApi.warn(`${formatLog.tag()} Using DexScreener decimals for ${address} - Helius did not provide. This is unexpected.`);
-           // tokenUpdateData.decimals = dexData.baseToken.decimals;
         }
-
 
         // Name & Symbol: Prioritize Helius (on-chain) if available, else DexScreener
         if (heliusData && heliusData.name) {
           tokenUpdateData.name = heliusData.name;
         } else if (dexData && dexData.name) {
           tokenUpdateData.name = dexData.name;
-        }
+          }
         if (heliusData && heliusData.symbol) {
           tokenUpdateData.symbol = heliusData.symbol;
         } else if (dexData && dexData.symbol) {
@@ -415,11 +419,8 @@ class TokenActivationService extends BaseService {
 
         // Logo URL: DexScreener
         if (dexData && dexData.metadata && dexData.metadata.imageUrl) {
-          tokenUpdateData.logo_url = dexData.metadata.imageUrl;
-        } else if (dexData && dexData.info && dexData.info.imageUrl) { // Fallback for older collector structure
-            tokenUpdateData.logo_url = dexData.info.imageUrl;
+          tokenUpdateData.image_url = dexData.metadata.imageUrl;
         }
-
 
         // Total Supply: Use Helius if available as initial, but TokenPriceWebSocketService handles ongoing.
         // Only set if not already set or if Helius value is significantly different and newer.
@@ -430,9 +431,8 @@ class TokenActivationService extends BaseService {
           } catch (e) { /* ignore parse error */ }
         }
 
-
         if (Object.keys(tokenUpdateData).length > 1) { // more than just metadata_last_updated_at
-          tokenUpdates.push({ where: { id: tokenRecord.id }, data: tokenUpdateData });
+          tokenUpdateOps.push({ where: { id: tokenRecord.id }, data: tokenUpdateData });
         }
 
         // Prepare token_prices table upsert data (from DexScreener)
@@ -443,21 +443,21 @@ class TokenActivationService extends BaseService {
             market_cap: dexData.marketCap !== undefined && dexData.marketCap !== null ? parseFloat(dexData.marketCap) : null,
             fdv: dexData.fdv !== undefined && dexData.fdv !== null ? parseFloat(dexData.fdv) : null,
             volume_24h: dexData.volume && dexData.volume.h24 !== undefined && dexData.volume.h24 !== null ? parseFloat(dexData.volume.h24) : null,
-            liquidity_usd: dexData.liquidity && dexData.liquidity.usd !== undefined && dexData.liquidity.usd !== null ? parseFloat(dexData.liquidity.usd) : null,
+            liquidity: dexData.liquidity && dexData.liquidity.usd !== undefined && dexData.liquidity.usd !== null ? parseFloat(dexData.liquidity.usd) : null,
             updated_at: new Date(),
             // Store raw dexscreener data if needed for specific fields not yet mapped
             // raw_dexscreener_data: dexData, 
           };
           // Filter out null prices before pushing, as price is non-nullable in schema
           if (priceUpsertData.price !== null && !isNaN(priceUpsertData.price)) {
-             tokenPriceUpserts.push({
+             tokenPriceUpsertOps.push({
                 where: { token_id: tokenRecord.id },
                 update: {
                     price: priceUpsertData.price,
                     market_cap: isNaN(priceUpsertData.market_cap) ? null : priceUpsertData.market_cap,
                     fdv: isNaN(priceUpsertData.fdv) ? null : priceUpsertData.fdv,
                     volume_24h: isNaN(priceUpsertData.volume_24h) ? null : priceUpsertData.volume_24h,
-                    liquidity_usd: isNaN(priceUpsertData.liquidity_usd) ? null : priceUpsertData.liquidity_usd,
+                    liquidity: isNaN(priceUpsertData.liquidity_usd) ? null : priceUpsertData.liquidity_usd,
                     updated_at: priceUpsertData.updated_at,
                 },
                 create: {
@@ -466,20 +466,19 @@ class TokenActivationService extends BaseService {
                     market_cap: isNaN(priceUpsertData.market_cap) ? null : priceUpsertData.market_cap,
                     fdv: isNaN(priceUpsertData.fdv) ? null : priceUpsertData.fdv,
                     volume_24h: isNaN(priceUpsertData.volume_24h) ? null : priceUpsertData.volume_24h,
-                    liquidity_usd: isNaN(priceUpsertData.liquidity_usd) ? null : priceUpsertData.liquidity_usd,
+                    liquidity: isNaN(priceUpsertData.liquidity_usd) ? null : priceUpsertData.liquidity_usd,
                     updated_at: priceUpsertData.updated_at,
                 },
             });
           } else {
             logApi.debug(`${formatLog.tag()} Skipping price upsert for ${address} due to null/NaN price from DexScreener.`);
-          }
-
+                  }
 
           // Prepare token_socials and token_websites data
           if (dexData.socials) {
             for (const [type, url] of Object.entries(dexData.socials)) {
               if (url && typeof url === 'string') { // Ensure URL is a string
-                allNewSocials.push({ token_id: tokenRecord.id, type: type.toLowerCase(), url: url });
+                allNewSocialsOps.push({ token_id: tokenRecord.id, type: type.toLowerCase(), url: url });
               }
             }
           }
@@ -489,61 +488,102 @@ class TokenActivationService extends BaseService {
                 // Assuming a separate table for websites, or a generic type in token_socials
                 // For this example, let's assume token_socials handles websites with type 'website'
                 // And token_websites is a separate table.
-                 allNewWebsites.push({ token_id: tokenRecord.id, label: site.label || 'website', url: site.url });
+                 allNewWebsitesOps.push({ token_id: tokenRecord.id, label: site.label || 'website', url: site.url });
                  // If also adding to token_socials:
                  // allNewSocials.push({ token_id: tokenRecord.id, type: 'website', url: site.url });
+                      }
+                  });
               }
-            });
-          }
-        }
+            }
       } // End of address loop
 
-      // Batch Database Operations
-      if (tokenUpdates.length > 0 || tokenPriceUpserts.length > 0 || allNewSocials.length > 0 || allNewWebsites.length > 0) {
+      if (lastCycleDetailsRef) {
+        set(lastCycleDetailsRef, 'dbTokensUpdated', tokenUpdateOps.length);
+        set(lastCycleDetailsRef, 'dbPricesUpserted', tokenPriceUpsertOps.length);
+        set(lastCycleDetailsRef, 'dbSocialsUpdated', allNewSocialsOps.length);
+        set(lastCycleDetailsRef, 'dbWebsitesUpdated', allNewWebsitesOps.length);
+      }
+
+      if (tokenUpdateOps.length > 0 || tokenPriceUpsertOps.length > 0 || allNewSocialsOps.length > 0 || allNewWebsitesOps.length > 0) {
         await prisma.$transaction(async (tx) => {
           logApi.info(`${formatLog.tag()} Starting Prisma transaction for DB updates...`);
 
           // Update tokens table
-          if (tokenUpdates.length > 0) {
-            logApi.info(`${formatLog.tag()} Updating ${tokenUpdates.length} records in 'tokens' table.`);
-            for (const op of tokenUpdates) {
+          if (tokenUpdateOps.length > 0) {
+            logApi.info(`${formatLog.tag()} Updating ${tokenUpdateOps.length} records in 'tokens' table.`);
+            for (const op of tokenUpdateOps) {
               await tx.tokens.update(op);
             }
           }
 
           // Upsert token_prices table
-          if (tokenPriceUpserts.length > 0) {
-            logApi.info(`${formatLog.tag()} Upserting ${tokenPriceUpserts.length} records in 'token_prices' table.`);
-            for (const op of tokenPriceUpserts) {
+          if (tokenPriceUpsertOps.length > 0) {
+            logApi.info(`${formatLog.tag()} Upserting ${tokenPriceUpsertOps.length} records in 'token_prices' table.`);
+            for (const op of tokenPriceUpsertOps) {
               await tx.token_prices.upsert(op);
             }
           }
           
-          if (processedTokenIds.length > 0) {
+          if (processedTokenIdsForSocials.length > 0) {
             // Delete existing socials and websites for these tokens then create new ones
-            if (allNewSocials.length > 0) {
-              logApi.info(`${formatLog.tag()} Deleting existing socials for ${processedTokenIds.length} tokens.`);
-              await tx.token_socials.deleteMany({ where: { token_id: { in: processedTokenIds } } });
-              logApi.info(`${formatLog.tag()} Creating ${allNewSocials.length} new records in 'token_socials' table.`);
-              await tx.token_socials.createMany({ data: allNewSocials, skipDuplicates: true });
+            if (allNewSocialsOps.length > 0) {
+              logApi.info(`${formatLog.tag()} Deleting existing socials for ${processedTokenIdsForSocials.length} tokens then creating ${allNewSocialsOps.length} new records.`);
+              await tx.token_socials.deleteMany({ where: { token_id: { in: processedTokenIdsForSocials } } });
+              const socialsCreateResult = await tx.token_socials.createMany({ data: allNewSocialsOps, skipDuplicates: true });
+              if (lastCycleDetailsRef) set(lastCycleDetailsRef, 'dbSocialsUpdated', socialsCreateResult.count);
             }
 
-            if (allNewWebsites.length > 0) { // Assuming token_websites table exists
-              logApi.info(`${formatLog.tag()} Deleting existing websites for ${processedTokenIds.length} tokens.`);
-              await tx.token_websites.deleteMany({ where: { token_id: { in: processedTokenIds } } });
-              logApi.info(`${formatLog.tag()} Creating ${allNewWebsites.length} new records in 'token_websites' table.`);
-              await tx.token_websites.createMany({ data: allNewWebsites, skipDuplicates: true });
+            if (allNewWebsitesOps.length > 0) { // Assuming token_websites table exists
+              logApi.info(`${formatLog.tag()} Deleting existing websites for ${processedTokenIdsForSocials.length} tokens then creating ${allNewWebsitesOps.length} new records.`);
+              await tx.token_websites.deleteMany({ where: { token_id: { in: processedTokenIdsForSocials } } });
+              const websitesCreateResult = await tx.token_websites.createMany({ data: allNewWebsitesOps, skipDuplicates: true });
+              if (lastCycleDetailsRef) set(lastCycleDetailsRef, 'dbWebsitesUpdated', websitesCreateResult.count);
             }
           }
           logApi.info(`${formatLog.tag()} Prisma transaction completed successfully.`);
         });
       } else {
-        logApi.info(`${formatLog.tag()} No database updates required for this batch of addresses.`);
+        logApi.info(`${formatLog.tag()} No database updates required from _refreshMetricsForTokens.`);
       }
 
     } catch (error) {
-      logError(logApi, this.name, `Error in _refreshMetricsForTokens main try block: ${error.message}`, { count: addresses.length, firstAddress: addresses[0] });
-      throw error;
+      logError(logApi, this.name, `Error in _refreshMetricsForTokens: ${error.message}`, { count: addresses.length, firstAddress: addresses[0] });
+      if (lastCycleDetailsRef) {
+        set(lastCycleDetailsRef, 'errorMessage', `_refreshMetricsForTokens: ${error.message}`);
+      }
+      throw error; 
     }
   }
+  
+  getServiceStatus() {
+    const baseStatus = super.getServiceStatus();
+    
+    let nextRunTime = null;
+    if (this.isStarted && this.updateTimeoutId && typeof this.updateTimeoutId.ref === 'function') {
+        if (!this.isProcessing) {
+            try {
+              const delayMs = this._calculateDelayToNextSlot();
+              nextRunTime = new Date(Date.now() + delayMs).toISOString();
+            } catch (e) { nextRunTime = "Error calculating next run"; }
+        } else if (this.isProcessing && this.stats.lastCycleDetails?.startTime) {
+            nextRunTime = `Currently processing (started at ${this.stats.lastCycleDetails.startTime})`;
+        }
+    } else if (this.isStarted && !this.updateTimeoutId && !this.isProcessing) {
+        nextRunTime = "Scheduler not running, attempting to restart on next health check or manual trigger.";
+    }
+
+    return {
+      ...baseStatus,
+      metrics: {
+        ...(baseStatus.metrics || {}), // Ensure baseStatus.metrics exists
+        tokenActivationServiceSpecific: {
+          isCurrentlyProcessing: this.isProcessing,
+          nextScheduledRunAttempt: nextRunTime,
+          lastCycleDetails: this.stats.lastCycleDetails || { status: 'not_run_yet', errorMessage: null }
+        }
+      }
+    };
+  }
 }
+
+export default new TokenActivationService(); 

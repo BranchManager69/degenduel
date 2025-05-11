@@ -478,6 +478,20 @@ class ServiceInitializer {
             logApi.info(`${fancyColors.YELLOW}Skipping registration of ai_service - disabled in config${fancyColors.RESET}`);
         }
 
+        // Register Dialect Service for Blinks
+        if (config.services.dialect_service) { // Check config
+            try {
+                // Dynamic import for the dialect service
+                const { default: dialectService } = await import('../../services/dialect/index.js');
+                serviceManager.register(dialectService, [SERVICE_NAMES.SOLANA_ENGINE]);
+                logApi.info(`${fancyColors.GREEN}Successfully registered dialect_service${fancyColors.RESET}`);
+            } catch (error) {
+                logApi.error(`${fancyColors.RED}Failed to register dialect_service: ${error.message}${fancyColors.RESET}`);
+            }
+        } else {
+            logApi.info(`${fancyColors.YELLOW}Skipping registration of dialect_service - disabled in config${fancyColors.RESET}`);
+        }
+
         // ... register other future application-level services here ...
 
         if (VERBOSE_SERVICE_INIT_LOGS) {
@@ -514,6 +528,7 @@ class ServiceInitializer {
                 [SERVICE_NAMES.TOKEN_DETECTION]: 'token_detection_service',
                 [SERVICE_NAMES.TOKEN_ENRICHMENT]: 'token_enrichment_service',
                 [SERVICE_NAMES.PORTFOLIO_SNAPSHOT]: 'portfolio_snapshot_service',
+                [SERVICE_NAMES.DIALECT]: 'dialect_service',
                 // Add other services as they get profile support
             };
             

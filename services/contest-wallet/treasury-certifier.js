@@ -163,10 +163,10 @@ class TreasuryCertifier {
 
         try {
             // Step 1: Load Master Funder Wallet
-            if (!this.appConfig.masterFunderSeedB58) {
+            if (!this.masterFunderSeedB58) {
                 throw new Error('MASTER_FUNDER_WALLET_SEED_B58 not configured.');
             }
-            const masterSeedBytes = bs58.decode(this.appConfig.masterFunderSeedB58);
+            const masterSeedBytes = bs58.decode(this.masterFunderSeedB58);
             if (masterSeedBytes.length !== 32 && masterSeedBytes.length !== 64) { // Allow 64 if it's full keypair, take first 32
                 throw new Error('Master funder seed (after bs58 decode) is not 32 or 64 bytes.');
             }

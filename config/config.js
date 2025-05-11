@@ -713,7 +713,7 @@ const config = {
     production: {
       // token_sync has been permanently removed
       ai_service: true,
-      market_data: true, 
+      market_data: true,
       contest_evaluation: true,
       token_whitelist: true,
       liquidity: true,
@@ -738,6 +738,7 @@ const config = {
       discord_interactive_service: true,
       launch_event_service: true,
       portfolio_snapshot_service: true,
+      dialect_service: true, // Dialect integration service (Blinks/Solana Actions)
       // Additional services would be defined here as we expand this pattern
       // etc.
     },
@@ -756,11 +757,12 @@ const config = {
 
       // BELOW SERVICES ARE ENABLED IN DEVELOPMENT
       launch_event_service: true, // Enabled in dev for testing
+      dialect_service: true, // Enabled in dev for testing Blinks registry
 
-      // BELOW SERVICES ARE DISABLED IN DEVELOPMENT 
+      // BELOW SERVICES ARE DISABLED IN DEVELOPMENT
       ai_service: false,
       discord_notification_service: false, // Disable Discord notification service in development
-      discord_interactive_service: false, // Disable Discord interactive service in development 
+      discord_interactive_service: false, // Disable Discord interactive service in development
       market_data: false, // Disabled to prevent token fetching in dev environment (uses external API)
       contest_evaluation: false, // Disabled to prevent real contest evaluations from being run in development
       token_whitelist: false, // Completely removed from the application (DEPRECATED)
@@ -782,7 +784,11 @@ const config = {
       token_detection_service: false, // Disable token detection service in development
       token_enrichment_service: false, // Disable token enrichment service in development
       portfolio_snapshot_service: false, // Disable portfolio snapshot service to prevent double-snapshotting in development (causes race conditions)
-      token_activation_service: false, // Explicitly false for dev unless overridden by specific needs
+      token_activation_service: false, // Disabled in development
+      token_monitor: false, // [ADDED 5/11/25] Explicitly disable token monitor service in development
+      contest_image_service: false, // [ADDED 5/11/25] Explicitly disable contest image service in development
+      contest_service: false, // [ADDED 5/11/25] Explicitly disable contest service in development
+      jupiter_client: false, // [ADDED 5/11/25] Explicitly disable JupiterClient service in development
       
       // Any future services that may cause conflicts with prod services would be disabled here too
     }
@@ -790,7 +796,7 @@ const config = {
   
   // Vanity Wallet Generator Configuration
   vanityWallet: {
-    // Number of worker threads to use for generation 
+    // Number of worker threads to use for generation
     numWorkers: parseInt(process.env.VANITY_WALLET_NUM_WORKERS || 8), // Use all 8 cores for maximum performance
     // CPU limit for generation processes
     cpuLimit: parseInt(process.env.VANITY_WALLET_CPU_LIMIT || 80), // Use 80% CPU by default to leave more resources for other tasks
@@ -807,6 +813,26 @@ const config = {
     checkIntervalMinutes: parseInt(process.env.VANITY_WALLET_CHECK_INTERVAL || 1), // Every minute
     // Maximum concurrent generation jobs
     maxConcurrentJobs: parseInt(process.env.VANITY_WALLET_MAX_CONCURRENT_JOBS || 1), // Use 1 job at a time to maximize resources per job
+  },
+
+  // Dialect Service Configuration (Blinks/Solana Actions integration)
+  dialect: {
+    // Wallet private key for signing Dialect provider registration
+    walletPrivateKey: process.env.DIALECT_WALLET_PRIVATE_KEY || process.env.WALLET_ENCRYPTION_KEY,
+    // Dialect API key
+    apiKey: process.env.DIALECT_API_KEY || '',
+    // Environment (development or production)
+    environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
+    // Provider configuration
+    provider: {
+      name: 'DegenDuel',
+      description: 'DegenDuel Contest & Trading Platform',
+      websiteUrl: 'https://degenduel.me',
+      iconUrl: 'https://degenduel.me/images/logo192.png',
+      termsUrl: 'https://degenduel.me/terms',
+      oauthRedirectUrl: 'https://degenduel.me/api/blinks/auth/callback',
+      blinksInstructionsUrl: 'https://degenduel.me/docs/blinks'
+    }
   },
 
   // Active service configuration (based on profile)
@@ -908,19 +934,19 @@ const config = {
       return profile.contest_wallet_service;
     },
 
-    // TODO: Add contest_image_service and contest_service (these are new; have not yet been brought fully to our established standard)
-    // 
-    //get contest_image_service() {
-    //  const profile = config.service_profiles[config.services.active_profile] || 
-    //                 config.service_profiles.development;
-    //  return profile.contest_image_service;
-    //},
-    //
-    //get contest_service() {
-    //  const profile = config.service_profiles[config.services.active_profile] || 
-    //                 config.service_profiles.development;
-    //  return profile.contest_service;
-    //},
+    // Contest Image Service
+    get contest_image_service() {
+      const profile = config.service_profiles[config.services.active_profile] ||
+                     config.service_profiles.development;
+      return profile.contest_image_service === undefined ? false : profile.contest_image_service;
+    },
+
+    // Contest Service
+    get contest_service() {
+      const profile = config.service_profiles[config.services.active_profile] ||
+                     config.service_profiles.development;
+      return profile.contest_service === undefined ? false : profile.contest_service;
+    },
 
     // ADMIN WALLET SERVICE
     get admin_wallet_service() {
@@ -973,23 +999,37 @@ const config = {
 
     // TOKEN DEX DATA SERVICE
     get token_dex_data_service() {
-      const profile = config.service_profiles[config.services.active_profile] || 
+      const profile = config.service_profiles[config.services.active_profile] ||
                      config.service_profiles.development;
       return profile.token_dex_data_service;
     },
 
     // TOKEN DETECTION SERVICE
     get token_detection_service() {
-      const profile = config.service_profiles[config.services.active_profile] || 
+      const profile = config.service_profiles[config.services.active_profile] ||
                      config.service_profiles.development;
       return profile.token_detection_service;
     },
 
+    // JUPITER CLIENT SERVICE
+    get jupiter_client() {
+      const profile = config.service_profiles[config.services.active_profile] ||
+                     config.service_profiles.development;
+      return profile.jupiter_client;
+    },
+
     // TOKEN ENRICHMENT SERVICE
     get token_enrichment_service() {
-      const profile = config.service_profiles[config.services.active_profile] || 
+      const profile = config.service_profiles[config.services.active_profile] ||
                      config.service_profiles.development;
       return profile.token_enrichment_service;
+    },
+
+    // DIALECT SERVICE
+    get dialect_service() {
+      const profile = config.service_profiles[config.services.active_profile] ||
+                     config.service_profiles.development;
+      return profile.dialect_service;
     },
 
     // DISCORD NOTIFICATION SERVICE

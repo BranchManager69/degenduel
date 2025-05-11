@@ -27,9 +27,10 @@ import { prisma } from '../config/prisma.js';
 // Solana Engine
 import { jupiterClient, getJupiterClient } from './solana-engine/jupiter-client.js';
 import { heliusClient } from './solana-engine/helius-client.js';
+import dexScreenerCollector from './token-enrichment/collectors/dexScreenerCollector.js';
 // Logger and Progress Utilities
 import { logApi } from '../utils/logger-suite/logger.js';
-import { fancyColors } from '../utils/colors.js';
+import { fancyColors, serviceColors } from '../utils/colors.js';
 import { createBatchProgress } from '../utils/logger-suite/batch-progress.js';
 // Token Refresh Scheduler components
 import PriorityQueue from './token-refresh-scheduler/priority-queue.js';
@@ -87,6 +88,20 @@ let PRIORITY_TIERS = {
     rank_threshold: 100000
   }
 };
+
+// -- CURSOR AI MODIFICATION START --
+// Add formatLog definition for this service
+const formatLog = {
+  tag: () => `${serviceColors.tokenRefreshScheduler || fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET}`, // Assuming you have a color for it
+  header: (text) => `${serviceColors.tokenRefreshSchedulerHeader || fancyColors.BG_GOLD}${fancyColors.BLACK} ${text} ${fancyColors.RESET}`,
+  // Add other specific formats if needed, or a generic one:
+  info: (text) => `${fancyColors.GOLD}${text}${fancyColors.RESET}`,
+  error: (text) => `${fancyColors.RED}${text}${fancyColors.RESET}`,
+  success: (text) => `${fancyColors.GREEN}${text}${fancyColors.RESET}`,
+  warning: (text) => `${fancyColors.YELLOW}${text}${fancyColors.RESET}`,
+  token: (text) => `${fancyColors.MAGENTA}${text}${fancyColors.RESET}`
+};
+// -- CURSOR AI MODIFICATION END --
 
 /**
  * TokenRefreshScheduler - Advanced scheduling system for token price updates
@@ -169,6 +184,14 @@ class TokenRefreshScheduler extends BaseService {
     
     // Debug state 
     this.debugMode = config.debug_mode === 'true' || config.debug_modes?.token_refresh === 'true';
+
+    // -- CURSOR AI MODIFICATION START --
+    this.jupiterClient = jupiterClient; // Explicitly assign imported singleton to instance property
+    this.heliusClient = heliusClient;   // Might as well do it for heliusClient too for consistency
+    this.dexScreenerCollector = dexScreenerCollector; // And for DexScreenerCollector
+    // Log to confirm they are defined
+    logApi.debug(`${formatLog.tag()} Constructor: jupiterClient type: ${typeof this.jupiterClient}, heliusClient type: ${typeof this.heliusClient}, dexScreenerCollector type: ${typeof this.dexScreenerCollector}`);
+    // -- CURSOR AI MODIFICATION END --
   }
 
   /**
@@ -208,6 +231,23 @@ class TokenRefreshScheduler extends BaseService {
       logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} INITIALIZED ${fancyColors.RESET} Token Refresh Scheduler ready with ${this.activeTokens.size} active tokens`);
       
       this.isInitialized = true;
+
+      // -- CURSOR AI MODIFICATION START --
+      // Double check clients are available before proceeding with logic that uses them
+      if (!this.jupiterClient || typeof this.jupiterClient.getPrices !== 'function') {
+        logApi.error(`${formatLog.tag()} CRITICAL ERROR during initialize: JupiterClient is not available or missing getPrices.`);
+        throw new Error("JupiterClient failed to load correctly for TokenRefreshScheduler.");
+      }
+      if (!this.heliusClient || typeof this.heliusClient.tokens?.getTokensMetadata !== 'function') {
+        logApi.error(`${formatLog.tag()} CRITICAL ERROR during initialize: HeliusClient is not available or missing tokens.getTokensMetadata.`);
+        throw new Error("HeliusClient failed to load correctly for TokenRefreshScheduler.");
+      }
+      if (!this.dexScreenerCollector || typeof this.dexScreenerCollector.getTokensByAddressBatch !== 'function') {
+        logApi.error(`${formatLog.tag()} CRITICAL ERROR during initialize: DexScreenerCollector is not available or missing getTokensByAddressBatch.`);
+        throw new Error("DexScreenerCollector failed to load correctly for TokenRefreshScheduler.");
+      }
+      // -- CURSOR AI MODIFICATION END --
+      
       return true;
     } catch (error) {
       logApi.error(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} ${fancyColors.RED}Initialization error:${fancyColors.RESET}`, error);
@@ -853,23 +893,28 @@ class TokenRefreshScheduler extends BaseService {
     let pricedTokensInBatch = new Set();
 
     try {
-      // DEGENS: Single attempt to get prices for the entire batch from JupiterClient
+      // Ensure we are using the instance property `this.jupiterClient`
+      if (!this.jupiterClient || typeof this.jupiterClient.getPrices !== 'function') {
+        logApi.error(`${formatLog.tag()} [processBatch] JupiterClient or getPrices method is undefined when attempting to fetch prices.`);
+        throw new Error('JupiterClient not available in processBatch');
+      }
       priceData = await this.jupiterClient.getPrices(tokenAddresses);
       fetchSuccess = true; // Assume success if no exception
       logApi.debug(`[TokenRefreshScheduler.processBatch] JupiterClient.getPrices returned for batch ${batchNum}. Found prices for ${Object.keys(priceData || {}).length} tokens.`);
 
     } catch (error) {
-      logApi.error(`[TokenRefreshScheduler.processBatch] Error fetching prices from JupiterClient for batch ${batchNum}: ${error.message}`, { 
-        error, 
+      logApi.error(`${formatLog.tag()} [processBatch] Error fetching prices from JupiterClient for batch ${batchNum}: ${error.message}`, { 
+        error: error.message, // Pass only message to avoid circular issues if error is complex
         batchTokenCount: batch.length,
-        // firstFewTokens: tokenAddresses.slice(0,3) 
       });
       // Mark all tokens in this batch as failed for this attempt and requeue them
       batch.forEach(token => {
         this.trackFailedToken(token);
         this.requeueWithBackoff(token); // Requeue with backoff due to API error
       });
-      this.metricsCollector.recordBatchFailure(batch.length, Date.now() - batchStartTime, error.message);
+      if (this.metricsCollector && typeof this.metricsCollector.recordBatchFailure === 'function') {
+        this.metricsCollector.recordBatchFailure(batch.length, Date.now() - batchStartTime, error.message);
+      }
       return { processed: batch.length, successful: 0, failed: batch.length, durationMs: Date.now() - batchStartTime, pricedTokens: pricedTokensInBatch };
     }
 
