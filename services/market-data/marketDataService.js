@@ -39,6 +39,9 @@ const {
     repository
 } = marketData;
 
+// Import WebSocket-based price monitoring
+import tokenPriceWs from './token-price-ws.js';
+
 // Service configuration
 const BROADCAST_INTERVAL = 60; // Broadcast every 60 seconds
 const UPDATE_INTERVAL = 60; // Update market database every 1 minute (Jupiter allows 10 requests/sec)
@@ -213,9 +216,46 @@ class MarketDataService extends BaseService {
                 } else {
                     logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Using already initialized Jupiter client`);
                 }
-                
+
                 await this.registerTokenSyncTasks();
-                
+
+                // Initialize WebSocket-based token price monitoring
+                try {
+                    logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Initializing WebSocket-based token price monitoring...`);
+
+                    // Configure WebSocket price monitoring
+                    const wsConfig = {
+                        maxTokensToMonitor: 1000,         // Monitor up to 1000 tokens via WebSocket
+                        minimumPriorityScore: 50,         // Monitor tokens with priority score >= 50
+                        storePriceHistory: true,          // Store price updates in history table
+                        batchSize: 20                     // Process subscriptions in batches of 20
+                    };
+
+                    // Register price update handler
+                    tokenPriceWs.onPriceUpdate((priceUpdate) => {
+                        this.handlePriceUpdate({
+                            [priceUpdate.tokenId]: {
+                                price: priceUpdate.price,
+                                source: priceUpdate.source
+                            }
+                        });
+                    });
+
+                    // Initialize the WebSocket service
+                    const wsInitialized = await tokenPriceWs.initialize(solanaEngine, wsConfig);
+
+                    if (wsInitialized) {
+                        logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} WS ENABLED ${fancyColors.RESET} WebSocket-based token price monitoring initialized successfully`);
+                        this.webSocketEnabled = true;
+                    } else {
+                        logApi.warn(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} WS DISABLED ${fancyColors.RESET} WebSocket-based token price monitoring failed to initialize, using fallback methods`);
+                        this.webSocketEnabled = false;
+                    }
+                } catch (wsError) {
+                    logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error initializing WebSocket-based price monitoring: ${wsError.message}${fancyColors.RESET}`);
+                    this.webSocketEnabled = false;
+                }
+
                 logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} MINIMALLY INITIALIZED ${fancyColors.RESET} MarketDataService initialization (transitional) complete.`);
                 return true;
             } catch (dbError) {
@@ -786,20 +826,115 @@ class MarketDataService extends BaseService {
     }
 
     /**
-     * FUTURE IMPLEMENTATION: Direct Helius monitoring of token liquidity pools
-     * This will replace the Jupiter WebSocket which doesn't seem to be documented/available
-     * 
-     * The strategy:
-     * 1. Use Helius to find the liquidity pools for each token
-     * 2. Monitor pool transactions directly via Helius WebHooks or WebSockets
-     * 3. Calculate price changes based on liquidity pool events
+     * Get token price WebSocket monitoring stats
+     * @returns {Object} - WebSocket monitoring stats
      */
-    async setupHeliusTokenMonitoring(tokenAddresses) {
-        // TODO: Implement when ready to replace Jupiter price polling
-        // This will give us more direct and reliable price updates
-        
-        logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Helius token monitoring not yet implemented${fancyColors.RESET}`);
-        return false;
+    getTokenPriceWebSocketStats() {
+        if (!this.webSocketEnabled) {
+            return {
+                enabled: false,
+                message: 'WebSocket token price monitoring is not enabled'
+            };
+        }
+
+        try {
+            const stats = tokenPriceWs.getStats();
+            return {
+                enabled: true,
+                stats,
+                message: `WebSocket token price monitoring is ${stats.connected ? 'active' : 'inactive'}`
+            };
+        } catch (error) {
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error getting WebSocket stats:${fancyColors.RESET}`, error);
+            return {
+                enabled: true,
+                error: error.message,
+                message: 'Error getting WebSocket monitoring stats'
+            };
+        }
+    }
+
+    /**
+     * Update token price WebSocket priority threshold
+     * @param {number} minimumScore - Minimum priority score for tokens to monitor
+     * @returns {Promise<Object>} - Result of the update
+     */
+    async updateTokenPriceWebSocketThreshold(minimumScore) {
+        if (!this.webSocketEnabled) {
+            return {
+                success: false,
+                message: 'WebSocket token price monitoring is not enabled'
+            };
+        }
+
+        try {
+            const success = await tokenPriceWs.updatePriorityThreshold(minimumScore);
+            return {
+                success,
+                message: success ?
+                    `Priority threshold updated to: ${minimumScore}` :
+                    'Failed to update priority threshold'
+            };
+        } catch (error) {
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error updating WebSocket threshold:${fancyColors.RESET}`, error);
+            return {
+                success: false,
+                error: error.message,
+                message: 'Error updating WebSocket priority threshold'
+            };
+        }
+    }
+
+    /**
+     * Update token price WebSocket priority tiers (legacy method)
+     * @param {number[]} tiers - Array of priority tier numbers to monitor
+     * @returns {Promise<Object>} - Result of the update
+     */
+    async updateTokenPriceWebSocketTiers(tiers) {
+        logApi.warn(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}updateTokenPriceWebSocketTiers is deprecated, use updateTokenPriceWebSocketThreshold instead${fancyColors.RESET}`);
+
+        // Default to 50 (equivalent to tiers 1-2)
+        return await this.updateTokenPriceWebSocketThreshold(50);
+    }
+
+    /**
+     * Direct WebSocket-based token price monitoring
+     * Uses the token-price-ws.js module to monitor token mint accounts and liquidity pools
+     *
+     * The strategy:
+     * 1. Use existing token and pool data from the database
+     * 2. Monitor pool accounts directly via WebSocket
+     * 3. Calculate price changes based on liquidity pool events
+     * 4. Broadcast price updates to clients
+     *
+     * @param {string[]} tokenAddresses - Optional array of specific token addresses to monitor
+     * @returns {Promise<Object>} - Monitoring status
+     */
+    async setupDirectTokenPriceMonitoring(tokenAddresses = []) {
+        try {
+            if (!this.webSocketEnabled) {
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.YELLOW}WebSocket token price monitoring is not enabled${fancyColors.RESET}`);
+                return {
+                    success: false,
+                    message: 'WebSocket token price monitoring is not enabled'
+                };
+            }
+
+            const stats = tokenPriceWs.getStats();
+
+            // Return current status
+            return {
+                success: true,
+                message: `WebSocket token price monitoring active with ${stats.tokenCount} tokens and ${stats.poolCount} pools`,
+                stats
+            };
+        } catch (error) {
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error getting token price monitoring status: ${error.message}${fancyColors.RESET}`);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
     }
     
     // Handle price updates (updated to work with both sources)
@@ -976,6 +1111,18 @@ class MarketDataService extends BaseService {
             this.broadcastInterval = null;
             logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Cleared broadcastInterval.`);
         }
+
+        // Clean up WebSocket monitoring if enabled
+        if (this.webSocketEnabled) {
+            try {
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} Cleaning up WebSocket token price monitoring...`);
+                await tokenPriceWs.cleanup();
+                logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} WebSocket token price monitoring cleaned up successfully.`);
+            } catch (wsError) {
+                logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error cleaning up WebSocket monitoring: ${wsError.message}${fancyColors.RESET}`);
+            }
+        }
+
         // Call BaseService stop, which also sets isStarted to false
         await super.stop();
         logApi.info(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} MarketDataService stopped.`);

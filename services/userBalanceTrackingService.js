@@ -14,7 +14,9 @@ import { BaseService } from '../utils/service-suite/base-service.js';
 import { ServiceError } from '../utils/service-suite/service-error.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import prisma from '../config/prisma.js';
-import { solanaEngine, heliusBalanceTracker } from '../services/solana-engine/index.js';
+import { solanaEngine } from '../services/solana-engine/index.js';
+// Legacy Helius tracker as fallback
+import { heliusBalanceTracker } from '../services/solana-engine/index.js';
 import { isAddress } from '@solana/addresses';
 import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
 import { fancyColors } from '../utils/colors.js';
@@ -24,6 +26,9 @@ import { config } from '../config/config.js';
 
 // TEST OVERRIDE - Set to true to force WebSocket mode regardless of environment settings
 const FORCE_WEBSOCKET_MODE = true;
+
+// IMPORTANT: Set to 'direct' to use direct RPC WebSocket, 'helius' to use HeliusBalanceTracker, or 'polling' for traditional polling
+let WEBSOCKET_IMPLEMENTATION = 'direct'; // 'direct', 'helius'
 
 const USER_BALANCE_TRACKING_MODE = FORCE_WEBSOCKET_MODE ? 'websocket' : config.service_thresholds.user_balance_tracking_mode; // 'polling' or 'websocket'
 const USER_BALANCE_TRACKING_DYNAMIC_TARGET_RPC_CALLS_PER_DAY = config.service_thresholds.user_balance_tracking_dynamic_target_rpc_calls_per_day; // dynamic target RPC calls per day (specific to user balance tracking service)
@@ -81,6 +86,9 @@ class UserBalanceTrackingService extends BaseService {
         // Track subscribed wallets (for WebSocket mode)
         this.subscribedWallets = new Set();
         this.pendingSubscriptions = new Map(); // wallet -> {retries, lastAttempt}
+
+        // Direct WebSocket module reference
+        this.walletBalanceWs = null;
         
         // Stats for tracking and monitoring
         this.trackingStats = {
@@ -174,14 +182,57 @@ class UserBalanceTrackingService extends BaseService {
             
             // Initialize the appropriate tracking mode
             if (this.trackingMode === 'websocket') {
-                // Initialize HeliusBalanceTracker for WebSocket mode
-                if (!heliusBalanceTracker.initialized) {
-                    const initialized = await heliusBalanceTracker.initialize();
-                    if (!initialized) {
-                        logApi.warn(`${fancyColors.MAGENTA}[userBalanceTrackingService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} WEBSOCKET FALLBACK ${fancyColors.RESET} Failed to initialize HeliusBalanceTracker, falling back to polling mode`);
-                        this.trackingMode = 'polling'; // Fallback to polling mode
-                    } else {
-                        logApi.info(`${fancyColors.BOLD}${fancyColors.CYAN}WebSocket Tracking Mode${fancyColors.RESET} ${fancyColors.CYAN}initialized for real-time balance updates${fancyColors.RESET}`);
+                if (WEBSOCKET_IMPLEMENTATION === 'direct') {
+                    // Initialize direct RPC WebSocket monitoring
+                    try {
+                        // Import the wallet-balance-ws module
+                        this.walletBalanceWs = (await import('./user-balance-tracking/wallet-balance-ws.js')).default;
+
+                        // Initialize the WebSocket connection
+                        const initialized = await this.walletBalanceWs.initializeWalletBalanceWebSocket(solanaEngine, this.config);
+
+                        if (initialized) {
+                            logApi.info(`${fancyColors.BOLD}${fancyColors.CYAN}Direct RPC WebSocket Tracking Mode${fancyColors.RESET} ${fancyColors.CYAN}initialized for real-time balance updates${fancyColors.RESET}`);
+                        } else {
+                            logApi.warn(`${fancyColors.MAGENTA}[userBalanceTrackingService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} DIRECT WEBSOCKET FALLBACK ${fancyColors.RESET} Failed to initialize direct RPC WebSocket, trying HeliusBalanceTracker as fallback`);
+
+                            // Try HeliusBalanceTracker as fallback
+                            if (!heliusBalanceTracker.initialized) {
+                                const heliusInitialized = await heliusBalanceTracker.initialize();
+                                if (!heliusInitialized) {
+                                    logApi.warn(`${fancyColors.MAGENTA}[userBalanceTrackingService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} WEBSOCKET FALLBACK ${fancyColors.RESET} Failed to initialize HeliusBalanceTracker, falling back to polling mode`);
+                                    this.trackingMode = 'polling'; // Fallback to polling mode
+                                } else {
+                                    logApi.info(`${fancyColors.BOLD}${fancyColors.CYAN}Helius WebSocket Tracking Mode${fancyColors.RESET} ${fancyColors.CYAN}initialized for real-time balance updates${fancyColors.RESET}`);
+                                    // Set WebSocket implementation to Helius since direct failed
+                                    WEBSOCKET_IMPLEMENTATION = 'helius';
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        logApi.error(`${fancyColors.MAGENTA}[userBalanceTrackingService]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} WEBSOCKET ERROR ${fancyColors.RESET} Failed to initialize direct RPC WebSocket: ${error.message}`);
+
+                        // Try HeliusBalanceTracker as fallback
+                        if (!heliusBalanceTracker.initialized) {
+                            const heliusInitialized = await heliusBalanceTracker.initialize();
+                            if (!heliusInitialized) {
+                                this.trackingMode = 'polling'; // Fallback to polling mode
+                            } else {
+                                // Set WebSocket implementation to Helius since direct failed
+                                WEBSOCKET_IMPLEMENTATION = 'helius';
+                            }
+                        }
+                    }
+                } else {
+                    // Initialize HeliusBalanceTracker for WebSocket mode
+                    if (!heliusBalanceTracker.initialized) {
+                        const initialized = await heliusBalanceTracker.initialize();
+                        if (!initialized) {
+                            logApi.warn(`${fancyColors.MAGENTA}[userBalanceTrackingService]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} WEBSOCKET FALLBACK ${fancyColors.RESET} Failed to initialize HeliusBalanceTracker, falling back to polling mode`);
+                            this.trackingMode = 'polling'; // Fallback to polling mode
+                        } else {
+                            logApi.info(`${fancyColors.BOLD}${fancyColors.CYAN}WebSocket Tracking Mode${fancyColors.RESET} ${fancyColors.CYAN}initialized for real-time balance updates${fancyColors.RESET}`);
+                        }
                     }
                 }
             } else {
@@ -208,7 +259,9 @@ class UserBalanceTrackingService extends BaseService {
             const healthyEndpoints = solanaStatus.connectionStatus?.healthyEndpoints || 0;
             const totalEndpoints = solanaStatus.connectionStatus?.totalEndpoints || 0;
             
-            logApi.info(`${fancyColors.BOLD}${fancyColors.ORANGE}User Balance Tracking Service${fancyColors.RESET} ${fancyColors.ORANGE}initialized with ${fancyColors.BOLD_YELLOW}${activeUsers}${fancyColors.RESET} ${fancyColors.ORANGE}users using ${fancyColors.BOLD_YELLOW}${this.trackingMode}${fancyColors.RESET} ${fancyColors.ORANGE}mode${fancyColors.RESET}`);
+            // Log the final mode and implementation
+            const modeSuffix = this.trackingMode === 'websocket' ? ` (${WEBSOCKET_IMPLEMENTATION})` : '';
+            logApi.info(`${fancyColors.BOLD}${fancyColors.ORANGE}User Balance Tracking Service${fancyColors.RESET} ${fancyColors.ORANGE}initialized with ${fancyColors.BOLD_YELLOW}${activeUsers}${fancyColors.RESET} ${fancyColors.ORANGE}users using ${fancyColors.BOLD_YELLOW}${this.trackingMode}${modeSuffix}${fancyColors.RESET} ${fancyColors.ORANGE}mode${fancyColors.RESET}`);
             logApi.info(`${fancyColors.BOLD}${fancyColors.ORANGE}Using SolanaEngine with ${fancyColors.BOLD_YELLOW}${healthyEndpoints}/${totalEndpoints}${fancyColors.RESET} ${fancyColors.ORANGE}healthy RPC endpoints${fancyColors.RESET}`);
             
             return true;
@@ -410,46 +463,65 @@ class UserBalanceTrackingService extends BaseService {
     
     /**
      * Perform operation in WebSocket mode
-     * 
+     *
      * @returns {Promise<Object>} - Operation results
      */
     async performWebSocketOperation() {
         const startTime = Date.now();
-        
+
         // Add log at the start of each operation cycle with timestamp
         logApi.info(`${fancyColors.BG_CYAN}${fancyColors.WHITE} BALANCE WS CYCLE ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.CYAN}Starting WebSocket maintenance cycle${fancyColors.RESET} | Wallets tracked: ${fancyColors.BOLD_YELLOW}${this.subscribedWallets.size}${fancyColors.RESET} | Pending: ${this.pendingSubscriptions.size}`);
-        
+
         // 1. Update user count
         await this.updateUserCount();
-        
-        // 2. Subscribe any new users to WebSocket updates
-        const newUsersCount = await this.subscribeNewUsers();
-        if (newUsersCount > 0) {
-            logApi.info(`${fancyColors.BG_CYAN}${fancyColors.WHITE} BALANCE WS USERS ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.CYAN}Added ${fancyColors.BOLD_YELLOW}${newUsersCount}${fancyColors.RESET}${fancyColors.CYAN} new users to balance tracking${fancyColors.RESET}`);
+
+        // Different implementations for direct vs Helius WebSocket
+        if (WEBSOCKET_IMPLEMENTATION === 'direct') {
+            // Direct RPC WebSocket implementation
+            if (this.walletBalanceWs) {
+                // Get WebSocket status
+                const wsStatus = this.walletBalanceWs.getWebSocketStatus();
+
+                logApi.info(`${fancyColors.BG_CYAN}${fancyColors.WHITE} DIRECT WS STATUS ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.CYAN}Connection: ${fancyColors.YELLOW}${wsStatus.connectionState}${fancyColors.RESET} | Wallets: ${fancyColors.BOLD_YELLOW}${wsStatus.walletCount}${fancyColors.RESET} | Subscriptions: ${fancyColors.BOLD_YELLOW}${wsStatus.subscriptionCount}${fancyColors.RESET}`);
+
+                // If connection is not healthy, try to refresh it
+                if (wsStatus.connectionState !== 'connected') {
+                    logApi.warn(`${fancyColors.BG_YELLOW}${fancyColors.BLACK} DIRECT WS REFRESH ${fancyColors.RESET} WebSocket connection is not healthy (${wsStatus.connectionState}), attempting to refresh`);
+                    await this.walletBalanceWs.refreshMonitoredWallets();
+                }
+            }
+        } else {
+            // Original Helius WebSocket implementation
+            // 2. Subscribe any new users to WebSocket updates
+            const newUsersCount = await this.subscribeNewUsers();
+            if (newUsersCount > 0) {
+                logApi.info(`${fancyColors.BG_CYAN}${fancyColors.WHITE} BALANCE WS USERS ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.CYAN}Added ${fancyColors.BOLD_YELLOW}${newUsersCount}${fancyColors.RESET}${fancyColors.CYAN} new users to balance tracking${fancyColors.RESET}`);
+            }
+
+            // 3. Retry any pending subscriptions
+            const retriedCount = await this.retryPendingSubscriptions();
+            if (retriedCount > 0) {
+                logApi.info(`${fancyColors.BG_CYAN}${fancyColors.WHITE} BALANCE WS RETRY ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.CYAN}Retried ${fancyColors.BOLD_YELLOW}${retriedCount}${fancyColors.RESET}${fancyColors.CYAN} pending subscriptions${fancyColors.RESET}`);
+            }
         }
-        
-        // 3. Retry any pending subscriptions
-        const retriedCount = await this.retryPendingSubscriptions();
-        if (retriedCount > 0) {
-            logApi.info(`${fancyColors.BG_CYAN}${fancyColors.WHITE} BALANCE WS RETRY ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.CYAN}Retried ${fancyColors.BOLD_YELLOW}${retriedCount}${fancyColors.RESET}${fancyColors.CYAN} pending subscriptions${fancyColors.RESET}`);
-        }
-        
+
         // 4. Update stats
         this.trackingStats.operations.successful++;
         this.trackingStats.operations.total++;
         this.trackingStats.performance.lastOperationTimeMs = Date.now() - startTime;
-        
+
         // 5. Record success
         await this.recordSuccess();
-        
+
         // Add log at the end of the cycle with timing information
         const duration = Date.now() - startTime;
         logApi.info(`${fancyColors.BG_CYAN}${fancyColors.WHITE} BALANCE WS CYCLE ${fancyColors.RESET} ${fancyColors.BOLD}${fancyColors.CYAN}Completed maintenance in ${fancyColors.YELLOW}${duration}ms${fancyColors.RESET} | Next cycle: ${new Date(Date.now() + this.config.checkIntervalMs).toLocaleTimeString()}`);
-        
+
         return {
             duration: duration,
             activeSubscriptions: this.subscribedWallets.size,
-            pendingSubscriptions: this.pendingSubscriptions.size
+            pendingSubscriptions: this.pendingSubscriptions.size,
+            implementation: WEBSOCKET_IMPLEMENTATION
         };
     }
     
@@ -807,7 +879,7 @@ class UserBalanceTrackingService extends BaseService {
     /**
      * Manually trigger a balance check for a specific wallet
      * Used by external services that need immediate balance info
-     * 
+     *
      * @param {string} walletAddress - The wallet address to check
      * @returns {Promise<Object>} - The results of the operation
      */
@@ -816,39 +888,61 @@ class UserBalanceTrackingService extends BaseService {
             // Different implementation based on tracking mode
             if (this.trackingMode === 'websocket') {
                 // WebSocket mode - force a refresh
-                
-                // Check if wallet is already subscribed
-                if (this.subscribedWallets.has(walletAddress)) {
-                    // Refresh the balance
-                    const balance = await heliusBalanceTracker.refreshSolanaBalance(walletAddress);
-                    return {
-                        status: 'success',
-                        balance: balance,
-                        timestamp: new Date(),
-                        mode: 'websocket'
-                    };
-                } else {
-                    // Try to subscribe to the wallet first
-                    let nickname = 'Unknown';
-                    try {
-                        const user = await prisma.users.findUnique({
-                            where: { wallet_address: walletAddress },
-                            select: { nickname: true }
-                        });
-                        nickname = user?.nickname || 'Unknown';
-                    } catch (error) {
-                        // Ignore user lookup errors
+
+                // Different implementations for direct vs Helius WebSocket
+                if (WEBSOCKET_IMPLEMENTATION === 'direct' && this.walletBalanceWs) {
+                    // Direct RPC WebSocket implementation
+                    // Refresh the balance using direct RPC WebSocket
+                    const balance = await this.walletBalanceWs.refreshWalletBalance(walletAddress);
+
+                    if (balance !== null) {
+                        return {
+                            status: 'success',
+                            balance: balance,
+                            timestamp: new Date(),
+                            mode: 'websocket',
+                            implementation: 'direct'
+                        };
+                    } else {
+                        throw new Error('Failed to refresh balance using direct RPC WebSocket');
                     }
-                    
-                    await this.subscribeToWalletBalance(walletAddress, nickname);
-                    const balance = await heliusBalanceTracker.refreshSolanaBalance(walletAddress);
-                    
-                    return {
-                        status: 'success',
-                        balance: balance,
-                        timestamp: new Date(),
-                        mode: 'websocket'
-                    };
+                } else {
+                    // Original Helius WebSocket implementation
+                    // Check if wallet is already subscribed
+                    if (this.subscribedWallets.has(walletAddress)) {
+                        // Refresh the balance
+                        const balance = await heliusBalanceTracker.refreshSolanaBalance(walletAddress);
+                        return {
+                            status: 'success',
+                            balance: balance,
+                            timestamp: new Date(),
+                            mode: 'websocket',
+                            implementation: 'helius'
+                        };
+                    } else {
+                        // Try to subscribe to the wallet first
+                        let nickname = 'Unknown';
+                        try {
+                            const user = await prisma.users.findUnique({
+                                where: { wallet_address: walletAddress },
+                                select: { nickname: true }
+                            });
+                            nickname = user?.nickname || 'Unknown';
+                        } catch (error) {
+                            // Ignore user lookup errors
+                        }
+
+                        await this.subscribeToWalletBalance(walletAddress, nickname);
+                        const balance = await heliusBalanceTracker.refreshSolanaBalance(walletAddress);
+
+                        return {
+                            status: 'success',
+                            balance: balance,
+                            timestamp: new Date(),
+                            mode: 'websocket',
+                            implementation: 'helius'
+                        };
+                    }
                 }
             } else {
                 // Polling mode
@@ -918,32 +1012,44 @@ class UserBalanceTrackingService extends BaseService {
     
     /**
      * Clean up resources
-     * 
+     *
      * Note: We don't need to clean up any SolanaEngine resources as SolanaEngine
      * is managed separately via the service manager and will be stopped independently.
-     * 
+     *
      * @returns {Promise<void>} - The results of the operation
      */
     async stop() {
         await super.stop();
-        
+
         // Clean up based on the active tracking mode
         if (this.trackingMode === 'websocket') {
-            // Unsubscribe from all WebSocket subscriptions
-            if (this.subscribedWallets.size > 0) {
-                logApi.info(`${fancyColors.CYAN}[userBalanceTrackingService]${fancyColors.RESET} Unsubscribing from ${this.subscribedWallets.size} WebSocket wallets...`);
-                
-                // Using Promise.all with a timeout to prevent hanging during shutdown
-                const unsubPromises = Array.from(this.subscribedWallets).map(wallet => {
-                    return Promise.race([
-                        this.unsubscribeFromWalletBalance(wallet),
-                        new Promise(resolve => setTimeout(() => resolve(false), 5000)) // 5 second timeout
-                    ]);
-                });
-                
-                await Promise.all(unsubPromises);
+            // Different cleanup based on implementation
+            if (WEBSOCKET_IMPLEMENTATION === 'direct' && this.walletBalanceWs) {
+                // Clean up direct RPC WebSocket
+                logApi.info(`${fancyColors.CYAN}[userBalanceTrackingService]${fancyColors.RESET} Stopping direct RPC WebSocket monitoring...`);
+                try {
+                    await this.walletBalanceWs.stopWalletBalanceWebSocket();
+                    this.walletBalanceWs = null;
+                } catch (error) {
+                    logApi.error(`${fancyColors.RED}[userBalanceTrackingService]${fancyColors.RESET} Error stopping direct RPC WebSocket: ${error.message}`);
+                }
+            } else {
+                // Unsubscribe from all Helius WebSocket subscriptions
+                if (this.subscribedWallets.size > 0) {
+                    logApi.info(`${fancyColors.CYAN}[userBalanceTrackingService]${fancyColors.RESET} Unsubscribing from ${this.subscribedWallets.size} Helius WebSocket wallets...`);
+
+                    // Using Promise.all with a timeout to prevent hanging during shutdown
+                    const unsubPromises = Array.from(this.subscribedWallets).map(wallet => {
+                        return Promise.race([
+                            this.unsubscribeFromWalletBalance(wallet),
+                            new Promise(resolve => setTimeout(() => resolve(false), 5000)) // 5 second timeout
+                        ]);
+                    });
+
+                    await Promise.all(unsubPromises);
+                }
             }
-            
+
             this.subscribedWallets.clear();
             this.pendingSubscriptions.clear();
         } else {
@@ -1273,12 +1379,23 @@ class UserBalanceTrackingService extends BaseService {
         let websocketStatus = { available: false };
         if (this.trackingMode === 'websocket') {
             try {
-                websocketStatus = {
-                    available: true,
-                    initialized: heliusBalanceTracker.initialized,
-                    activeSubscriptions: this.subscribedWallets.size,
-                    pendingSubscriptions: this.pendingSubscriptions.size
-                };
+                if (WEBSOCKET_IMPLEMENTATION === 'direct' && this.walletBalanceWs) {
+                    // Direct RPC WebSocket status
+                    websocketStatus = {
+                        available: true,
+                        implementation: 'direct',
+                        status: this.walletBalanceWs.getWebSocketStatus()
+                    };
+                } else {
+                    // Helius WebSocket status
+                    websocketStatus = {
+                        available: true,
+                        implementation: 'helius',
+                        initialized: heliusBalanceTracker.initialized,
+                        activeSubscriptions: this.subscribedWallets.size,
+                        pendingSubscriptions: this.pendingSubscriptions.size
+                    };
+                }
             } catch (error) {
                 websocketStatus.error = error.message;
             }

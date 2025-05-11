@@ -4,22 +4,24 @@
 
 /**
  * Jupiter Like Detection Service
+ * 
  * @description Checks a particular Jupiter token page for Likes.
  *   This script runs each minute and saves likers' Twitter handles to a database table.
  *   We attempt to match the Twitter handle to a DegenDuel user w/ associated Twitter handle.
  *   If a match is found, it applies special privileges to the user.
  * 
  * @author BranchManager69
- * @version 2.0.0
+ * @version 2.1.0
  * @created 2025-05-02
- * @updated 2025-05-02
+ * @updated 2025-05-10
  */
 import fetch from 'node-fetch'
 import prisma from '../../config/prisma.js'; // Import the Prisma Singleton
-import discordInteractiveService from '../discord/discord-interactive-service.js'; // Import the Discord service
 import serviceEvents from '../../utils/service-suite/service-events.js'; // Ensure serviceEvents is imported
 import { SERVICE_EVENTS } from '../../utils/service-suite/service-events.js'; // Import the keys
-import { discordConfig } from '../discord/discordConfig.js'; // Import the new Discord config
+// Discord
+import { discordConfig } from '../../services/discord/discordConfig.js'; // Import the new Discord config
+import discordInteractiveService from '../../services/discord/discord-interactive-service.js'; // Import the Discord service
 
 // Config
 // import { config } from '../../config/config.js'; // Keep if needed for other things, comment out if not
@@ -29,7 +31,7 @@ const URL_TEMPLATE = `https://fe-api.jup.ag/api/v1/tokens/ADDRESS_PLACEHOLDER/re
 const isValidTwitterHandle = (username) => /^[a-zA-Z0-9_]{1,15}$/.test(username);
 
 async function main() {
-  console.log(`[${new Date().toISOString()}] Checking Jupiter likes...`);
+  console.log(`🪐 Checking Jupiter likes...`);
   
   // --- Get the official token address from the database --- 
   const tokenConfig = await prisma.token_config.findFirst();
@@ -38,7 +40,7 @@ async function main() {
     return; // Cannot proceed without the address
   }
   const TRACKED_TOKEN_ADDRESS = tokenConfig.address;
-  console.log(`ℹ️ Tracking likes for official token: ${TRACKED_TOKEN_ADDRESS}`);
+  console.log(`🪐 Tracking likes for official token: ${TRACKED_TOKEN_ADDRESS}`);
   // --- End token address fetch ---
 
   // 1. Fetch current likers from Jupiter API
@@ -98,8 +100,9 @@ async function main() {
 
   // 3. Find New/Returning Likers (in API, not in DB as LIKING)
   const handlesToUpsert = currentApiHandles.filter(handle => !dbLikingHandlesSet.has(handle));
-  
+
   let newLikersCount = 0;
+
   if (handlesToUpsert.length > 0) {
     console.log(`➕ Processing ${handlesToUpsert.length} new or returning likers...`);
     // Use upsert to add new ones or update status of previously UNLIKED ones
@@ -130,8 +133,12 @@ async function main() {
         const privilegeKey = 'JUP_LIKE_DISCORD_ROLE'; // Define the privilege key
 
         for (const username of handlesToUpsert) {
-            const socialProfile = await prisma.user_social_profiles.findUnique({
-                where: { platform_username: { platform: 'twitter', username: username } },
+            // Find the social profile by querying properly without compound key
+            const socialProfile = await prisma.user_social_profiles.findFirst({
+                where: {
+                    platform: 'twitter',
+                    username: username
+                },
                 select: {
                     wallet_address: true,
                     user: {
@@ -202,6 +209,7 @@ async function main() {
   const handlesToMarkUnliked = dbLikingHandles.filter(handle => !currentApiHandlesSet.has(handle));
 
   let unlikersCount = 0;
+
   if (handlesToMarkUnliked.length > 0) {
       console.log(`➖ Processing ${handlesToMarkUnliked.length} unlikers...`);
       try {
@@ -223,8 +231,12 @@ async function main() {
               const privilegeKey = 'JUP_LIKE_DISCORD_ROLE'; // Define the privilege key
 
               for (const username of handlesToMarkUnliked) {
-                  const socialProfile = await prisma.user_social_profiles.findUnique({
-                      where: { platform_username: { platform: 'twitter', username: username } },
+                  // Find the social profile by querying properly without compound key
+                  const socialProfile = await prisma.user_social_profiles.findFirst({
+                      where: {
+                          platform: 'twitter',
+                          username: username
+                      },
                       select: {
                           wallet_address: true,
                           user: {
@@ -298,7 +310,13 @@ async function main() {
       }
   }
 
-  console.log(`[${new Date().toISOString()}] Jupiter like check finished. New/Updated: ${newLikersCount}, Unliked: ${unlikersCount}.`);
+  // Only show detailed changes when there are actual changes
+  if (newLikersCount > 0 || unlikersCount > 0) {
+    console.log(`🪐 Jupiter check: ${newLikersCount} new likes, ${unlikersCount} unlikes. Total likers: ${currentApiHandles.length}`);
+  } else {
+    // Simple log to show it's still running when nothing changes
+    console.log(`🪐 Jupiter check: No changes. Total likers: ${currentApiHandles.length}`);
+  }
 }
 
 main().catch(err => {

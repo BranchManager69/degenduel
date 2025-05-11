@@ -228,9 +228,104 @@ router.get("/countdown", async (req, res) => {
     }
 
     // Get token contract address from token_config (just get the first row)
-    const tokenConfig = await prisma.token_config.findFirst({
-      select: { address: true }
-    });
+    const tokenConfig = await prisma.token_config.findFirst();
+
+    // Get token price information if available
+    let tokenInfo = null;
+    if (tokenConfig?.address) {
+      const token = await prisma.tokens.findUnique({
+        where: { address: tokenConfig.address },
+        select: {
+          id: true,
+          address: true,
+          symbol: true,
+          name: true,
+          decimals: true,
+          raw_supply: true
+        }
+      });
+
+      if (token) {
+        // Get token price info
+        const tokenPrice = await prisma.token_prices.findUnique({
+          where: { token_id: token.id },
+          select: {
+            price: true,
+            market_cap: true,
+            volume_24h: true,
+            fdv: true,
+            liquidity: true,
+            change_24h: true
+          }
+        });
+
+        // Calculate market cap if not provided but we have price and raw_supply
+        let calculatedMarketCap = null;
+        if (tokenPrice?.price && token.raw_supply && token.decimals) {
+          try {
+            const price = parseFloat(tokenPrice.price);
+            const adjustedSupply = token.raw_supply / Math.pow(10, token.decimals);
+            calculatedMarketCap = Math.round(price * adjustedSupply);
+          } catch (e) {
+            logApi.warn("Failed to calculate market cap:", e);
+          }
+        }
+
+        tokenInfo = {
+          ...token,
+          price: tokenPrice?.price || null,
+          market_cap: tokenPrice?.market_cap || calculatedMarketCap,
+          volume_24h: tokenPrice?.volume_24h || null,
+          fdv: tokenPrice?.fdv || null,
+          liquidity: tokenPrice?.liquidity || null,
+          change_24h: tokenPrice?.change_24h || null
+        };
+      }
+    }
+
+    // Calculate countdown information
+    const now = new Date();
+    const endTimeStr = countdown.value.end_time;
+    let countdownInfo = null;
+
+    if (endTimeStr) {
+      try {
+        const endTime = new Date(endTimeStr);
+        const timeRemaining = endTime - now;
+
+        if (timeRemaining > 0) {
+          const days = Math.floor(timeRemaining / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+
+          countdownInfo = {
+            days,
+            hours,
+            minutes,
+            seconds,
+            total_seconds: Math.floor(timeRemaining / 1000)
+          };
+        } else {
+          countdownInfo = {
+            days: 0,
+            hours: 0,
+            minutes: 0,
+            seconds: 0,
+            total_seconds: 0,
+            expired: true
+          };
+        }
+      } catch (e) {
+        logApi.warn("Failed to parse countdown end time:", e);
+      }
+    }
+
+    // Get token configuration info - simplified
+    const tokenConfigInfo = tokenConfig ? {
+      symbol: tokenConfig.symbol,
+      address: tokenConfig.address
+    } : null;
 
     // Return countdown data if it's enabled
     return res.json({
@@ -239,7 +334,10 @@ router.get("/countdown", async (req, res) => {
       title: countdown.value.title || "Coming Soon",
       message: countdown.value.message || "Our platform is launching soon.",
       redirect_url: countdown.value.redirect_url,
-      token_address: tokenConfig?.address || null
+      token_address: tokenConfig?.address || null,
+      token_info: tokenInfo,
+      token_config: tokenConfigInfo,
+      countdown: countdownInfo
     });
   } catch (error) {
     logApi.error("Failed to get countdown status", {

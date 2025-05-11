@@ -834,21 +834,26 @@ ${fancyColors.BG_RED}${fancyColors.WHITE}└────────────
       logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} AUTH NEEDED ${fancyColors.RESET} Restricted topic requires authentication`);
       // Try to authenticate if auth token is provided
       if (message.authToken) {
+        const authToken = message.authToken;
+
+        // NEW LOGGING: Auth attempt with token
+        logApi.info(`[WebSocketAuth] WS /api/v69/ws: Auth attempt for client ${ws.clientInfo.connectionId}. Token (first 10 chars): ${authToken.substring(0,10)}...`);
+
         try {
           // Track JWT tokens that were already denied to prevent repeated log spam
           if (!ws.authFailedTokens) {
             ws.authFailedTokens = new Set();
           }
           
-          const authToken = message.authToken;
-          
           // Skip verification if this token already failed (prevents log spam)
           if (ws.authFailedTokens.has(authToken)) {
+             // NEW LOGGING: Token previously failed
+            logApi.warn(`[WebSocketAuth] WS /api/v69/ws: Auth token for client ${ws.clientInfo.connectionId} was previously marked as failed. Denying.`);
             return server.send(ws, {
               type: MESSAGE_TYPES.ERROR,
               code: 4401,
-              reason: 'token_expired',
-              message: 'Your session has expired. Please log in again.',
+              reason: 'token_expired', // Or 'token_invalid_repeated'
+              message: 'Your session has expired or the token is invalid. Please log in again.',
               timestamp: new Date().toISOString()
             });
           }
@@ -861,6 +866,8 @@ ${fancyColors.BG_RED}${fancyColors.WHITE}└────────────
           };
           
           if (!authData || !authData.userId) {
+            // NEW LOGGING: Decoded token lacks userId
+            logApi.warn(`[WebSocketAuth] WS /api/v69/ws: Auth FAILED for client ${ws.clientInfo.connectionId}. Decoded token missing wallet_address. Decoded: ${JSON.stringify(decoded)}`);
             return server.sendError(ws, 'Authentication required for restricted topics', 4010);
           }
           
@@ -920,18 +927,35 @@ ${fancyColors.BG_GREEN}${fancyColors.BLACK}└${'─'.repeat(30)}┘${fancyColor
           
           // Also log the fancy auth format to console
           console.log(authLog);
+
+          // NEW LOGGING: Construct and log ACK payload before sending
+          const ackPayloadForAuth = {
+              type: MESSAGE_TYPES.ACKNOWLEDGMENT,
+              operation: 'authenticate', // Specific operation for auth ACK
+              status: 'success',
+              message: "User authenticated successfully", // Ensure "authenticated" is present
+              timestamp: new Date().toISOString(),
+              // Optionally include some user details if helpful for client
+              // userData: { userId: authData.userId, role: authData.role, nickname: userNickname }
+          };
+          logApi.info(`[WebSocketAuth] WS /api/v69/ws: Sending AUTH ACK to client ${ws.clientInfo.connectionId}. Payload: ${JSON.stringify(ackPayloadForAuth)}`);
+          server.send(ws, ackPayloadForAuth);
+
         } catch (error) {
           // Detect the type of error
           const expiredJwt = error.name === 'TokenExpiredError';
           
           // Store this token in the failed tokens set to prevent repeated attempts
-          if (authToken) {
+          if (authToken) { // authToken is defined in this scope
             ws.authFailedTokens.add(authToken);
           }
           
           // Only log the first occurrence of each expired token to reduce spam
-          if (!expiredJwt || !authToken) {
-            logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Authentication error:${fancyColors.RESET}`, error);
+          // NEW LOGGING: Auth failed (token invalid/expired)
+          if (!expiredJwt || !authToken) { // if not expired, or if expired but no token (should not happen)
+            logApi.error(`[WebSocketAuth] WS /api/v69/ws: Auth FAILED for client ${ws.clientInfo.connectionId}. Token error: ${error.message}. Token (first 10): ${authToken ? authToken.substring(0,10) : 'N/A'}...`);
+          } else if (expiredJwt) {
+            logApi.warn(`[WebSocketAuth] WS /api/v69/ws: Auth FAILED for client ${ws.clientInfo.connectionId}. Token EXPIRED. Token (first 10): ${authToken.substring(0,10)}...`);
           }
           
           // Special handling for expired tokens
@@ -949,6 +973,8 @@ ${fancyColors.BG_GREEN}${fancyColors.BLACK}└${'─'.repeat(30)}┘${fancyColor
           }
         }
       } else {
+         // NEW LOGGING: Auth needed but no token provided
+        logApi.warn(`[WebSocketAuth] WS /api/v69/ws: Auth required for client ${ws.clientInfo.connectionId} for restricted topics, but no authToken provided in SUBSCRIBE message.`);
         return server.sendError(ws, 'Authentication required for restricted topics', 4010);
       }
     }
@@ -963,6 +989,8 @@ ${fancyColors.BG_GREEN}${fancyColors.BLACK}└${'─'.repeat(30)}┘${fancyColor
     // If we've gotten this far without clientInfo, we should have the temporary tracker
     // but we know it's not authenticated as an admin
     if (!ws.clientInfo || !ws.clientInfo.role || !['ADMIN', 'SUPERADMIN'].includes(ws.clientInfo.role.toLowerCase())) {
+      // NEW LOGGING: Admin topic access denied
+      logApi.warn(`[WebSocketAuth] WS /api/v69/ws: Admin topic access DENIED for client ${ws.clientInfo ? ws.clientInfo.connectionId : 'UNTRACKED'}. Role: ${ws.clientInfo ? ws.clientInfo.role : 'N/A'}`);
       return server.sendError(ws, 'Admin/superadmin role required for ADMIN topics', 4012);
     }
   }
@@ -1008,13 +1036,18 @@ ${fancyColors.BG_GREEN}${fancyColors.BLACK}└${'─'.repeat(30)}┘${fancyColor
   server.metrics.subscriptions = [...server.clientSubscriptions.values()]
     .reduce((total, subs) => total + subs.size, 0);
   
-  // Send acknowledgment
-  server.send(ws, {
+  // Send acknowledgment for subscription
+  const subAckPayload = { // <<< RENAME variable to be specific to subscription ack
     type: MESSAGE_TYPES.ACKNOWLEDGMENT,
     operation: 'subscribe',
     topics: validTopics,
+    status: 'success', // <<< ADD status
+    message: `Successfully subscribed to ${validTopics.join(', ')}`, // <<< ADD descriptive message
     timestamp: new Date().toISOString()
-  });
+  };
+  // NEW LOGGING: Before sending subscription ACK
+  logApi.info(`[WebSocketHandler] WS /api/v69/ws: Sending SUBSCRIBE ACK to client ${ws.clientInfo ? ws.clientInfo.connectionId : 'UNTRACKED'}. Payload: ${JSON.stringify(subAckPayload)}`);
+  server.send(ws, subAckPayload);
   
   // Format subscription topics for display
   const topicsDisplay = validTopics.join(',');

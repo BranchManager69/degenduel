@@ -15,11 +15,13 @@ import clientErrorRoutes from './admin/client-errors.js';
 import aiSqlRoutes from './admin/ai-sql.js';
 import aiAnalysisRoutes from './admin/ai-analysis.js';
 import serviceMetricsRoutes from './admin/service-metrics.js';
+import serviceManagementRoutes from './admin/service-management.js'; // Add service management routes
 import vanityWalletsRoutes from './admin/vanity-wallets.js';
 import vanityDashboardRoutes from './admin/vanity-dashboard.js';
 import vanityCallbackRoutes from './admin/vanity-callback.js';
 import tokenSyncRoutes from './admin/token-sync.js';
 import tokenRefreshRoutes from './admin/token-refresh.js';
+import tokenActivationRoutes from './admin/token-activation.js';
 import discordWebhooksRoutes from './admin/discord-webhooks.js';
 import redisAdminAuthValidator from './admin/redis-admin-auth-validator.js';
 
@@ -55,11 +57,17 @@ router.use('/auth-check', redisAdminAuthValidator);
 // Mount the Service Metrics routes
 router.use('/admin/metrics', serviceMetricsRoutes);
 
+// Mount the Service Management routes
+router.use('/admin/service-management', serviceManagementRoutes);
+
 // Mount the Token Sync routes
 router.use('/admin/token-sync', tokenSyncRoutes);
 
 // Mount the Token Refresh routes
 router.use('/admin/token-refresh', tokenRefreshRoutes);
+
+// Mount the Token Activation routes
+router.use('/admin/token-activation', tokenActivationRoutes);
 
 // Mount the Vanity Wallets routes
 router.use('/admin/vanity-wallets', vanityWalletsRoutes);

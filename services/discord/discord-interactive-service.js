@@ -13,13 +13,15 @@
  */
 
 /**
- * This service is responsible for sending interactive notifications to 
+ * Discord Interactive Service (Discord Bot)
+ * 
+ * @description This service is responsible for sending interactive notifications to 
  * the Discord server via the DegenDuel AI Discord bot for various events.
  * 
  * @author BranchManager69
- * @version 1.9.0
+ * @version 2.1.0
  * @created 2025-04-26
- * @updated 2025-04-26
+ * @updated 2025-05-10
  */
 
 import { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
@@ -29,9 +31,8 @@ import { BaseService } from '../../utils/service-suite/base-service.js';
 import { SERVICE_NAMES } from '../../utils/service-suite/service-constants.js'; 
 import serviceEvents from '../../utils/service-suite/service-events.js';
 import prisma from '../../config/prisma.js';
-import discordNotificationService from './discordNotificationService.js'; // Import the webhook service
-import { SERVICE_EVENTS } from '../../utils/service-suite/service-events.js'; // Import the event keys
 import { discordConfig } from './discordConfig.js'; // Import the new Discord config
+import discordNotificationService from './discordNotificationService.js'; // Import the webhook service
 
 // Config
 import config from '../../config/config.js';
@@ -127,8 +128,8 @@ class DiscordInteractiveService extends BaseService {
     serviceEvents.on('token:pump', this.handleTokenPump.bind(this));
 
     // --- Listen for Privilege Changes --- 
-    serviceEvents.on(SERVICE_EVENTS.PRIVILEGE_GRANTED, this.onPrivilegeGranted.bind(this));
-    serviceEvents.on(SERVICE_EVENTS.PRIVILEGE_REVOKED, this.onPrivilegeRevoked.bind(this));
+    serviceEvents.on(serviceEvents.PRIVILEGE_GRANTED, this.onPrivilegeGranted.bind(this));
+    serviceEvents.on(serviceEvents.PRIVILEGE_REVOKED, this.onPrivilegeRevoked.bind(this));
   }
 
   setupInteractionHandlers() {

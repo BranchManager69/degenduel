@@ -324,21 +324,21 @@ class ContestWalletService extends BaseService {
             logApi.info(`${formatLog.tag()} ${formatLog.success('Contest Wallet Service initialized successfully')}`);
             logApi.info(`${formatLog.tag()} ${formatLog.info(`Using SolanaEngine with ${healthyEndpoints}/${totalEndpoints} healthy RPC endpoints`)}`);
             
-            logApi.info(`${formatLog.tag()} ${formatLog.header('WEBSOCKET')} Setting up real-time wallet monitoring`);
+            logApi.info(`${formatLog.tag()} ${formatLog.header('DIRECT RPC WEBSOCKET')} Setting up direct Solana RPC wallet monitoring`);
             this.initializeWebSocketMonitoring().then(() => {
-                logApi.info(`${formatLog.tag()} ${formatLog.success('WebSocket monitoring initialized successfully')}`);
-                if(this.walletStats && this.walletStats.websocket_monitoring) { 
+                logApi.info(`${formatLog.tag()} ${formatLog.success('Direct RPC WebSocket monitoring initialized successfully')}`);
+                if(this.walletStats && this.walletStats.websocket_monitoring) {
                     this.walletStats.websocket_monitoring.enabled = true;
                     this.walletStats.websocket_monitoring.initialized_at = new Date().toISOString();
                     this.walletStats.websocket_monitoring.status = 'active';
                 }
             }).catch(err => {
-                logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Failed to initialize WebSocket monitoring: ${err.message}`)}`, { 
-                    error: err.message, 
-                    stack: err.stack 
+                logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Failed to initialize direct RPC WebSocket monitoring: ${err.message}`)}`, {
+                    error: err.message,
+                    stack: err.stack
                 });
                 logApi.info(`${formatLog.tag()} ${formatLog.info('Falling back to traditional polling for wallet balances')}`);
-                if(this.walletStats && this.walletStats.websocket_monitoring) { 
+                if(this.walletStats && this.walletStats.websocket_monitoring) {
                     this.walletStats.websocket_monitoring.enabled = false;
                     this.walletStats.websocket_monitoring.error = err.message;
                     this.walletStats.websocket_monitoring.status = 'fallback_to_polling';
@@ -549,86 +549,56 @@ class ContestWalletService extends BaseService {
      * using the unified WebSocket system's Solana PubSub feature.
      */
     async initializeWebSocketMonitoring() {
-        logApi.info(`${formatLog.tag()} ${formatLog.header('WEBSOCKET')} Initializing WebSocket monitoring for contest wallets`);
-        
+        logApi.info(`${formatLog.tag()} ${formatLog.header('DIRECT RPC WEBSOCKET')} Initializing direct Solana RPC WebSocket monitoring for contest wallets`);
+
         try {
-            // Check if unified WebSocket server is available
-            if (!config.websocket || !config.websocket.unifiedWebSocket) {
-                throw new Error("Unified WebSocket server not available");
+            // Import the wallet-balance-ws module
+            const walletBalanceWs = (await import('./modules/wallet-balance-ws.js')).default;
+
+            // Store module reference for later use
+            this.walletBalanceWs = walletBalanceWs;
+
+            // Initialize WebSocket monitoring stats in walletStats
+            if (!this.walletStats.websocket_monitoring) {
+                this.walletStats.websocket_monitoring = {
+                    enabled: false,
+                    status: 'initializing',
+                    initialized_at: null,
+                    last_connection_attempt: new Date().toISOString(),
+                    connection_attempts: 0,
+                    successful_connections: 0,
+                    subscribed_accounts: 0,
+                    active_subscriptions: 0,
+                    last_balance_update: null,
+                    balance_updates: 0,
+                    significant_updates: 0,
+                    connection_errors: 0,
+                    subscription_errors: 0,
+                    last_error: null,
+                    last_error_time: null
+                };
             }
-            
-            // Get all active contest wallets from database
-            const contestWallets = await prisma.contest_wallets.findMany({
-                include: {
-                    contests: {
-                        select: {
-                            status: true,
-                            id: true,
-                            contest_code: true
-                        }
-                    }
-                }
-            });
-            
-            // Log wallet count that will be monitored
-            logApi.info(`${formatLog.tag()} ${formatLog.info(`Found ${contestWallets.length} contest wallets to monitor`)}`);
-            
-            // Create WebSocket client for internal service-to-service communication
-            await this.createServiceWebSocketClient();
-            
-            // Subscribe to all contest wallet accounts
-            const activeWallets = contestWallets.filter(wallet => 
-                wallet.contests?.status === 'active' || wallet.contests?.status === 'pending'
-            );
-            
-            // Subscribe to active wallets first (max 50 at a time to prevent rate limits)
-            if (activeWallets.length > 0) {
-                logApi.info(`${formatLog.tag()} ${formatLog.header('WEBSOCKET')} Subscribing to ${activeWallets.length} active contest wallets`);
-                
-                // Process in batches of 50
-                const batchSize = 50;
-                for (let i = 0; i < activeWallets.length; i += batchSize) {
-                    const batch = activeWallets.slice(i, i + batchSize);
-                    await this.subscribeToWalletBatch(batch);
-                    
-                    // Small delay between batches to prevent rate limits
-                    if (i + batchSize < activeWallets.length) {
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                    }
-                }
+
+            // Initialize the WebSocket connection with all contest wallets
+            const initialized = await walletBalanceWs.initializeWalletBalanceWebSocket(solanaEngine, this.config);
+
+            if (initialized) {
+                logApi.info(`${formatLog.tag()} ${formatLog.success('Successfully initialized direct Solana RPC WebSocket monitoring')}`);
+
+                // Update stats
+                this.walletStats.websocket_monitoring.enabled = true;
+                this.walletStats.websocket_monitoring.status = 'active';
+                this.walletStats.websocket_monitoring.initialized_at = new Date().toISOString();
+
+                // Set up periodic status check
+                this.startWebSocketStatusChecks();
+
+                return true;
+            } else {
+                throw new Error('Failed to initialize direct Solana RPC WebSocket monitoring');
             }
-            
-            // Schedule subscription for remaining wallets gradually to avoid rate limits
-            const remainingWallets = contestWallets.filter(wallet => 
-                !activeWallets.some(active => active.wallet_address === wallet.wallet_address)
-            );
-            
-            if (remainingWallets.length > 0) {
-                logApi.info(`${formatLog.tag()} ${formatLog.info(`Scheduling subscription for ${remainingWallets.length} non-active wallets`)}`);
-                
-                // Schedule subscription for remaining wallets over time (1 batch every 5 seconds)
-                const batchSize = 50;
-                for (let i = 0; i < remainingWallets.length; i += batchSize) {
-                    const batchIndex = i / batchSize;
-                    const batch = remainingWallets.slice(i, i + batchSize);
-                    
-                    setTimeout(() => {
-                        this.subscribeToWalletBatch(batch).catch(err => {
-                            logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Failed to subscribe to wallet batch: ${err.message}`)}`, {
-                                error: err.message,
-                                batchIndex
-                            });
-                        });
-                    }, batchIndex * 5000); // 5 seconds between batches
-                }
-            }
-            
-            // Set up periodic recovery for subscriptions
-            this.startSubscriptionRecovery();
-            
-            return true;
         } catch (error) {
-            logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to initialize WebSocket monitoring: ${error.message}`)}`, {
+            logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to initialize direct RPC WebSocket monitoring: ${error.message}`)}`, {
                 error: error.message,
                 stack: error.stack
             });
@@ -637,9 +607,140 @@ class ContestWalletService extends BaseService {
     }
     
     /**
+     * Start periodic checks of WebSocket status to update internal stats
+     */
+    startWebSocketStatusChecks() {
+        if (this.websocketStatusInterval) {
+            clearInterval(this.websocketStatusInterval);
+        }
+
+        this.websocketStatusInterval = setInterval(() => {
+            if (this.isOperational && !this.isShuttingDown && this.walletBalanceWs) {
+                try {
+                    // Get WebSocket status
+                    const status = this.walletBalanceWs.getWebSocketStatus();
+
+                    // Update internal stats
+                    this.walletStats.websocket_monitoring.status = status.connectionState === 'connected' ? 'active' : 'reconnecting';
+                    this.walletStats.websocket_monitoring.subscribed_accounts = status.walletCount || 0;
+                    this.walletStats.websocket_monitoring.active_subscriptions = status.subscriptionCount || 0;
+                    this.walletStats.websocket_monitoring.balance_updates = status.stats?.balanceUpdates || 0;
+                    this.walletStats.websocket_monitoring.significant_updates = status.stats?.significantUpdates || 0;
+                    this.walletStats.websocket_monitoring.last_update = status.stats?.lastUpdate;
+                    this.walletStats.websocket_monitoring.connection_errors = status.stats?.errors || 0;
+                    this.walletStats.websocket_monitoring.last_error = status.stats?.lastError;
+                    this.walletStats.websocket_monitoring.last_error_time = status.stats?.lastErrorTime;
+
+                    // Log status periodically
+                    logApi.debug(`${formatLog.tag()} ${formatLog.info(`WebSocket status: ${status.connectionState}, ${status.walletCount} wallets monitored, ${status.subscriptionCount} active subscriptions`)}`);
+
+                } catch (error) {
+                    logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to check WebSocket status: ${error.message}`)}`, {
+                        error: error.message
+                    });
+                }
+            }
+        }, 60 * 1000); // Check every minute
+
+        // Ensure interval doesn't keep process alive during shutdown
+        if (this.websocketStatusInterval && this.websocketStatusInterval.unref) {
+            this.websocketStatusInterval.unref();
+        }
+    }
+
+    /**
+     * Add a new wallet to be monitored via WebSocket
+     * @param {Object} wallet - Wallet object from database
+     * @returns {Promise<boolean>} - Success status
+     */
+    async addWalletToWebSocketMonitor(wallet) {
+        if (!this.walletBalanceWs || !wallet || !wallet.wallet_address) {
+            return false;
+        }
+
+        try {
+            return await this.walletBalanceWs.addWalletToMonitor(wallet);
+        } catch (error) {
+            logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to add wallet to WebSocket monitor: ${error.message}`)}`, {
+                error: error.message,
+                wallet_address: wallet.wallet_address
+            });
+            return false;
+        }
+    }
+
+    /**
+     * Remove a wallet from WebSocket monitoring
+     * @param {string} address - Wallet address to remove
+     * @returns {boolean} - Success status
+     */
+    removeWalletFromWebSocketMonitor(address) {
+        if (!this.walletBalanceWs || !address) {
+            return false;
+        }
+
+        try {
+            return this.walletBalanceWs.removeWalletFromMonitor(address);
+        } catch (error) {
+            logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to remove wallet from WebSocket monitor: ${error.message}`)}`, {
+                error: error.message,
+                wallet_address: address
+            });
+            return false;
+        }
+    }
+
+    /**
+     * Refresh the list of wallets being monitored via WebSocket
+     * @returns {Promise<boolean>} - Success status
+     */
+    async refreshWebSocketMonitoredWallets() {
+        if (!this.walletBalanceWs) {
+            return false;
+        }
+
+        try {
+            return await this.walletBalanceWs.refreshMonitoredWallets();
+        } catch (error) {
+            logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to refresh WebSocket monitored wallets: ${error.message}`)}`, {
+                error: error.message
+            });
+            return false;
+        }
+    }
+
+    /**
+     * Get the current status of the WebSocket monitoring
+     * @returns {Object} - WebSocket status
+     */
+    getWebSocketStatus() {
+        if (!this.walletBalanceWs) {
+            return {
+                active: false,
+                status: 'not_initialized',
+                error: 'WebSocket monitoring not initialized'
+            };
+        }
+
+        try {
+            return this.walletBalanceWs.getWebSocketStatus();
+        } catch (error) {
+            logApi.error(`${formatLog.tag()} ${formatLog.error(`Failed to get WebSocket status: ${error.message}`)}`, {
+                error: error.message
+            });
+            return {
+                active: false,
+                status: 'error',
+                error: error.message
+            };
+        }
+    }
+
+    /**
      * Create a WebSocket client for service-to-service communication
-     * This client connects to the unified WebSocket server 
+     * This client connects to the unified WebSocket server
      * to subscribe to Solana account updates
+     * @deprecated Replaced by direct Solana RPC WebSocket connection
      */
     async createServiceWebSocketClient() {
         // If WebSocket is already connected, disconnect it first
@@ -1580,260 +1681,131 @@ class ContestWalletService extends BaseService {
      * Handles both new v2_seed format and legacy formats for backward compatibility.
      * 
      * @param {string} encryptedData - The encrypted private key data (JSON string).
-     * @returns {Buffer} - The decrypted 32-byte private key seed as a Buffer.
+     * @returns {Buffer} - The decrypted 32-byte private key seed or 64-byte legacy key as a Buffer.
      * @throws {ServiceError} - If decryption fails or format is unrecognized.
      */
     decryptPrivateKey(encryptedData) {
         this.logApi.debug(`${formatLog.tag()} Attempting to decrypt private key data.`);
-        let parsedData;
         try {
-            parsedData = JSON.parse(encryptedData);
-        } catch (e) {
-            // If it's not JSON, it might be a very old plaintext key (highly unlikely for contest wallets after first encryption pass)
-            // Or it's corrupted data.
-            this.logApi.warn(`${formatLog.tag()} ${formatLog.warning('Encrypted data is not valid JSON. Attempting to treat as plaintext (legacy).')}`, { preview: encryptedData.substring(0, 30) });
-            // For now, if it's not JSON, we cannot decrypt it with new or old methods that expect JSON.
-            // If this was truly plaintext 64-byte base64 from old Keypair.secretKey.toString('base64') then that's a different path.
-            // The old decryptPrivateKey also assumed JSON. We will treat non-JSON as an error for v2_seed path.
-            throw ServiceError.operation('Failed to decrypt private key: Invalid JSON format.', {
-                type: 'DECRYPTION_ERROR_FORMAT'
-            });
-        }
-
-        if (parsedData.version === 'v2_seed') {
-            this.logApi.info(`${formatLog.tag()} Decrypting v2_seed format private key.`);
-            try {
-                const { encrypted, iv, tag, aad } = parsedData;
-                if (!encrypted || !iv || !tag || !aad) {
-                    throw new Error('Encrypted v2_seed data is missing required fields (encrypted, iv, tag, aad).');
-                }
-
-                const decipher = crypto.createDecipheriv(
-                    'aes-256-gcm',
-                    Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex'),
-                    Buffer.from(iv, 'hex')
-                );
-                decipher.setAuthTag(Buffer.from(tag, 'hex'));
-                decipher.setAAD(Buffer.from(aad, 'hex'));
-
-                const decryptedSeed = Buffer.concat([
-                    decipher.update(Buffer.from(encrypted, 'hex')),
-                    decipher.final()
-                ]);
-
-                if (decryptedSeed.length !== 32) {
-                    throw new Error(`Decrypted v2_seed is not 32 bytes long, got ${decryptedSeed.length} bytes.`);
-                }
-                this.logApi.info(`${formatLog.tag()} Successfully decrypted 32-byte v2_seed.`);
-                return decryptedSeed; // Return as Buffer
-            } catch (error) {
-                this.logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to decrypt v2_seed private key:')}`, { error: error.message });
-                throw ServiceError.operation('Failed to decrypt v2_seed private key', {
-                    error: error.message,
-                    type: 'DECRYPTION_ERROR_V2_SEED'
-                });
+            const decryptedBuffer = walletCrypto.decryptWallet(encryptedData, process.env.WALLET_ENCRYPTION_KEY);
+            if (!(decryptedBuffer instanceof Buffer)) {
+                throw ServiceError.operation('Decryption did not yield a Buffer, which is unexpected for encrypted keys.');
             }
-        } else {
-            // Fallback to legacy decryption logic (IF NEEDED and if the old logic can be adapted or called)
-            // For a clean break, we might throw an error for unrecognized formats.
-            // The OLD decryptPrivateKey in the provided file also expected JSON, but without a `version` field.
-            // It would parse `encrypted, iv, tag, aad` and then do `decrypted.toString()` at the end.
-            // That `toString()` implies the encrypted content was itself a string (like base64 of 64-byte key).
-            this.logApi.warn(`${formatLog.tag()} ${formatLog.warning('Private key is not in v2_seed format. Attempting legacy decryption (experimental).')}`);
-            try {
-                // This is a simplified adaptation of the OLD logic, assuming the encrypted content was the base64 of a 64-byte key.
-                const { encrypted, iv, tag, aad } = parsedData;
-                 if (!encrypted || !iv || !tag ) { // AAD might be optional in some very old formats
-                    throw new Error('Encrypted legacy data is missing required fields (encrypted, iv, tag).');
-                }
-                const decipher = crypto.createDecipheriv(
-                    'aes-256-gcm', 
-                    Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex'),
-                    Buffer.from(iv, 'hex')
-                );
-                decipher.setAuthTag(Buffer.from(tag, 'hex'));
-                if (aad) decipher.setAAD(Buffer.from(aad, 'hex'));
-
-                const decryptedStringRepresentation = Buffer.concat([
-                    decipher.update(Buffer.from(encrypted, 'hex')),
-                    decipher.final()
-                ]).toString(); // Old logic did .toString()
-                
-                // Now, we need to parse this string (likely base64 of 64 bytes) to get the first 32 bytes as seed.
-                const fullKeyBytes = Buffer.from(decryptedStringRepresentation, 'base64');
-                if (fullKeyBytes.length === 64) {
-                    this.logApi.info("Successfully decrypted legacy key (64 bytes base64 encoded) and extracted 32-byte seed.");
-                    return fullKeyBytes.slice(0, 32); // Return the first 32 bytes as seed
-                } else {
-                    this.logApi.warn("Decrypted legacy key was not 64 bytes after base64 decoding. Cannot extract seed.", {length: fullKeyBytes.length });
-                    throw new Error ('Legacy key decryption did not result in 64 bytes after base64 decode.');
-                }
-
-            } catch (legacyError) {
-                 this.logApi.error(`${formatLog.tag()} ${formatLog.error('Failed to decrypt private key using legacy attempt:')}`, { error: legacyError.message });
-                throw ServiceError.operation('Failed to decrypt private key: Unrecognized format or legacy decryption failed.', {
-                    error: legacyError.message,
-                    type: 'DECRYPTION_ERROR_LEGACY_ATTEMPT'
-                });
-            }
+            return decryptedBuffer;
+        } catch (error) {
+            this.logApi.error(`${formatLog.tag()} Error in decryptPrivateKey: ${error.message}`, { error });
+            if (error instanceof ServiceError) throw error;
+            throw ServiceError.operation(`Decryption failed: ${error.message}`, { originalError: error });
         }
     }
 
     /**
-     * Perform a blockchain transfer from a contest wallet to a destination address
-     * This version prepares the v2 signer and calls the (soon to be refactored) executeTransfer.
+     * Performs a blockchain transfer from a managed contest wallet.
      * 
-     * @param {Object} sourceWallet - The source wallet object containing encrypted private key
-     * @param {string} destinationAddressString - The destination wallet address
-     * @param {number} amount - The amount to transfer in SOL
-     * @returns {Promise<string>} - The transaction signature
+     * @param {Object} sourceWallet - The source wallet object from DB (must have encrypted_private_key).
+     * @param {string} destinationAddressString - The recipient's public key string.
+     * @param {number} amount - The amount in SOL to transfer.
+     * @returns {Promise<Object>} - Transaction signature and details.
      */
     async performBlockchainTransfer(sourceWallet, destinationAddressString, amount) {
-        this.logApi.info(`${formatLog.tag()} ${formatLog.transfer('PREPARE v2 SIGNER')} for ${amount} SOL from ${sourceWallet.wallet_address} to ${destinationAddressString}`);
-        let seedBytes_32;
+        this.logApi.info(`${formatLog.tag()} Initiating blockchain transfer from ${sourceWallet.wallet_address} to ${destinationAddressString} for ${amount} SOL.`);
+        const startTime = Date.now();
 
+        if (!sourceWallet || !sourceWallet.encrypted_private_key) {
+            throw ServiceError.validation('Source wallet or its encrypted private key is missing.');
+        }
+
+        let signer;
         try {
-            const decryptedData = this.decryptPrivateKey(sourceWallet.private_key); // This now returns a 32-byte Buffer (seed)
+            const decryptedKeyOrSeed = this.decryptPrivateKey(sourceWallet.encrypted_private_key);
 
-            if (sourceWallet.is_vanity) {
-                this.logApi.info(`${formatLog.tag()} Processing VANITY wallet. Decrypted data expected to be 32-byte seed (if re-encrypted) or legacy format.`);
-                // The `decryptPrivateKey` was updated to try and return a 32-byte seed Buffer even for legacy.
-                // If it successfully parsed a legacy 64-byte key and extracted the seed, decryptedData will be that 32-byte seed.
-                // If decryptPrivateKey couldn't handle a specific legacy vanity format and threw an error, we'd catch it below.
-                // If it returned a string (e.g. bs58 of 64-byte key, which the new decryptPrivateKey tries to avoid for legacy),
-                // this path would need to handle it. But the goal is decryptPrivateKey standardizes the output.
-                
-                if (Buffer.isBuffer(decryptedData) && decryptedData.length === 32) {
-                    seedBytes_32 = decryptedData;
-                    this.logApi.info(`${formatLog.tag()} Successfully obtained 32-byte seed for vanity wallet (likely from v2_seed or processed legacy format).`);
-                } else {
-                     // This case should ideally not be hit if decryptPrivateKey correctly handles legacy formats by returning a 32-byte seed.
-                    this.logApi.error("Decrypted data for vanity wallet was not a 32-byte seed Buffer as expected from updated decryptPrivateKey.", { type: typeof decryptedData, length: decryptedData?.length });
-                    throw ServiceError.validation('Vanity key processing error: Expected 32-byte seed from decryptPrivateKey.');
-                }
+            if (decryptedKeyOrSeed.length === 32) {
+                this.logApi.debug(`${formatLog.tag()} Decrypted a 32-byte seed. Creating signer with createKeyPairSignerFromBytes.`);
+                signer = await createKeyPairSignerFromBytes(decryptedKeyOrSeed);
+            } else if (decryptedKeyOrSeed.length === 64) {
+                this.logApi.debug(`${formatLog.tag()} Decrypted a 64-byte legacy key. Creating signer with createSignerFromLegacyKey (compat layer).`);
+                signer = await createSignerFromLegacyKey(decryptedKeyOrSeed);
             } else {
-                this.logApi.info(`${formatLog.tag()} Processing RANDOMLY GENERATED wallet (expected v2_seed format).`);
-                if (!Buffer.isBuffer(decryptedData) || decryptedData.length !== 32) {
-                    this.logApi.error("Decryption of random wallet did not yield a 32-byte seed Buffer.", { type: typeof decryptedData, length: decryptedData?.length });
-                    throw new Error('Decryption of random wallet did not yield a 32-byte seed Buffer.');
-                }
-                seedBytes_32 = decryptedData;
-                this.logApi.info(`${formatLog.tag()} Successfully obtained 32-byte seed for random wallet.`);
+                const errMsg = `Decrypted key/seed has an unexpected length: ${decryptedKeyOrSeed.length}. Expected 32 or 64 bytes.`;
+                this.logApi.error(`${formatLog.tag()} ${errMsg}`);
+                throw ServiceError.operation(errMsg, { type: 'KEY_MATERIAL_LENGTH_ERROR' });
             }
-
-            // Create v2 KeyPairSigner from the 32-byte seed
-            const fromSigner_v2 = await createKeyPairSignerFromBytes(seedBytes_32, { SENSITIVE_BYTE_ARRAY_IS_EXTRACTABLE: true });
-            this.logApi.info(`${formatLog.tag()} Created v2 KeyPairSigner. Derived Address: ${fromSigner_v2.address}`);
-            
-            // CRITICAL VERIFICATION STEP
-            if (fromSigner_v2.address !== sourceWallet.wallet_address) {
-                this.logApi.error(`${formatLog.tag()} ${formatLog.error('CRITICAL PUBLIC KEY MISMATCH!')}`,
-                    { derived_address: fromSigner_v2.address, stored_wallet_address: sourceWallet.wallet_address });
-                throw ServiceError.operation('Public key mismatch after deriving from seed. Data corruption or key error suspected.');
-            }
-            this.logApi.info(`${formatLog.tag()} ${formatLog.success('Public key verification PASSED.')} Derived address matches stored address.`);
-
-            // Call executeTransfer (which will be refactored next to accept fromSigner_v2)
-            return await this.executeTransfer(fromSigner_v2, destinationAddressString, amount);
-
         } catch (error) {
-            this.logApi.error(`${formatLog.tag()} ${formatLog.error('performBlockchainTransfer (v2 signer prep) failed:')}`, { 
-                error: error.message, 
-                sourceWalletAddress: sourceWallet.wallet_address, 
-                destination: destinationAddressString, 
-                amount, 
-                isVanity: sourceWallet.is_vanity,
-                stack: error.stack?.substring(0, 500) 
-            });
+            this.logApi.error(`${formatLog.tag()} Failed to decrypt key or create signer for wallet ${sourceWallet.wallet_address}: ${error.message}`, { stack: error.stack });
             if (error instanceof ServiceError) throw error;
-            throw ServiceError.blockchain('Blockchain transfer v2 signer preparation failed', { 
-                originalError: error.message, 
-                source: sourceWallet.wallet_address 
-            });
+            throw ServiceError.operation(`Key decryption or signer creation failed for ${sourceWallet.wallet_address}`, { originalError: error.message });
+        }
+        
+        if (!signer) {
+             throw ServiceError.operation(`Failed to create a signer for wallet ${sourceWallet.wallet_address}.`);
+        }
+        
+        try {
+            const transferResult = await this.executeTransfer(signer, destinationAddressString, amount);
+            
+            this.logApi.info(`${formatLog.tag()} Blockchain transfer successful. Signature: ${transferResult.signature}. Duration: ${Date.now() - startTime}ms`);
+            return transferResult;
+        } catch (error) {
+            this.logApi.error(`${formatLog.tag()} Blockchain transfer from ${sourceWallet.wallet_address} failed: ${error.message}`, { stack: error.stack, amount, to: destinationAddressString });
+            if (error instanceof ServiceError) throw error;
+            throw ServiceError.operation(`Blockchain transfer failed: ${error.message}`, { originalError: error });
         }
     }
 
     /**
-     * Helper to execute the actual SOL transfer once we have a valid v2 signer.
+     * Executes the actual transfer using a v2 signer.
+     * (This method would use solanaEngine.sendTransaction internally)
      * 
-     * @param {import('@solana/keys').KeyPairSigner} fromSigner_v2 - The source wallet v2 KeyPairSigner.
-     * @param {string} destinationAddressString - The destination wallet address string.
-     * @param {number} amount - The amount of SOL to transfer.
-     * @returns {Promise<string>} - The signature of the transaction.
+     * @param {KeyPairSigner} fromSigner_v2 - The v2 KeyPairSigner for the source wallet.
+     * @param {string} destinationAddressString - The recipient's public key string.
+     * @param {number} amount - The amount in SOL to transfer.
+     * @returns {Promise<Object>} - Transaction signature and details.
      */
     async executeTransfer(fromSigner_v2, destinationAddressString, amount) {
-        this.logApi.info(`${formatLog.tag()} ${formatLog.transfer('EXECUTE V2 SOL TRANSFER')} ${amount} SOL from ${fromSigner_v2.address} to ${destinationAddressString}`);
-        try {
-            // 1. Define Program ID and Addresses in v2 format
-            const systemProgramId_v2 = v2Address('11111111111111111111111111111111');
-            const toAddress_v2 = v2Address(destinationAddressString);
+        this.logApi.info(`${formatLog.tag()} Executing transfer with v2 signer ${fromSigner_v2.address} to ${destinationAddressString} for ${amount} SOL.`);
+        
+        if (!solanaEngine || typeof solanaEngine.sendTransaction !== 'function') {
+             this.logApi.error(`${formatLog.tag()} solanaEngine.sendTransaction is not available or not a function.`);
+             throw ServiceError.internal('SolanaEngine transaction sending capability is missing or invalid.');
+        }
 
-            // 2. Prepare AccountMetas for the instruction
-            const fromAccountMeta = { address: fromSigner_v2.address, role: 'readwrite-signer' };
-            const toAccountMeta = { address: toAddress_v2, role: 'readwrite' };
+        const lamports = Math.round(amount * LAMPORTS_PER_SOL);
 
-            // 3. Prepare Instruction Data for SystemProgram.transfer
-            const lamportsBigInt = BigInt(Math.round(amount * LAMPORTS_PER_SOL_V2)); // Use v2 constant
-            const instructionData = Buffer.alloc(12); // SystemProgram.transfer is 12 bytes: 4 for index, 8 for lamports
-            instructionData.writeUInt32LE(2, 0);       // Instruction index for SystemProgram.transfer is 2
-            instructionData.writeBigUInt64LE(lamportsBigInt, 4); // Lamports (u64)
+        // Manually define the data for a SystemProgram.transfer instruction
+        // The instruction index for transfer is 2.
+        // Data layout: instruction_index (u32), lamports (u64)
+        const instructionData = Buffer.alloc(4 + 8); // 4 bytes for u32, 8 bytes for u64
+        instructionData.writeUInt32LE(2, 0); // Instruction index for transfer
+        instructionData.writeBigUInt64LE(BigInt(lamports), 4);
 
-            // 4. Construct the v2 SolanaInstruction object
-            const v2SystemTransferInstruction = {
-                programAddress: systemProgramId_v2,
-                accounts: [fromAccountMeta, toAccountMeta],
-                data: instructionData
-            };
-            
-            // 5. Define options for solanaEngine.sendTransaction
-            const transferOptions = {
-                commitment: 'confirmed',
-                skipPreflight: false, // Default to false for safety in financial transactions
-                endpointId: this.config.wallet?.preferredEndpoints?.transfers, // From original executeTransfer logic
-                // blockhashRetries and sendTransactionRetries are handled by solanaEngine.sendTransaction defaults
-            };
-
-            this.logApi.info(`${formatLog.tag()} Attempting v2 solanaEngine.sendTransaction...`, {
-                instruction: {
-                    program: v2SystemTransferInstruction.programAddress,
-                    accounts: v2SystemTransferInstruction.accounts.map(a => ({...a, address: a.address.toString()})), // Log address as string
-                    dataLength: v2SystemTransferInstruction.data.length
+        const transferInstruction = {
+            programAddress: SYSTEM_PROGRAM_ADDRESS, // System Program ID
+            accounts: [
+                {
+                    address: fromSigner_v2.address,
+                    role: 'writeableSigner', // Source account is writable and a signer
                 },
-                options: transferOptions 
+                {
+                    address: v2Address(destinationAddressString), // Destination account is writable
+                    role: 'writeable',
+                },
+            ],
+            data: instructionData,
+        };
+        
+        const instructions = [transferInstruction];
+        const feePayerAddress = fromSigner_v2.address;
+        const signersArray = [fromSigner_v2];
+
+        try {
+            return await solanaEngine.sendTransaction(instructions, feePayerAddress, signersArray, { 
+                commitment: 'confirmed', 
+                waitForConfirmation: true 
             });
-
-            // 6. Call solanaEngine.sendTransaction with v2 inputs
-            const result = await this.solanaEngine.sendTransaction(
-                [v2SystemTransferInstruction], // Array of SolanaInstruction objects
-                fromSigner_v2.address,       // Fee payer address (v2 Address string)
-                [fromSigner_v2],             // Array of v2 Signer objects
-                transferOptions
-            );
-
-            // solanaEngine.sendTransaction should return an object like { signature, blockhashResult, confirmationStatus }
-            if (!result || !result.signature) {
-                this.logApi.error(`${formatLog.tag()} ${formatLog.error('solanaEngine.sendTransaction did not return a valid signature.')}`, { result });
-                throw new Error('Transaction sent but no signature received from solanaEngine.');
-            }
-
-            this.logApi.info(`${formatLog.tag()} ${formatLog.success('V2 SOL Transfer Complete.')} Signature: ${result.signature}`);
-            return result.signature; // Return only the signature string as done previously
-
         } catch (error) {
-            this.logApi.error(`${formatLog.tag()} ${formatLog.error('V2 executeTransfer for SOL failed:')}`, {
-                error: error.message,
-                sourceAddress: fromSigner_v2.address,
-                destination: destinationAddressString,
-                amount,
-                stack: error.stack?.substring(0, 500) // Log a portion of the stack
-            });
-            // Ensure ServiceError is thrown for consistent error handling by callers
-            if (error instanceof ServiceError) throw error;
-            throw ServiceError.blockchain('V2 SOL transfer execution failed', { 
-                originalError: error.message, 
-                from: fromSigner_v2.address, 
-                to: destinationAddressString 
-            });
+            this.logApi.error(`${formatLog.tag()} solanaEngine.sendTransaction failed during executeTransfer: ${error.message}`, { stack: error.stack });
+            // Re-throw to be caught by performBlockchainTransfer's error handler
+            throw error;
         }
     }
 
@@ -2307,32 +2279,50 @@ class ContestWalletService extends BaseService {
     async stop() {
         // Mark service as shutting down to prevent new operations
         this.isShuttingDown = true;
-        
+
         // Clean up polling interval if it exists
         if (this.pollingInterval) {
             logApi.info(`${formatLog.tag()} ${formatLog.info('Cleaning up polling interval...')}`);
             clearInterval(this.pollingInterval);
             this.pollingInterval = null;
         }
-        
+
         // Clean up subscription recovery interval if it exists
         if (this.subscriptionRecoveryInterval) {
             logApi.info(`${formatLog.tag()} ${formatLog.info('Cleaning up subscription recovery interval...')}`);
             clearInterval(this.subscriptionRecoveryInterval);
             this.subscriptionRecoveryInterval = null;
         }
-        
+
+        // Clean up WebSocket status check interval if it exists
+        if (this.websocketStatusInterval) {
+            logApi.info(`${formatLog.tag()} ${formatLog.info('Cleaning up WebSocket status check interval...')}`);
+            clearInterval(this.websocketStatusInterval);
+            this.websocketStatusInterval = null;
+        }
+
         // Clean up WebSocket connection if it exists
         if (this.websocketSubscriptions && this.websocketSubscriptions.unifiedWsConnection) {
-            logApi.info(`${formatLog.tag()} ${formatLog.info('Cleaning up WebSocket connection...')}`);
+            logApi.info(`${formatLog.tag()} ${formatLog.info('Cleaning up old WebSocket connection...')}`);
             try {
                 this.websocketSubscriptions.unifiedWsConnection.close();
                 this.websocketSubscriptions.unifiedWsConnection = null;
             } catch (error) {
-                logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Error closing WebSocket connection: ${error.message}`)}`);
+                logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Error closing old WebSocket connection: ${error.message}`)}`);
             }
         }
-        
+
+        // Clean up direct RPC WebSocket connection if it exists
+        if (this.walletBalanceWs) {
+            logApi.info(`${formatLog.tag()} ${formatLog.info('Cleaning up direct RPC WebSocket connection...')}`);
+            try {
+                await this.walletBalanceWs.stopWalletBalanceWebSocket();
+                this.walletBalanceWs = null;
+            } catch (error) {
+                logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Error closing direct RPC WebSocket connection: ${error.message}`)}`);
+            }
+        }
+
         // Clean up certification resources if there was an active treasury certifier
         if (this.treasuryCertifierInstance) {
             try {
@@ -2345,10 +2335,10 @@ class ContestWalletService extends BaseService {
                 logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Error cleaning up Treasury Certification: ${error.message}`)}`);
             }
         }
-        
+
         // Reset shutdown flag before calling super.stop() to ensure clean state
         this.isShuttingDown = false;
-        
+
         // Continue with normal service shutdown
         return super.stop();
     }

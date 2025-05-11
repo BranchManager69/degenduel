@@ -41,7 +41,7 @@ import {
 } from '@solana/transaction-messages'; 
 import { 
   compileTransaction,
-  signTransaction
+  partiallySignTransaction
 } from '@solana/transactions';
 
 // Import Helius Kite
@@ -336,9 +336,6 @@ class SolanaEngineService extends BaseService {
     if (!signers || signers.length === 0) {
         throw new Error('At least one v2 Signer object (fee payer) is required.');
     }
-    // Ensure feePayer is the first signer or is present in signers array for `signTransaction`
-    // `signTransaction` expects signers in the order they appear in the message, or for feePayer to be explicitly handled.
-    // For simplicity here, we'll assume the `signers` array is correctly ordered and includes the fee payer.
 
     while (attempt <= blockhashRetries) {
       try {
@@ -355,23 +352,18 @@ class SolanaEngineService extends BaseService {
           instructions: instructions 
         });
 
-        // 3. Sign the Transaction Message
-        // `signTransaction` from `@solana/transactions` expects CryptoKeyPair-like objects or objects with a sign() method.
-        // If signers are KeyPairSigner from `@solana/kit`, they have a .signTransactions method, 
-        // but signTransaction from @solana/transactions expects CryptoKey[] or CryptoKeyPair[].
-        // For now, assuming `signers` contains objects that `signTransaction` can use (e.g., from fromLegacyKeypair or new v2 keypairs).
-        // This might need adjustment based on the actual structure of v2 Signer objects you intend to use.
-        // If using KeyPairSigner from @solana/kit, a different signing approach might be needed or a helper to extract CryptoKeyPairs.
-        // Let's assume for now `signers` are CryptoKeyPair[] as returned by `fromLegacyKeypair` for this step.
-        const signedTx = await signTransaction(signers, message);
+        // 3. Compile and Sign the Transaction
+        const transaction = compileTransaction(message);
+        const signedTransaction = await partiallySignTransaction(signers, transaction); // This is a Transaction object
 
         // 4. Send the Transaction
+        // Pass the Transaction object directly. The RPC client handles serialization.
         const signature = await rpc.sendTransaction(
-          signedTx.serializedMessage, 
+          signedTransaction, 
           {
-            encoding: 'base64',
+            encoding: 'base64', 
             skipPreflight: options.skipPreflight || false,
-            preflightCommitment: commitment, // Use the same commitment for preflight
+            preflightCommitment: commitment, 
             maxRetries: options.maxRetries || 0, 
             minContextSlot: options.minContextSlot,
           }

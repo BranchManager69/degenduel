@@ -536,6 +536,18 @@ const config = {
   // Service threshold settings:
   service_thresholds: {
 
+    /* TOKEN REFRESH SCHEDULER SERVICE */
+
+    // Token refresh scheduler service check interval:
+    token_refresh_scheduler_max_tokens_per_cycle:
+      parseInt(process.env.TRS_MAX_TOKENS_PER_CYCLE || 200), // 200 tokens default
+    token_refresh_scheduler_delay_between_batches_ms:
+      parseInt(process.env.TRS_DELAY_BETWEEN_BATCHES_MS || 100), // 100 ms default
+    token_refresh_scheduler_api_calls_per_window:
+      parseInt(process.env.TRS_API_CALLS_PER_WINDOW || 1), // 1 API call per window default
+    token_refresh_scheduler_window_duration_ms:
+      parseInt(process.env.TRS_WINDOW_DURATION_MS || 1100), // 1100 ms default
+
     /* USER BALANCE TRACKING SERVICE */
 
     // User balance tracking mode (polling or websocket):

@@ -219,8 +219,13 @@ export function configureMiddleware(app) {
     };
 
     if (origin && isOriginAllowed(origin)) {
-      logApi.info(`[CORS_DEBUG] ALLOWING origin: '${origin}' for path: ${req.path}. Setting ACAO header.`);
+      const existingAcao = res.getHeader('Access-Control-Allow-Origin');
+      logApi.info(`[CORS_DIAGNOSTIC] Before setHeader, current ACAO: ${existingAcao}, Origin to set: '${origin}'`);
+      
       res.setHeader('Access-Control-Allow-Origin', origin);
+      
+      const newAcao = res.getHeader('Access-Control-Allow-Origin');
+      logApi.info(`[CORS_DIAGNOSTIC] After setHeader, new ACAO: ${newAcao}`);
       res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Cache-Control,X-Wallet-Address,Accept,Origin');
       res.setHeader('Access-Control-Allow-Credentials', 'true');

@@ -6,6 +6,8 @@ import serviceManager from '../../utils/service-suite/service-manager.js';
 import { requireAuth, requireAdmin, requireSuperAdmin } from '../../middleware/auth.js';
 import AdminLogger from '../../utils/admin-logger.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../../utils/service-suite/service-constants.js';
+import adminWalletService from '../../services/admin-wallet/admin-wallet-service.js';
+import walletBalanceWs from '../../services/admin-wallet/modules/wallet-balance-ws.js';
 
 const router = express.Router();
 const serviceLogger = logApi.forService('SERVICE-MGMT');
@@ -22,7 +24,8 @@ const serviceLogger = logApi.forService('SERVICE-MGMT');
  *       200:
  *         description: Status of all services
  */
-router.get('/status', requireAuth, requireAdmin, async (req, res) => {
+// Open endpoint for monitoring services without authentication
+router.get('/status', async (req, res) => {
     try {
         const services = Array.from(serviceManager.services.entries());
         const statuses = await Promise.all(
@@ -323,6 +326,230 @@ router.post('/restart/:service', requireAuth, requireSuperAdmin, async (req, res
         res.status(500).json({
             success: false,
             error: error.message
+        });
+    }
+});
+
+/**
+ * @swagger
+ * /api/admin/service-management/status/{serviceName}:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Get status of a specific service
+ *     parameters:
+ *       - in: path
+ *         name: serviceName
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Status of the specified service
+ *       404:
+ *         description: Service not found
+ */
+router.get('/status/service/:serviceName', async (req, res) => {
+    try {
+        const { serviceName } = req.params;
+
+        // Special case handling for admin_wallet_service
+        if (serviceName === SERVICE_NAMES.ADMIN_WALLET && adminWalletService) {
+            const metadata = getServiceMetadata(SERVICE_NAMES.ADMIN_WALLET) || {
+                description: 'Administrative wallet operations'
+            };
+
+            // Direct WebSocket status
+            let wsStatus = { active: false };
+            let monitoringInfo = {};
+
+            if (adminWalletService.walletStats && adminWalletService.walletStats.monitoring) {
+                monitoringInfo = adminWalletService.walletStats.monitoring;
+
+                if (monitoringInfo.mode === 'websocket' && monitoringInfo.initialized) {
+                    try {
+                        wsStatus = {
+                            active: true,
+                            ...walletBalanceWs.getWebSocketStatus()
+                        };
+                    } catch (error) {
+                        wsStatus = {
+                            active: monitoringInfo.initialized,
+                            error: error.message,
+                            message: 'Error getting WebSocket status'
+                        };
+                    }
+                }
+            }
+
+            // Create custom service status for admin wallet
+            const serviceStatus = {
+                name: serviceName,
+                displayName: metadata?.displayName || serviceName,
+                description: metadata?.description || 'Administrative wallet operations',
+                status: adminWalletService.isOperational ? 'operational' : 'non-operational',
+                isOperational: adminWalletService.isOperational || false,
+                isInitialized: adminWalletService.isInitialized || false,
+                isStarted: adminWalletService.isStarted || false,
+                dependencies: adminWalletService.config?.dependencies || [],
+                lastCheck: adminWalletService.stats?.history?.lastCheck,
+                lastError: adminWalletService.stats?.history?.lastError,
+                lastErrorTime: adminWalletService.stats?.history?.lastErrorTime,
+                stats: {
+                    operations: adminWalletService.stats?.operations || { total: 0, successful: 0, failed: 0 },
+                    performance: adminWalletService.stats?.performance || {},
+                },
+                circuitBreaker: {
+                    isOpen: adminWalletService.stats?.circuitBreaker?.isOpen || false,
+                    failures: adminWalletService.stats?.circuitBreaker?.failures || 0,
+                    lastFailure: adminWalletService.stats?.circuitBreaker?.lastFailure,
+                    lastSuccess: adminWalletService.stats?.circuitBreaker?.lastSuccess,
+                    recoveryAttempts: adminWalletService.stats?.circuitBreaker?.recoveryAttempts || 0
+                },
+                monitoring: {
+                    mode: monitoringInfo.mode || 'polling',
+                    status: monitoringInfo.status || 'inactive',
+                    initialized: monitoringInfo.initialized || false,
+                    webSocket: wsStatus
+                }
+            };
+
+            return res.json({
+                success: true,
+                data: serviceStatus,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        // Standard service manager lookup for other services
+        const serviceInstance = serviceManager.services.get(serviceName);
+
+        if (!serviceInstance) {
+            return res.status(404).json({
+                success: false,
+                error: 'Service not found'
+            });
+        }
+
+        const state = await serviceManager.getServiceState(serviceName);
+        const metadata = getServiceMetadata(serviceName);
+
+        let serviceStatus = {
+            name: serviceName,
+            displayName: metadata?.displayName || serviceName,
+            description: metadata?.description || '',
+            status: serviceManager.determineServiceStatus(serviceInstance.stats),
+            isOperational: serviceInstance.isOperational,
+            isInitialized: serviceInstance.isInitialized,
+            isStarted: serviceInstance.isStarted || false,
+            dependencies: serviceInstance.config.dependencies || [],
+            lastCheck: serviceInstance.stats?.history?.lastCheck,
+            lastError: serviceInstance.stats?.history?.lastError,
+            lastErrorTime: serviceInstance.stats?.history?.lastErrorTime,
+            stats: {
+                operations: serviceInstance.stats?.operations || { total: 0, successful: 0, failed: 0 },
+                performance: serviceInstance.stats?.performance || {},
+            },
+            circuitBreaker: {
+                isOpen: serviceInstance.stats?.circuitBreaker?.isOpen || false,
+                failures: serviceInstance.stats?.circuitBreaker?.failures || 0,
+                lastFailure: serviceInstance.stats?.circuitBreaker?.lastFailure,
+                lastSuccess: serviceInstance.stats?.circuitBreaker?.lastSuccess,
+                recoveryAttempts: serviceInstance.stats?.circuitBreaker?.recoveryAttempts || 0
+            },
+            ...state
+        };
+
+        res.json({
+            success: true,
+            data: serviceStatus,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        serviceLogger.error(`Failed to get service status for ${req.params.serviceName}:`, error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+/**
+ * @swagger
+ * /api/admin/service-management/wallet-monitoring:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Get status of the admin wallet WebSocket monitoring
+ *     responses:
+ *       200:
+ *         description: WebSocket monitoring status for admin wallets
+ *       404:
+ *         description: Admin wallet service not found
+ */
+router.get('/wallet-monitoring', async (req, res) => {
+    try {
+        // Skip the service manager check since it might not be registered properly
+        if (!adminWalletService) {
+            return res.status(404).json({
+                success: false,
+                error: 'Admin wallet service not available'
+            });
+        }
+
+        // Get WebSocket monitoring status if active
+        let wsStatus = { active: false };
+        let monitoringInfo = {};
+
+        if (adminWalletService.walletStats && adminWalletService.walletStats.monitoring) {
+            monitoringInfo = adminWalletService.walletStats.monitoring;
+
+            if (monitoringInfo.mode === 'websocket' && monitoringInfo.initialized) {
+                try {
+                    // Get detailed WebSocket status directly from the module
+                    wsStatus = {
+                        active: true,
+                        ...walletBalanceWs.getWebSocketStatus()
+                    };
+                } catch (error) {
+                    wsStatus = {
+                        active: monitoringInfo.initialized,
+                        error: error.message,
+                        message: 'Error getting WebSocket status'
+                    };
+                }
+            }
+        }
+
+        // Get basic service information without serviceManager
+        const metadata = getServiceMetadata(SERVICE_NAMES.ADMIN_WALLET) || {
+            description: 'Administrative wallet operations'
+        };
+
+        const basicStatus = {
+            name: SERVICE_NAMES.ADMIN_WALLET,
+            displayName: SERVICE_NAMES.ADMIN_WALLET,
+            description: metadata.description || 'Administrative wallet operations',
+            status: adminWalletService.isOperational ? 'operational' : 'non-operational',
+            isInitialized: adminWalletService.isInitialized || false,
+            isStarted: adminWalletService.isStarted || false,
+        };
+
+        res.json({
+            success: true,
+            data: {
+                ...basicStatus,
+                monitoringMode: monitoringInfo.mode || 'polling',
+                initialized: monitoringInfo.initialized || false,
+                webSocket: wsStatus,
+                walletCount: wsStatus.walletCount || 0,
+                timestamp: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        const errorMsg = `Failed to get admin wallet monitoring status: ${error.message}`;
+        serviceLogger.error(errorMsg, error);
+        res.status(500).json({
+            success: false,
+            error: errorMsg
         });
     }
 });

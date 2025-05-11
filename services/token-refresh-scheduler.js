@@ -101,17 +101,29 @@ class TokenRefreshScheduler extends BaseService {
       description: metadata.description || 'Advanced token refresh scheduling system',
       layer: metadata.layer || SERVICE_LAYERS.DATA, // Default to DATA layer if not in metadata
       criticalLevel: metadata.criticalLevel || 'medium',
-      checkIntervalMs: 10000, // Health check every 10 seconds
+      checkIntervalMs: 1 * 60 * 1000, // Default 1 minute, used for onPerformOperation health check
       circuitBreaker: { // ADDED/CORRECTED circuit breaker config
         ...(DEFAULT_CIRCUIT_BREAKER_CONFIG), // Start with defaults
         failureThreshold: 7, // Custom override example
         resetTimeoutMs: 45000, // Custom override example
         description: metadata.description || 'Manages token refresh scheduling'
-      }
+      },
+      dependencies: [SERVICE_NAMES.JUPITER_CLIENT /*, SERVICE_NAMES.SOLANA_ENGINE*/],
     });
 
     // Configuration (will be loaded from db/env)
     this.config = {
+      performance: {
+        targetBatchSize: parseInt(config.token_refresh_scheduler_target_batch_size || '50'),
+        maxTokensPerCycle: parseInt(config.token_refresh_scheduler_max_tokens_per_cycle || '200'),
+        delayBetweenBatchesMs: parseInt(config.token_refresh_scheduler_delay_between_batches_ms || '100'), // DEGENS: Adjusted default
+        maxConcurrentBatches: parseInt(config.token_refresh_scheduler_max_concurrent_batches || '1'),
+      },
+      rateLimit: {
+        apiCallsPerWindow: parseInt(config.token_refresh_scheduler_api_calls_per_window || '1'),
+        windowDurationMs: parseInt(config.token_refresh_scheduler_window_duration_ms || '1100'),
+        maxFailedStreak: parseInt(config.token_refresh_scheduler_max_failed_streak || '5'),
+      },
       maxTokensPerBatch: DEFAULT_MAX_TOKENS_PER_BATCH,
       minIntervalSeconds: DEFAULT_MIN_INTERVAL_SECONDS,
       batchDelayMs: DEFAULT_BATCH_DELAY_MS,
@@ -827,42 +839,63 @@ class TokenRefreshScheduler extends BaseService {
    * @param {number} totalBatches - Total number of batches
    */
   async processBatch(batch, batchNum = 1, totalBatches = 1) {
-    this.lastBatchStartTime = Date.now();
-    this.currentBatch = batch;
-    
-    // Set metadata on the batch for Jupiter to use in its logs
-    batch.source_service = 'token_refresh_scheduler';
-    batch.batch_group = `group-${new Date().getHours()}-${Math.floor(Date.now()/300000)}`; // 5-min groups for tracking
-    
-    // Increment API call counter
-    this.apiCallsInCurrentWindow++;
-    this.lifetimeBatches++;
-    
-    // Extract addresses for the batch
-    const tokenAddresses = batch.map(token => token.address);
-    
-    // Fetch prices from Jupiter API - now includes batch numbering internally
-    const priceData = await jupiterClient.getPrices(tokenAddresses);
-    
-    if (!priceData) {
-      throw new Error(`Jupiter API returned empty price data for batch ${batchNum}/${totalBatches}`);
+    const batchStartTime = Date.now();
+    if (!batch || batch.length === 0) {
+      logApi.debug('[TokenRefreshScheduler.processBatch] Empty batch, skipping.');
+      return { processed: 0, successful: 0, failed: 0, durationMs: 0, pricedTokens: new Set() };
+    }
+
+    const tokenAddresses = batch.map(t => t.address);
+    logApi.info(`[TokenRefreshScheduler.processBatch] Processing batch ${batchNum}/${totalBatches} with ${batch.length} tokens. Addresses: ${tokenAddresses.slice(0,5).join(', ')}...`);
+
+    let priceData = null;
+    let fetchSuccess = false;
+    let pricedTokensInBatch = new Set();
+
+    try {
+      // DEGENS: Single attempt to get prices for the entire batch from JupiterClient
+      priceData = await this.jupiterClient.getPrices(tokenAddresses);
+      fetchSuccess = true; // Assume success if no exception
+      logApi.debug(`[TokenRefreshScheduler.processBatch] JupiterClient.getPrices returned for batch ${batchNum}. Found prices for ${Object.keys(priceData || {}).length} tokens.`);
+
+    } catch (error) {
+      logApi.error(`[TokenRefreshScheduler.processBatch] Error fetching prices from JupiterClient for batch ${batchNum}: ${error.message}`, { 
+        error, 
+        batchTokenCount: batch.length,
+        // firstFewTokens: tokenAddresses.slice(0,3) 
+      });
+      // Mark all tokens in this batch as failed for this attempt and requeue them
+      batch.forEach(token => {
+        this.trackFailedToken(token);
+        this.requeueWithBackoff(token); // Requeue with backoff due to API error
+      });
+      this.metricsCollector.recordBatchFailure(batch.length, Date.now() - batchStartTime, error.message);
+      return { processed: batch.length, successful: 0, failed: batch.length, durationMs: Date.now() - batchStartTime, pricedTokens: pricedTokensInBatch };
+    }
+
+    // Update token prices in DB and handle requeuing
+    // DEGENS: This call will now only use the `priceData` from the single batch call.
+    // No internal individual retries will happen in `updateTokenPrices`.
+    const { updatedCount, failedToPriceCount, successfullyPricedTokens } = await this.updateTokenPrices(batch, priceData);
+    pricedTokensInBatch = successfullyPricedTokens;
+
+    const batchDuration = Date.now() - batchStartTime;
+    if (updatedCount > 0 || failedToPriceCount > 0) { // Only record if there was an attempt
+        this.metricsCollector.recordBatchCompletion(updatedCount + failedToPriceCount, batchDuration, updatedCount, failedToPriceCount);
     }
     
-    // Track successful result
-    this.consecutiveFailures = 0;
-    
-    // Process results and update database
-    await this.updateTokenPrices(batch, priceData);
-    
-    // Record completion time for metrics
-    const batchDuration = Date.now() - this.lastBatchStartTime;
-    this.metricsCollector.recordBatchCompletion(batch.length, batchDuration);
-    
-    // Clear current batch reference
-    this.currentBatch = null;
-    
-    // Return the duration for the progress tracker
-    return batchDuration;
+    logApi.info(`[TokenRefreshScheduler.processBatch] Batch ${batchNum}/${totalBatches} completed. Processed: ${batch.length}, Updated in DB: ${updatedCount}, Failed to price: ${failedToPriceCount}. Duration: ${batchDuration}ms`);
+
+    // Update rate limit window
+    this.rateLimit.apiCallsMadeInWindow += Math.ceil(tokenAddresses.length / (this.jupiterClient.prices.batchSize || 90)); // Estimate API calls made by JupiterClient
+
+    return {
+      processed: batch.length,
+      successful: updatedCount,
+      failed: failedToPriceCount,
+      durationMs: batchDuration,
+      pricedTokens: pricedTokensInBatch
+    };
   }
 
   /**
@@ -871,117 +904,90 @@ class TokenRefreshScheduler extends BaseService {
    * @param {Object} priceData - Price data from Jupiter API
    */
   async updateTokenPrices(batch, priceData) {
-    const updatePromises = [];
-    const now = new Date();
+    const startTime = Date.now();
     let updatedCount = 0;
-    
+    let failedToPriceCount = 0;
+    const tokensForRequeue = [];
+    const successfullyPricedTokens = new Set();
+
+    logApi.debug(`[TokenRefreshScheduler.updateTokenPrices] Updating prices for batch of ${batch.length} tokens. Received ${Object.keys(priceData || {}).length} price entries.`);
+
     for (const token of batch) {
-      // Get price from Jupiter data
-      const price = priceData[token.address];
-      
-      if (price) {
-        // Queue database update
-        updatePromises.push(
-          prisma.tokens.update({
+      const currentPriceInfo = priceData ? priceData[token.address] : null;
+
+      if (currentPriceInfo && currentPriceInfo.price) {
+        const oldPrice = token.current_price;
+        const newPrice = parseFloat(currentPriceInfo.price);
+        const priceChanged = oldPrice !== newPrice;
+
+        try {
+          await prisma.tokens.update({
             where: { id: token.id },
-            data: { 
-              last_refresh_success: now,
-              last_refresh_attempt: now
-            }
-          })
-        );
-        
-        // Get current price from database
-        const currentPriceRecord = await prisma.token_prices.findUnique({
-          where: { token_id: token.id },
-          select: { price: true }
-        });
-        
-        // Determine if price has changed
-        const currentPrice = currentPriceRecord?.price;
-        const newPrice = price.price;
-        const priceChanged = !currentPrice || 
-                             currentPrice.toString() !== newPrice.toString();
-        
-        // Update price if it exists
-        if (currentPriceRecord) {
-          updatePromises.push(
-            prisma.token_prices.update({
-              where: { token_id: token.id },
-              data: {
-                price: newPrice,
-                updated_at: now
-              }
-            })
-          );
-        } else {
-          // Create new price record if it doesn't exist
-          updatePromises.push(
-            prisma.token_prices.create({
-              data: {
-                token_id: token.id,
-                price: newPrice,
-                updated_at: now
-              }
-            })
-          );
-        }
-        
-        // If price has changed, update last_price_change and add to history
-        if (priceChanged) {
-          // Update last_price_change timestamp
-          updatePromises.push(
-            prisma.tokens.update({
-              where: { id: token.id },
-              data: { last_price_change: now }
-            })
-          );
+            data: {
+              current_price: newPrice,
+              previous_price: oldPrice,
+              last_price_update_at: new Date(),
+              last_jupiter_response_id: currentPriceInfo.id, // Assuming 'id' is the response/request ID from Jupiter
+              // Potentially update other fields like liquidity, market_cap if available from priceData
+              // liquidity_usd: currentPriceInfo.liquidity, // Example
+              // market_cap_usd: currentPriceInfo.marketCap, // Example
+              last_successful_refresh_at: new Date(),
+              consecutive_failed_refreshes: 0,
+            },
+          });
+
+          // Emit event for successful price update
+          serviceEvents.emit(SERVICE_EVENTS.TOKEN_PRICE_UPDATED, {
+            tokenId: token.id,
+            address: token.address,
+            symbol: token.symbol,
+            newPrice: newPrice,
+            oldPrice: oldPrice,
+            source: 'jupiter',
+            timestamp: new Date(),
+          });
           
-          // Add entry to price history
-          updatePromises.push(
-            prisma.token_price_history.create({
-              data: {
-                token_id: token.id,
-                price: newPrice,
-                source: 'jupiter_api',
-                timestamp: now
-              }
-            })
-          );
+          this.metricsCollector.recordTokenPriceUpdate(token.address, newPrice, oldPrice);
+          successfullyPricedTokens.add(token.address);
+          updatedCount++;
+          logApi.trace(`[TokenRefreshScheduler] Successfully updated price for ${token.symbol} (${token.address}) to ${newPrice}`);
           
-          // Requeue with updated priority
-          this.requeueWithUpdatedPriority(token, true);
-        } else {
-          // Requeue with same priority
-          this.requeueWithUpdatedPriority(token, false);
+          // Decide if token needs immediate requeue based on price change or priority
+          tokensForRequeue.push({ token, priceChanged });
+
+        } catch (dbError) {
+          logApi.error(`[TokenRefreshScheduler] DB error updating price for ${token.symbol} (${token.address}): ${dbError.message}`, { token_id: token.id, error: dbError });
+          // Even if DB update fails, we got a price, so don't treat as a failed fetch from Jupiter's perspective for this logic
+          // but we should track the failure for this token.
+          this.trackFailedToken(token); // Tracks generic failure
+          failedToPriceCount++;
         }
-        
-        updatedCount++;
       } else {
-        // Price not found in response
-        updatePromises.push(
-          prisma.tokens.update({
-            where: { id: token.id },
-            data: { last_refresh_attempt: now }
-          })
-        );
-        
-        // Track failed token and implement backoff
-        this.trackFailedToken(token);
-        
-        // Requeue with backoff
-        this.requeueWithBackoff(token);
+        // DEGENS: Token not found in priceData or price is null/undefined.
+        // This is where the old retry logic was. Now we just log it.
+        logApi.warn(`[TokenRefreshScheduler] Price not found in batch response for ${token.symbol} (${token.address}). Will attempt in next cycle.`, { 
+          token_id: token.id,
+          token_address: token.address
+        });
+        this.trackFailedToken(token); // Mark as failed for this cycle
+        failedToPriceCount++;
       }
-      
-      // Update metrics
-      this.lifetimeUpdates += updatedCount;
+    }
+
+    // Requeue tokens based on priority and whether their price changed
+    for (const { token, priceChanged } of tokensForRequeue) {
+      this.requeueWithUpdatedPriority(token, priceChanged);
     }
     
-    // Execute all database updates
-    await Promise.all(updatePromises);
-    
-    // Log summary
-    logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Updated ${updatedCount}/${batch.length} token prices`);
+    // Log summary of this update operation
+    const duration = Date.now() - startTime;
+    logApi.debug(`[TokenRefreshScheduler.updateTokenPrices] Finished processing batch. Updated: ${updatedCount}, Not Priced: ${failedToPriceCount}. Duration: ${duration}ms`);
+
+    return {
+      updatedCount,
+      failedToPriceCount,
+      successfullyPricedTokens
+    };
   }
 
   /**

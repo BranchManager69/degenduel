@@ -180,3 +180,12 @@ temp/
 temp/**
 
 *.json
+_CLIENT_LOGS.txt
+_NGINX_DEV.txt
+_FRONTEND_DIAGNOSIS.md
+TOKEN_PRICE_WEBSOCKET_IMPLEMENTATION.md
+_NGINX_PRIVY.txt
+_NGINX_PROD.txt
+_SERVER_LOGS.txt
+=
+tests/test-prisma-fields.js

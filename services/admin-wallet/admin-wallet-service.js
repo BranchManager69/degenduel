@@ -37,15 +37,20 @@ import walletCrypto from './modules/wallet-crypto.js';
 import walletTransactions from './modules/wallet-transactions.js';
 import batchOperations from './modules/batch-operations.js';
 import walletBalance from './modules/wallet-balance.js';
+import walletBalanceWs from './modules/wallet-balance-ws.js'; // WebSocket-based wallet balance monitoring
 
 // Config
 import { config } from '../../config/config.js';
+
+// Import the necessary signer creation functions
+import { createKeyPairSignerFromBytes } from '@solana/signers';
+import { createKeypairFromPrivateKey as createSignerFromLegacyKey } from './utils/solana-compat.js'; // It's in the same service's utils
 
 // Admin Wallet Config
 const ADMIN_WALLET_CONFIG = {
     name: SERVICE_NAMES.ADMIN_WALLET,
     description: getServiceMetadata(SERVICE_NAMES.ADMIN_WALLET).description,
-    checkIntervalMs: 60 * 1000, // Check every minute
+    checkIntervalMs: 5 * 60 * 1000, // Check every 5 minutes (reduced from 1 minute to avoid rate limits)
     maxRetries: 3,
     retryDelayMs: 5000,
     circuitBreaker: {
@@ -75,7 +80,7 @@ const ADMIN_WALLET_CONFIG = {
         // Preferred RPC endpoints for critical operations
         preferredEndpoints: {
             transfers: 'endpoint-1', // Can be configured to use specific endpoint
-            balanceChecks: null      // null means use rotation strategy
+            balanceChecks: config.rpc_urls.mainnet_http // CORRECTED: Using 'config' directly
         }
     }
 };
@@ -206,7 +211,42 @@ class AdminWalletService extends BaseService {
             this.walletStats.wallets.total = totalWallets;
             this.walletStats.wallets.active = activeWallets;
 
-            // Initialize stats
+            // Initialize WebSocket balance monitoring
+            try {
+                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.CYAN}Initializing WebSocket-based wallet balance monitoring${fancyColors.RESET}`);
+                const wsInitialized = await walletBalanceWs.initializeWalletBalanceWebSocket(solanaEngine, this.config);
+                if (wsInitialized) {
+                    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.GREEN}WebSocket monitoring initialized successfully${fancyColors.RESET}`);
+                    this.walletStats.monitoring = {
+                        mode: 'websocket',
+                        status: 'active',
+                        initialized: true
+                    };
+                } else {
+                    logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.YELLOW}WebSocket monitoring failed to initialize, will fall back to polling${fancyColors.RESET}`);
+                    this.walletStats.monitoring = {
+                        mode: 'polling',
+                        status: 'active',
+                        initialized: false
+                    };
+                }
+            } catch (error) {
+                logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.RED}Failed to initialize WebSocket monitoring: ${error.message}${fancyColors.RESET}`);
+                this.walletStats.monitoring = {
+                    mode: 'polling',
+                    status: 'active',
+                    initialized: false,
+                    error: error.message
+                };
+            }
+
+            // Initialize stats, preserving the monitoring configuration
+            const monitoring = this.walletStats.monitoring || {
+                mode: 'polling',
+                status: 'active',
+                initialized: false
+            };
+
             this.walletStats = {
                 operations: {
                     total: 0,
@@ -243,7 +283,9 @@ class AdminWalletService extends BaseService {
                         status: 'available',
                         lastCheck: new Date()
                     }
-                }
+                },
+                // Preserve the monitoring configuration
+                monitoring
             };
             
             // Get connection status from SolanaEngine for reporting
@@ -288,7 +330,7 @@ class AdminWalletService extends BaseService {
     // Encrypt a wallet
     encryptWallet(privateKey) {
         // Delegate to crypto module
-        return walletCrypto.encryptWallet(privateKey, this.config, process.env.WALLET_ENCRYPTION_KEY);
+        return walletCrypto.encryptV2SeedBuffer(privateKey, this.config, process.env.WALLET_ENCRYPTION_KEY);
     }
 
     // Decrypt a wallet
@@ -300,36 +342,50 @@ class AdminWalletService extends BaseService {
     /* Transfer operations */
 
     // Transfer SOL (single wallet)
-    async transferSOL(fromWalletEncrypted, toAddress, amount, description = '', adminId = null, context = {}) {
+    async transferSOL(fromWalletEncryptedData, toAddress, amount, description = '', adminId = null, context = {}) {
         const startTime = Date.now();
         
         try {
-            // Skip if already being processed
-            const transferKey = `${fromWalletEncrypted}:${toAddress}:${amount}`;
+            const transferKey = `${fromWalletEncryptedData}:${toAddress}:${amount}`;
             if (this.activeTransfers.has(transferKey)) {
                 throw ServiceError.operation('Transfer already in progress');
             }
-
-            // Add to active transfers
             this.activeTransfers.set(transferKey, startTime);
-
-            // Set timeout
             const timeout = setTimeout(() => {
                 this.activeTransfers.delete(transferKey);
                 this.walletStats.transfers.failed++;
             }, this.config.wallet.operations.transferTimeoutMs);
-            
             this.transferTimeouts.add(timeout);
 
-            // Perform transfer using our modular implementation
-            const result = await walletTransactions.transferSOL(
-                fromWalletEncrypted, 
+            // 1. Decrypt
+            const decryptedKeyOrSeed = this.decryptWallet(fromWalletEncryptedData);
+
+            // 2. Create Signer
+            let signer;
+            if (decryptedKeyOrSeed.length === 32) {
+                this.logApi.debug(`[AdminWalletService] transferSOL: Decrypted a 32-byte seed. Creating signer with createKeyPairSignerFromBytes.`);
+                signer = await createKeyPairSignerFromBytes(decryptedKeyOrSeed);
+            } else if (decryptedKeyOrSeed.length === 64) {
+                this.logApi.debug(`[AdminWalletService] transferSOL: Decrypted a 64-byte legacy key. Creating signer with createSignerFromLegacyKey.`);
+                signer = await createSignerFromLegacyKey(decryptedKeyOrSeed);
+            } else {
+                const errMsg = `transferSOL: Decrypted key/seed has an unexpected length: ${decryptedKeyOrSeed.length}. Expected 32 or 64 bytes.`;
+                this.logApi.error(`[AdminWalletService] ${errMsg}`);
+                throw ServiceError.operation(errMsg, { type: 'KEY_MATERIAL_LENGTH_ERROR' });
+            }
+
+            if (!signer) {
+                throw ServiceError.operation(`transferSOL: Failed to create a signer.`);
+            }
+
+            // 3. Perform transfer using the v2 signer
+            const result = await walletTransactions.transferSOLWithSigner(
+                signer, 
                 toAddress, 
                 amount, 
                 description, 
-                solanaEngine, 
-                this.config,
-                process.env.WALLET_ENCRYPTION_KEY
+                solanaEngine,
+                this.config
             );
             
             // Update stats
@@ -345,7 +401,7 @@ class AdminWalletService extends BaseService {
                     adminId,
                     'ADMIN_WALLET_TRANSFER',
                     {
-                        from: fromWalletEncrypted,
+                        from: fromWalletEncryptedData,
                         to: toAddress,
                         amount,
                         type: 'sol',
@@ -363,42 +419,59 @@ class AdminWalletService extends BaseService {
             return result;
         } catch (error) {
             this.walletStats.transfers.failed++;
+            if (!(error instanceof ServiceError)) {
+                this.logApi.error(`[AdminWalletService] Unexpected error in transferSOL: ${error.message}`, { stack: error.stack, toAddress, amount });
+            }
             throw error;
         }
     }
 
     // Transfer tokens (single wallet)
-    async transferToken(fromWalletEncrypted, toAddress, mint, amount, description = '', adminId = null, context = {}) {
+    async transferToken(fromWalletEncryptedData, toAddress, mint, amount, description = '', adminId = null, context = {}) {
         const startTime = Date.now();
         
         try {
-            // Skip if already being processed
-            const transferKey = `${fromWalletEncrypted}:${toAddress}:${mint}:${amount}`;
+            const transferKey = `${fromWalletEncryptedData}:${toAddress}:${mint}:${amount}`;
             if (this.activeTransfers.has(transferKey)) {
                 throw ServiceError.operation('Transfer already in progress');
             }
-
-            // Add to active transfers
             this.activeTransfers.set(transferKey, startTime);
-
-            // Set timeout
             const timeout = setTimeout(() => {
                 this.activeTransfers.delete(transferKey);
                 this.walletStats.transfers.failed++;
             }, this.config.wallet.operations.transferTimeoutMs);
-            
             this.transferTimeouts.add(timeout);
 
-            // Perform transfer using our modular implementation
-            const result = await walletTransactions.transferToken(
-                fromWalletEncrypted, 
+            // 1. Decrypt
+            const decryptedKeyOrSeed = this.decryptWallet(fromWalletEncryptedData);
+
+            // 2. Create Signer
+            let signer;
+            if (decryptedKeyOrSeed.length === 32) {
+                this.logApi.debug(`[AdminWalletService] transferToken: Decrypted a 32-byte seed. Creating signer with createKeyPairSignerFromBytes.`);
+                signer = await createKeyPairSignerFromBytes(decryptedKeyOrSeed);
+            } else if (decryptedKeyOrSeed.length === 64) {
+                this.logApi.debug(`[AdminWalletService] transferToken: Decrypted a 64-byte legacy key. Creating signer with createSignerFromLegacyKey.`);
+                signer = await createSignerFromLegacyKey(decryptedKeyOrSeed);
+            } else {
+                const errMsg = `transferToken: Decrypted key/seed has an unexpected length: ${decryptedKeyOrSeed.length}. Expected 32 or 64 bytes.`;
+                this.logApi.error(`[AdminWalletService] ${errMsg}`);
+                throw ServiceError.operation(errMsg, { type: 'KEY_MATERIAL_LENGTH_ERROR' });
+            }
+
+            if (!signer) {
+                throw ServiceError.operation(`transferToken: Failed to create a signer.`);
+            }
+            
+            // 3. Perform transfer using the v2 signer
+            const result = await walletTransactions.transferTokenWithSigner(
+                signer, 
                 toAddress, 
                 mint, 
                 amount, 
                 description, 
-                solanaEngine, 
-                this.config,
-                process.env.WALLET_ENCRYPTION_KEY
+                solanaEngine,
+                this.config
             );
             
             // Update stats
@@ -414,7 +487,7 @@ class AdminWalletService extends BaseService {
                     adminId,
                     'ADMIN_WALLET_TRANSFER',
                     {
-                        from: fromWalletEncrypted,
+                        from: fromWalletEncryptedData,
                         to: toAddress,
                         mint,
                         amount,
@@ -433,34 +506,63 @@ class AdminWalletService extends BaseService {
             return result;
         } catch (error) {
             this.walletStats.transfers.failed++;
+            if (!(error instanceof ServiceError)) {
+                this.logApi.error(`[AdminWalletService] Unexpected error in transferToken: ${error.message}`, { stack: error.stack, toAddress, mint, amount });
+            }
             throw error;
         }
     }
 
     // Transfer SOL (batch)
-    async massTransferSOL(fromWalletEncrypted, transfers) {
-        // Delegate to batch module
-        return batchOperations.massTransferSOL(
-            fromWalletEncrypted,
+    async massTransferSOL(fromWalletEncryptedData, transfers) {
+        // 1. Decrypt
+        const decryptedKeyOrSeed = this.decryptWallet(fromWalletEncryptedData);
+
+        // 2. Create Signer
+        let signer;
+        if (decryptedKeyOrSeed.length === 32) {
+            signer = await createKeyPairSignerFromBytes(decryptedKeyOrSeed);
+        } else if (decryptedKeyOrSeed.length === 64) {
+            signer = await createSignerFromLegacyKey(decryptedKeyOrSeed);
+        } else {
+            throw ServiceError.operation(`massTransferSOL: Decrypted key/seed has an unexpected length: ${decryptedKeyOrSeed.length}.`);
+        }
+        if (!signer) throw ServiceError.operation(`massTransferSOL: Failed to create a signer.`);
+
+        // Delegate to batch module, now passing the signer
+        return batchOperations.massTransferSOLWithSigner(
+            signer,
             transfers, 
             solanaEngine, 
             this.config, 
-            this.walletStats,
-            process.env.WALLET_ENCRYPTION_KEY
+            this.walletStats
         );
     }
 
     // Transfer tokens (batch)
-    async massTransferTokens(fromWalletEncrypted, mint, transfers) {
-        // Delegate to batch module
-        return batchOperations.massTransferTokens(
-            fromWalletEncrypted, 
+    async massTransferTokens(fromWalletEncryptedData, mint, transfers) {
+        // 1. Decrypt
+        const decryptedKeyOrSeed = this.decryptWallet(fromWalletEncryptedData);
+
+        // 2. Create Signer
+        let signer;
+        if (decryptedKeyOrSeed.length === 32) {
+            signer = await createKeyPairSignerFromBytes(decryptedKeyOrSeed);
+        } else if (decryptedKeyOrSeed.length === 64) {
+            signer = await createSignerFromLegacyKey(decryptedKeyOrSeed);
+        } else {
+            throw ServiceError.operation(`massTransferTokens: Decrypted key/seed has an unexpected length: ${decryptedKeyOrSeed.length}.`);
+        }
+        if (!signer) throw ServiceError.operation(`massTransferTokens: Failed to create a signer.`);
+        
+        // Delegate to batch module, now passing the signer
+        return batchOperations.massTransferTokensWithSigner(
+            signer, 
             mint, 
             transfers, 
             solanaEngine, 
             this.config, 
-            this.walletStats,
-            process.env.WALLET_ENCRYPTION_KEY
+            this.walletStats
         );
     }
 
@@ -492,16 +594,27 @@ class AdminWalletService extends BaseService {
     async stop() {
         try {
             await super.stop();
-            
+
             // Clear all timeouts
             for (const timeout of this.transferTimeouts) {
                 clearTimeout(timeout);
             }
             this.transferTimeouts.clear();
-            
+
             // Clear active transfers
             this.activeTransfers.clear();
-            
+
+            // Stop WebSocket monitoring if active
+            if (this.walletStats.monitoring?.mode === 'websocket' && this.walletStats.monitoring?.initialized) {
+                try {
+                    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.CYAN}Stopping WebSocket wallet balance monitoring${fancyColors.RESET}`);
+                    const stopped = walletBalanceWs.stopWalletBalanceWebSocket();
+                    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.GREEN}WebSocket monitoring ${stopped ? 'stopped' : 'failed to stop'}${fancyColors.RESET}`);
+                } catch (wsError) {
+                    logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.RED}Error stopping WebSocket monitoring: ${wsError.message}${fancyColors.RESET}`);
+                }
+            }
+
             // Final stats update
             await serviceManager.markServiceStopped(
                 this.name,
@@ -511,7 +624,7 @@ class AdminWalletService extends BaseService {
                     walletStats: this.walletStats
                 }
             );
-            
+
             logApi.info('Admin Wallet Service stopped successfully');
         } catch (error) {
             logApi.error('Error stopping Admin Wallet Service:', error);
@@ -575,14 +688,77 @@ class AdminWalletService extends BaseService {
                 prisma.managed_wallets.count(),
                 prisma.managed_wallets.count({ where: { status: 'active' } })
             ]);
-            
+
             // Update stats
             this.walletStats.wallets.total = totalWallets;
             this.walletStats.wallets.active = activeWallets;
-            
-            // Update all wallet balances
-            const balanceUpdateResults = await this.updateAllWalletBalances();
-            
+
+            // Check if WebSocket monitoring is active
+            let balanceUpdateResults = { skipped: false };
+
+            if (this.walletStats.monitoring?.mode === 'websocket' && this.walletStats.monitoring?.initialized) {
+                // Get WebSocket status
+                const wsStatus = walletBalanceWs.getWebSocketStatus();
+
+                // Update monitoring stats regardless of connection state
+                this.walletStats.monitoring.lastCheck = new Date().toISOString();
+                this.walletStats.monitoring.connectionState = wsStatus.connectionState;
+                this.walletStats.monitoring.walletCount = wsStatus.walletCount || 0;
+                this.walletStats.monitoring.subscriptionCount = wsStatus.subscriptionCount || 0;
+                this.walletStats.monitoring.readyState = wsStatus.readyState;
+                this.walletStats.monitoring.readyStateText = wsStatus.readyStateText;
+
+                if (wsStatus.connectionState === 'connected') {
+                    // WebSocket is working fine, skip polling
+                    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.GREEN}Using WebSocket for wallet monitoring (${wsStatus.walletCount} wallets). Skipping RPC balance polling.${fancyColors.RESET}`);
+
+                    // Set status to active
+                    this.walletStats.monitoring.status = 'active';
+                    this.walletStats.monitoring.lastSuccessfulConnection = new Date().toISOString();
+
+                    balanceUpdateResults = {
+                        duration: 0,
+                        skipped: true,
+                        mode: 'websocket',
+                        total: wsStatus.walletCount,
+                        updated: 0,
+                        failed: 0,
+                        websocket_status: wsStatus
+                    };
+
+                    // Log our connectivity success to Logtail
+                    logApi.debug(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.GREEN}WebSocket monitoring active with ${wsStatus.walletCount} wallets and ${wsStatus.subscriptionCount} subscriptions. Ready state: ${wsStatus.readyStateText}${fancyColors.RESET}`);
+
+                } else {
+                    // WebSocket is not connected, log this and continue with polling
+                    logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.YELLOW}WebSocket monitoring not connected (${wsStatus.connectionState}), falling back to balance polling${fancyColors.RESET}`);
+
+                    // Update connection status
+                    this.walletStats.monitoring.status = 'reconnecting';
+                    this.walletStats.monitoring.lastConnectionAttempt = new Date().toISOString();
+                    this.walletStats.monitoring.reconnectAttempts = wsStatus.reconnectAttempts || 0;
+
+                    // Try to refresh WebSocket connection
+                    try {
+                        await walletBalanceWs.refreshMonitoredWallets();
+                    } catch (error) {
+                        logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.RED}Failed to refresh WebSocket wallets: ${error.message}${fancyColors.RESET}`);
+                        this.walletStats.monitoring.lastError = error.message;
+                        this.walletStats.monitoring.lastErrorTime = new Date().toISOString();
+                    }
+
+                    // Fall back to polling
+                    balanceUpdateResults = await this.updateAllWalletBalances();
+                    balanceUpdateResults.mode = 'polling_fallback';
+                    balanceUpdateResults.websocket_status = wsStatus;
+                }
+            } else {
+                // WebSocket monitoring not active, use polling
+                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.CYAN}Using RPC polling for wallet balance updates${fancyColors.RESET}`);
+                balanceUpdateResults = await this.updateAllWalletBalances();
+                balanceUpdateResults.mode = 'polling';
+            }
+
             return {
                 duration: Date.now() - startTime,
                 wallets: {
@@ -621,13 +797,36 @@ class AdminWalletService extends BaseService {
             solanaStatus.error = error.message;
         }
 
+        // Get WebSocket monitoring status if active
+        let wsStatus = { active: false };
+        if (this.walletStats.monitoring?.mode === 'websocket' && this.walletStats.monitoring?.initialized) {
+            try {
+                wsStatus = {
+                    active: true,
+                    ...walletBalanceWs.getWebSocketStatus()
+                };
+            } catch (error) {
+                wsStatus = {
+                    active: false,
+                    error: error.message
+                };
+            }
+        }
+
+        // Log the full status information during initialization or when debugging is needed
+        logApi.debug(`${fancyColors.CYAN}[${this.name}]${fancyColors.RESET} Service status report generated. WebSocket monitor status: ${wsStatus.active ? 'active' : 'inactive'}, Wallets monitored: ${wsStatus.walletCount || 0}`);
+
         return {
             ...baseStatus,
             metrics: {
                 ...this.stats,
                 walletStats: this.walletStats,
                 serviceStartTime: this.stats.history.lastStarted,
-                solanaEngine: solanaStatus
+                solanaEngine: solanaStatus,
+                walletMonitoring: {
+                    ...this.walletStats.monitoring,
+                    wsStatus
+                }
             }
         };
     }

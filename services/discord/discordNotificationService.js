@@ -14,14 +14,15 @@
  */
 
 /**
- * Discord Notification Service
+ * Discord Notification Service (webhooks)
+ * 
  * @description This service is responsible for sending notifications to Discord.
  * It is used to send notifications to the Discord server for various events.
  * 
  * @author BranchManager69
- * @version 1.9.0
+ * @version 2.1.0
  * @created 2025-04-27
- * @updated 2025-05-02
+ * @updated 2025-05-10
  */
 
 // Service Suite
