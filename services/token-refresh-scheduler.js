@@ -194,6 +194,11 @@ class TokenRefreshScheduler extends BaseService {
     // Log to confirm they are defined
     logApi.debug(`${formatLog.tag()} Constructor: jupiterClient type: ${typeof this.jupiterClient}, heliusClient type: ${typeof this.heliusClient}, dexScreenerCollector type: ${typeof this.dexScreenerCollector}`);
     // -- CURSOR AI MODIFICATION END --
+
+    // Bind methods to ensure correct 'this' context
+    this.processBatch = this.processBatch.bind(this);
+    this.checkRateLimitWindow = this.checkRateLimitWindow.bind(this);
+    this.runSchedulerCycle = this.runSchedulerCycle.bind(this); // Also good to bind if used in setInterval
   }
 
   /**
@@ -882,13 +887,26 @@ class TokenRefreshScheduler extends BaseService {
    */
   async processBatch(batch, batchNum = 1, totalBatches = 1) {
     const batchStartTime = Date.now();
+    this.checkRateLimitWindow(); // Ensure rate limit window is current
+
+    // Defensive check for apiCallsInCurrentWindow
+    if (typeof this.apiCallsInCurrentWindow !== 'number') {
+      logApi.warn(`[TokenRefreshScheduler.processBatch] apiCallsInCurrentWindow was not a number (${typeof this.apiCallsInCurrentWindow}). Initializing to 0.`);
+      this.apiCallsInCurrentWindow = 0;
+    }
+
     if (!batch || batch.length === 0) {
       logApi.debug('[TokenRefreshScheduler.processBatch] Empty batch, skipping.');
       return { processed: 0, successful: 0, failed: 0, durationMs: 0, pricedTokens: new Set() };
     }
 
     const tokenAddresses = batch.map(t => t.address);
-    logApi.info(`[TokenRefreshScheduler.processBatch] Processing batch ${batchNum}/${totalBatches} with ${batch.length} tokens. Addresses: ${tokenAddresses.slice(0,5).join(', ')}...`);
+    // Reduce verbosity for small batches (typically test refreshes)
+    if (batch.length <= 5) {
+      logApi.debug(`[TokenRefreshScheduler.processBatch] Processing batch ${batchNum}/${totalBatches} with ${batch.length} tokens. Addresses: ${tokenAddresses.slice(0,5).join(', ')}...`);
+    } else {
+      logApi.info(`[TokenRefreshScheduler.processBatch] Processing batch ${batchNum}/${totalBatches} with ${batch.length} tokens. Addresses: ${tokenAddresses.slice(0,5).join(', ')}...`);
+    }
 
     let priceData = null;
     let fetchSuccess = false;
@@ -931,10 +949,15 @@ class TokenRefreshScheduler extends BaseService {
         this.metricsCollector.recordBatchCompletion(updatedCount + failedToPriceCount, batchDuration, updatedCount, failedToPriceCount);
     }
     
-    logApi.info(`[TokenRefreshScheduler.processBatch] Batch ${batchNum}/${totalBatches} completed. Processed: ${batch.length}, Updated in DB: ${updatedCount}, Failed to price: ${failedToPriceCount}. Duration: ${batchDuration}ms`);
+    // Reduce verbosity for small batches
+    if (batch.length <= 5) {
+      logApi.debug(`[TokenRefreshScheduler.processBatch] Batch ${batchNum}/${totalBatches} completed. Processed: ${batch.length}, Updated in DB: ${updatedCount}, Failed to price: ${failedToPriceCount}. Duration: ${batchDuration}ms`);
+    } else {
+      logApi.info(`[TokenRefreshScheduler.processBatch] Batch ${batchNum}/${totalBatches} completed. Processed: ${batch.length}, Updated in DB: ${updatedCount}, Failed to price: ${failedToPriceCount}. Duration: ${batchDuration}ms`);
+    }
 
     // Update rate limit window
-    this.rateLimit.apiCallsMadeInWindow += Math.ceil(tokenAddresses.length / (this.jupiterClient.prices.batchSize || 90)); // Estimate API calls made by JupiterClient
+    this.apiCallsInCurrentWindow += Math.ceil(tokenAddresses.length / (this.jupiterClient.prices.batchSize || 90)); // Estimate API calls made by JupiterClient
 
     return {
       processed: batch.length,
@@ -1001,8 +1024,8 @@ class TokenRefreshScheduler extends BaseService {
         });
 
         const tokenTableUpdateData = {
-          last_successful_refresh_at: new Date(),
-          consecutive_failed_refreshes: 0,
+          last_refresh_success: new Date(),
+          // consecutive_failed_refreshes: 0, // This field does not exist in the schema
           // last_jupiter_response_id: currentPriceInfo.id, // Uncomment if you have this field on tokens table
         };
         if (priceChanged) {
@@ -1028,7 +1051,7 @@ class TokenRefreshScheduler extends BaseService {
         }
         successfullyPricedTokens.add(token.address);
         updatedCount++;
-        logApi.trace(`[TokenRefreshScheduler] Successfully prepared price update for ${token.symbol || token.address} to ${newPrice}`);
+        logApi.debug(`[TokenRefreshScheduler] Successfully prepared price update for ${token.symbol || token.address} to ${newPrice}`);
         
         tokensForRequeue.push({ token, priceChanged });
 

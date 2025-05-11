@@ -169,21 +169,12 @@ class SolanaEngineService extends BaseService {
           console.log('  Kite httpUrl:', httpUrl);
           console.log('  Kite wsUrl  :', wsUrl);
           
-          // Fix: Only initialize Kite with both URLs defined, use appropriate object structure
-          if (wsUrl) {
-            if (wsUrl === 'wss://api.mainnet-beta.solana.com') { 
-              logApi.warn(`${formatLog.tag()} ${formatLog.warning('Using default Helius Kite WebSocket URL:')} ${wsUrl}`); 
-            }
-            // Initialize Kite connection with both URLs
-            this.kiteConnection = connectKite({
-              httpUrl: httpUrl,
-              webSocketUrl: wsUrl,
-              connectionTimeoutMs: 10000
-            });
-            logApi.info(`${formatLog.tag()} ${formatLog.success('Helius Kite client initialized successfully with RPC:')} ${kiteRpcUrl} and WS: ${wsUrl}`);
-          } else {
-            logApi.warn(`${formatLog.tag()} ${formatLog.warning('No WebSocket URL found for Helius Kite initialization. Continuing without Kite features.')}`);
-          }
+          // Initialize Kite connection with both URLs
+          // Based on index.d.ts, connect takes positional arguments: (httpUrl, wsUrl)
+          this.kiteConnection = connectKite(httpUrl, wsUrl);
+          // TODO: Check how to set connectionTimeoutMs if needed, not in connect() signature.
+
+          logApi.info(`${formatLog.tag()} ${formatLog.success('Helius Kite client initialized successfully with RPC:')} ${kiteRpcUrl} and WS: ${wsUrl}`);
         } else {
           logApi.error(`${formatLog.tag()} ${formatLog.error('No RPC URL found for Helius Kite initialization.')}`);
           // this.kiteConnection will remain null

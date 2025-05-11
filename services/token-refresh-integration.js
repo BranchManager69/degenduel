@@ -454,7 +454,7 @@ class TokenRefreshService extends BaseService {
             // Process the batch through the scheduler
             try {
               await tokenRefreshScheduler.processBatch(batch);
-              logApi.info(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Test refresh completed successfully`);
+              logApi.debug(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Test refresh completed successfully`);
             } catch (batchError) {
               logApi.warn(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Test refresh failed, but service is still operational:`, batchError);
               // Don't throw here - the service can still operate even if test refresh fails

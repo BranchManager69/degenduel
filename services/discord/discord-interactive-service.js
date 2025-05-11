@@ -127,9 +127,12 @@ class DiscordInteractiveService extends BaseService {
     // Listen for token price movements
     serviceEvents.on('token:pump', this.handleTokenPump.bind(this));
 
-    // --- Listen for Privilege Changes --- 
-    serviceEvents.on(serviceEvents.PRIVILEGE_GRANTED, this.onPrivilegeGranted.bind(this));
-    serviceEvents.on(serviceEvents.PRIVILEGE_REVOKED, this.onPrivilegeRevoked.bind(this));
+    // --- Listen for Privilege Changes ---
+    serviceEvents.on('privilege:granted', this.onPrivilegeGranted.bind(this));
+    serviceEvents.on('privilege:revoked', this.onPrivilegeRevoked.bind(this));
+
+    // Debug log to confirm subscription
+    logApi.info(`[Discord] Set up event listeners including privilege:granted and privilege:revoked events`);
   }
 
   setupInteractionHandlers() {
@@ -1021,8 +1024,13 @@ class DiscordInteractiveService extends BaseService {
 
   // --- Privilege Event Handlers ---
   async onPrivilegeGranted(payload) {
+    if (!payload) {
+      logApi.error('[Discord] Received PRIVILEGE_GRANTED event with empty payload');
+      return;
+    }
+
     const { walletAddress, privilegeKey, username } = payload;
-    logApi.info(`[Discord] Received PRIVILEGE_GRANTED event for ${walletAddress} (Twitter: ${username}, Key: ${privilegeKey})`);
+    logApi.info(`[Discord] Received PRIVILEGE_GRANTED event for ${walletAddress || 'unknown'} (Twitter: ${username || 'unknown'}, Key: ${privilegeKey || 'unknown'})`);
 
     // We only care about the JUP Like role for now
     if (privilegeKey !== 'JUP_LIKE_DISCORD_ROLE') {
@@ -1123,8 +1131,13 @@ class DiscordInteractiveService extends BaseService {
   }
 
   async onPrivilegeRevoked(payload) {
+      if (!payload) {
+        logApi.error('[Discord] Received PRIVILEGE_REVOKED event with empty payload');
+        return;
+      }
+
       const { walletAddress, privilegeKey, username } = payload;
-      logApi.info(`[Discord] Received PRIVILEGE_REVOKED event for ${walletAddress} (Twitter: ${username}, Key: ${privilegeKey})`);
+      logApi.info(`[Discord] Received PRIVILEGE_REVOKED event for ${walletAddress || 'unknown'} (Twitter: ${username || 'unknown'}, Key: ${privilegeKey || 'unknown'})`);
 
       // We only care about the JUP Like role for now
       if (privilegeKey !== 'JUP_LIKE_DISCORD_ROLE') {
@@ -1191,6 +1204,23 @@ class DiscordInteractiveService extends BaseService {
           }
       } else {
           logApi.warn(`[Discord] Admin Logs webhook not configured, cannot send revocation log.`);
+      }
+  }
+
+  // Helper to send to admin log webhook for privilege grants
+  async sendGrantToAdminLog(message) {
+      const adminWebhook = discordNotificationService.webhooks.adminLogs;
+      if (adminWebhook) {
+          try {
+              // Use success embed for privilege grants
+              const embed = adminWebhook.createSuccessEmbed('Privilege Granted: JUP Like', message);
+              await adminWebhook.sendEmbed(embed);
+              logApi.info(`[Discord] Sent grant details to admin log channel.`);
+          } catch (webhookError) {
+              logApi.error(`[Discord] Failed to send grant details to admin log webhook:`, webhookError);
+          }
+      } else {
+          logApi.warn(`[Discord] Admin Logs webhook not configured, cannot send grant log.`);
       }
   }
 

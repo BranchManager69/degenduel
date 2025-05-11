@@ -174,7 +174,14 @@ export function configureMiddleware(app) {
 
   // CORS middleware with WebSocket bypass and special handling for GPU server endpoints
   app.use((req, res, next) => {
+    // Skip for WebSocket requests
     if (req.WEBSOCKET_REQUEST === true) {
+      return next();
+    }
+
+    // Skip for blinks API endpoints (handled by NGINX)
+    if (req.path.startsWith('/api/blinks/')) {
+      logApi.info(`[CORS_DEBUG] Skipping CORS handling for blinks API: ${req.path}, Method: ${req.method}`);
       return next();
     }
 
@@ -197,7 +204,7 @@ export function configureMiddleware(app) {
       origin = `${protocol}://${req.headers.host}`;
       derivedFrom = 'req.headers.host';
     }
-    
+
     logApi.info(`[CORS_DEBUG] Evaluating origin: '${origin}', Derived from: '${derivedFrom}', Path: ${req.path}, Method: ${req.method}`);
 
     const isOriginAllowed = (originToCheck) => {
@@ -206,9 +213,9 @@ export function configureMiddleware(app) {
         return true;
       }
       if (originToCheck && (
-          originToCheck.startsWith('http://localhost:') || 
+          originToCheck.startsWith('http://localhost:') ||
           originToCheck.startsWith('http://127.0.0.1:') ||
-          originToCheck.startsWith('https://localhost:') || 
+          originToCheck.startsWith('https://localhost:') ||
           originToCheck.startsWith('https://127.0.0.1:')
       )) {
         logApi.info(`[CORS_DEBUG] Origin '${originToCheck}' IS a localhost variant.`);
@@ -221,9 +228,9 @@ export function configureMiddleware(app) {
     if (origin && isOriginAllowed(origin)) {
       const existingAcao = res.getHeader('Access-Control-Allow-Origin');
       logApi.info(`[CORS_DIAGNOSTIC] Before setHeader, current ACAO: ${existingAcao}, Origin to set: '${origin}'`);
-      
+
       res.setHeader('Access-Control-Allow-Origin', origin);
-      
+
       const newAcao = res.getHeader('Access-Control-Allow-Origin');
       logApi.info(`[CORS_DIAGNOSTIC] After setHeader, new ACAO: ${newAcao}`);
       res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');

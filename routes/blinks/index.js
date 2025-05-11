@@ -87,23 +87,24 @@ async function buildActionTransaction(feePayer, instructions) {
   }
 }
 
-/* CORS */
+/* Protocol Headers */
 
-// CORS configuration for Actions protocol
-const setupActionsCors = (req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
+// Add Dialect Actions protocol headers
+const setupActionProtocolHeaders = (req, res, next) => {
+  // Add only the required Dialect protocol headers
+  res.setHeader('X-Action-Version', '1');
+  res.setHeader('X-Blockchain-Ids', 'solana');
+
+  // Skip OPTIONS handling - let NGINX handle it
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    return res.status(204).end();
   }
-  
+
   next();
 };
 
-// Apply CORS middleware to all Actions routes
-router.use(setupActionsCors);
+// Apply protocol headers to all Actions routes (no CORS headers, let NGINX handle it)
+router.use(setupActionProtocolHeaders);
 
 /* ACTIONS ROUTES */
 
@@ -115,6 +116,13 @@ router.use(setupActionsCors);
  */
 router.get('/join-contest', async (req, res) => {
   try {
+    // Explicitly remove any CORS headers that might have been set by middleware
+    // This ensures NGINX is solely responsible for CORS headers
+    res.removeHeader('Access-Control-Allow-Origin');
+    res.removeHeader('Access-Control-Allow-Methods');
+    res.removeHeader('Access-Control-Allow-Headers');
+    res.removeHeader('Access-Control-Allow-Credentials');
+
     // First check if Dialect service is initialized
     if (config.services.dialect_service && dialectService.initialized) {
       try {
@@ -130,10 +138,20 @@ router.get('/join-contest', async (req, res) => {
             icon: blink.iconUrl || "https://degenduel.me/images/logo192.png",
             label: "Join Contest",
             parameters: blink.parameters || {
+              account: {
+                type: "string",
+                description: "Wallet address of the user joining the contest",
+                required: true
+              },
               contest_id: {
                 type: "string",
                 description: "Contest ID to join",
                 required: true
+              },
+              referrer: {
+                type: "string",
+                description: "Wallet address of the referrer",
+                required: false
               }
             }
           });
@@ -149,15 +167,25 @@ router.get('/join-contest', async (req, res) => {
 
     // Return standard metadata for the action
     res.json({
-      name: "DegenDuel Contest Entry",
-      description: "Join a contest on DegenDuel",
+      name: "Join Contest",
+      description: "Join a contest on DegenDuel with an AI-selected portfolio",
       icon: "https://degenduel.me/images/logo192.png",
       label: "Join Contest",
       parameters: {
+        account: {
+          type: "string",
+          description: "Wallet address of the user joining the contest",
+          required: true
+        },
         contest_id: {
           type: "string",
           description: "Contest ID to join",
           required: true
+        },
+        referrer: {
+          type: "string",
+          description: "Wallet address of the referrer",
+          required: false
         }
       }
     });
@@ -168,15 +196,6 @@ router.get('/join-contest', async (req, res) => {
 });
 
 /**
- * POST /api/blinks/join-contest
- *
- * Returns a signable transaction for joining a contest
- *
- * Required body parameters:
- * - account: User's public key
- * - contest_id: ID of the contest to join
- */
-/**
  * Process contest entry after validation
  *
  * @param {object} req - Express request object
@@ -186,9 +205,10 @@ router.get('/join-contest', async (req, res) => {
  * @param {PublicKey} userPubkey - User's public key
  * @param {string} contestWalletAddress - Contest wallet address
  * @param {number} entryFee - Contest entry fee
+ * @param {object} contestData - Contest data object
  * @returns {object} Express response
  */
-async function processContestEntry(req, res, account, contest_id, userPubkey, contestWalletAddress, entryFee) {
+async function processContestEntry(req, res, account, contest_id, userPubkey, contestWalletAddress, entryFee, contestData) {
   try {
     // Get or generate portfolio for user
     let portfolio;
@@ -336,16 +356,30 @@ async function processContestEntry(req, res, account, contest_id, userPubkey, co
         });
 
         // Notify Dialect of this blink usage (if implemented in service)
-        await dialectService.trackBlinkUsage('join-contest', account, {
-          contest_id,
-          portfolio_source: portfolioSource
-        }).catch(err => {
+        try {
+          await dialectService.trackBlinkUsage('join-contest', account, {
+            contest_id,
+            portfolio_source: portfolioSource,
+            contest_name: contestData.name
+          });
+          logApi.info('Successfully tracked Dialect blink usage', {
+            blink_id: 'join-contest',
+            wallet_address: account,
+            contest_id
+          });
+        } catch (err) {
           // Just log error, don't block the main flow
-          logApi.warn('Failed to track Dialect blink usage', { error: err.message });
-        });
+          logApi.warn('Failed to track Dialect blink usage', {
+            error: err.message || 'Unknown error',
+            stack: err.stack
+          });
+        }
       } catch (error) {
         // Log but don't block the main flow
-        logApi.warn('Error recording Dialect blink usage', { error: error.message });
+        logApi.warn('Error recording Dialect blink usage', {
+          error: error.message || 'Unknown error',
+          stack: error.stack
+        });
       }
     }
 
@@ -358,7 +392,7 @@ async function processContestEntry(req, res, account, contest_id, userPubkey, co
     let memoLines = [];
 
     // Line 1: Contest Name (ALL CAPS)
-    memoLines.push(`${contest.name.toUpperCase()}`);
+    memoLines.push(`${contestData.name.toUpperCase()}`);
     memoLines.push(''); // Blank line for separation
 
     // Line 2: Portfolio Source Description with Emoji
@@ -453,14 +487,40 @@ async function processContestEntry(req, res, account, contest_id, userPubkey, co
     });
 
   } catch (error) {
-    logApi.error('Error in processContestEntry', { error });
-    return res.status(500).json({ error: 'Failed to process contest entry' });
+    // Enhanced error logging with more details
+    logApi.error('Error in processContestEntry', {
+      error: error.message || 'Unknown error',
+      stack: error.stack,
+      userId: account,
+      contestId: contest_id,
+      portfolioSource: portfolioSource || 'unknown'
+    });
+
+    // Return a more specific error message if possible
+    let errorMessage = 'Failed to process contest entry';
+    if (error.message && error.message.includes('portfolio')) {
+      errorMessage = 'Failed to create portfolio for contest entry';
+    } else if (error.message && error.message.includes('transaction')) {
+      errorMessage = 'Failed to create transaction for contest entry';
+    }
+
+    return res.status(500).json({
+      error: errorMessage,
+      info: 'Your entry was not processed. Please try again or try joining through the website.'
+    });
   }
 }
 
 // Handle POST /join-contest route
 router.post('/join-contest', async (req, res) => {
   try {
+    // Explicitly remove any CORS headers that might have been set by middleware
+    // This ensures NGINX is solely responsible for CORS headers
+    res.removeHeader('Access-Control-Allow-Origin');
+    res.removeHeader('Access-Control-Allow-Methods');
+    res.removeHeader('Access-Control-Allow-Headers');
+    res.removeHeader('Access-Control-Allow-Credentials');
+
     const { account, contest_id } = req.body;
 
     // Log the request for debugging
@@ -486,16 +546,20 @@ router.post('/join-contest', async (req, res) => {
       return res.status(400).json({ error: 'Invalid Solana address format' });
     }
 
-    // 2. Validate contest exists and is joinable
+    // 2. Get contest data in a single step
+    let contest;
+    let contestIdToUse;
+
     try {
       // Try to convert contest_id to an integer if it's a string
       const contestIdInt = parseInt(contest_id);
-      const contestIdToUse = isNaN(contestIdInt) ? contest_id : contestIdInt;
+      contestIdToUse = isNaN(contestIdInt) ? contest_id : contestIdInt;
 
       // Log what we're looking for
       logApi.info('Looking for contest', { contest_id: contestIdToUse });
 
-      const contest = await prisma.contests.findUnique({
+      // Get the contest data
+      contest = await prisma.contests.findUnique({
         where: { id: contestIdToUse }
       });
 
@@ -509,7 +573,8 @@ router.post('/join-contest', async (req, res) => {
         return res.status(404).json({ error: 'Contest not found' });
       }
 
-      if (contest.status !== 'OPEN_FOR_ENTRY') {
+      // Check if contest is in 'pending' status (open for entry)
+      if (contest.status !== 'pending') {
         return res.status(400).json({ error: 'Contest is not open for entry' });
       }
     } catch (error) {
@@ -517,47 +582,46 @@ router.post('/join-contest', async (req, res) => {
       return res.status(500).json({ error: 'Error checking contest status' });
     }
 
-    // 3. Get contest wallet information
+    // 3. Now that we have the contest, get the wallet information
     try {
-      const contestConfig = await prisma.service_configurations.findFirst({
-        where: { name: 'contest_wallet_config' }
+      // Get the contest wallet information from the contest_wallets table
+      const contestWallet = await prisma.contest_wallets.findFirst({
+        where: { contest_id: contestIdToUse }
       });
 
-      logApi.info('Contest wallet config lookup', {
-        found: !!contestConfig,
-        has_settings: !!contestConfig?.settings,
-        has_wallet_address: !!contestConfig?.settings?.wallet_address
+      // Get the entry fee from the contest record (now safely in scope)
+      const entryFee = contest.entry_fee || 0.05; // Use contest entry fee or default to 0.05
+
+      // Log wallet lookup information
+      logApi.info('Contest wallet lookup', {
+        found: !!contestWallet,
+        contest_id: contestIdToUse,
+        has_wallet_address: !!contestWallet?.wallet_address,
+        entry_fee: entryFee
       });
 
-      if (!contestConfig || !contestConfig.settings || !contestConfig.settings.wallet_address) {
-        // Fallback to treasury wallet if config not found
+      if (!contestWallet || !contestWallet.wallet_address) {
+        // Fallback to treasury wallet if no contest wallet found
         const contestWalletAddress = DEGENDUEL_TREASURY_ADDRESS;
         logApi.info('Using fallback treasury address', { contestWalletAddress });
 
-        // Default entry fee
-        const entryFee = 0.05; // Default to 0.05 SOL
-
         // Continue with these values
-        return processContestEntry(req, res, account, contest_id, userPubkey, contestWalletAddress, entryFee);
+        return processContestEntry(req, res, account, contest_id, userPubkey, contestWalletAddress, entryFee, contest);
       }
 
-      const contestWalletAddress = contestConfig.settings.wallet_address;
-      const entryFee = 0.05; // Default to 0.05 SOL if not specified
+      // Use the actual contest wallet address
+      const contestWalletAddress = contestWallet.wallet_address;
 
-      return processContestEntry(req, res, account, contest_id, userPubkey, contestWalletAddress, entryFee);
+      // Continue with the contest entry process
+      return processContestEntry(req, res, account, contest_id, userPubkey, contestWalletAddress, entryFee, contest);
     } catch (error) {
       logApi.error('Error getting contest wallet configuration', { error });
       return res.status(500).json({ error: 'Error getting contest wallet configuration' });
     }
   } catch (error) {
+    // Single catch block to handle all errors
     logApi.error('Error processing join contest request', { error });
     res.status(500).json({ error: 'Internal server error' });
-  } finally {
-    // Log the request for debugging
-    logApi.info('Received join-contest request', {
-      account: account ? account.substring(0, 8) + '...' : undefined,
-      contest_id
-    });
   }
 });
 

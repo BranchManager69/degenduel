@@ -378,7 +378,7 @@ class ConnectionManager {
             commitment: (args[1] && args[1].commitment) || commitment,
             encoding: (args[1] && args[1].encoding) || 'base64',
             dataSlice: (args[1] && args[1].dataSlice) || undefined,
-            minContextSlot: (args[1] && args[1].minContextSlot) || undefined,
+            minContextSlot: (args[1] && args[1].minContextSlot !== undefined) ? Number(args[1].minContextSlot) : undefined,
           };
 
           logApi.debug('[ConnectionManager] getMultipleAccounts: About to call RPC with config:', getMultipleAccountsConfig);
