@@ -34,6 +34,18 @@ import config from '../../../config/config.js';
  * @param {Object} server - The unified WebSocket server instance
  */
 export async function handleConnection(ws, req, server) {
+  // Initialize the connection data on the WebSocket object to prevent errors
+  ws.clientId = generateConnectionId();
+  ws.isAuthenticated = false;
+  ws.userId = null;
+  ws.role = null;
+  ws.subscriptions = new Set();
+  ws.messagesReceived = 0;
+  ws.messagesSent = 0;
+  ws.errors = {
+    count: 0,
+    lastError: null
+  };
   try {
     // ===== DEBUG LOGGING: Connection start =====
     logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} CONNECTION START ${fancyColors.RESET} WebSocket connection received`);
@@ -391,13 +403,28 @@ ${bgColor}${fgColor}└${'─'.repeat(fieldWidth + maxValueWidth + 3)}${fancyCol
  */
 export function handleDisconnect(ws, server) {
   try {
+    if (!ws) {
+      logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Disconnect called with null WebSocket${fancyColors.RESET}`);
+      return;
+    }
+
+    // Ensure we have a connection ID
+    const connectionId = ws.clientId || 'unknown';
+
     const disconnectTime = new Date();
-    
+
+    // DEBUG: Log the WebSocket properties
+    try {
+      logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BLUE}Client disconnect - WebSocket properties: ${Object.keys(ws).filter(k => !k.startsWith('_')).join(', ')}${fancyColors.RESET}`);
+    } catch (err) {
+      // Ignore
+    }
+
     // Calculate connection duration
     const connectedAt = ws.clientInfo?.connectedAt || disconnectTime; // Fallback to now
     const durationMs = disconnectTime - connectedAt;
     const durationSeconds = Math.round(durationMs / 1000);
-    
+
     // Format duration for display
     let humanDuration;
     if (durationSeconds < 60) {
@@ -455,7 +482,7 @@ export function handleDisconnect(ws, server) {
     }
     
     // Clean up rate limiter subscriptions
-    rateLimiter.cleanupClient(clientId);
+    rateLimiter.cleanupClient(connectionId);
     
     // Clean up token balance subscriptions
     if (ws.tokenBalanceHandlers) {
@@ -736,20 +763,28 @@ export async function handleMessage(ws, rawMessage, req, server) {
  * @param {Object} server - The unified WebSocket server instance
  */
 export async function handleSubscription(ws, message, req, server) {
+  // Initialize clientInfo if not exists
+  if (!ws.clientInfo) {
+    ws.clientInfo = {
+      connectionId: ws.clientId || generateConnectionId(),
+      ip: req?.headers?.['x-forwarded-for'] || req?.socket?.remoteAddress || 'unknown',
+      userAgent: req?.headers?.['user-agent'] || 'unknown',
+      isAuthenticated: false,
+      userId: null,
+      role: null,
+      connectedAt: new Date(),
+      subscriptions: new Set()
+    };
+  }
+
+  // Initialize subscriptions if not exists
+  if (!ws.subscriptions) {
+    ws.subscriptions = new Set();
+  }
+
   // ===== DEBUG LOGGING: Check if clientInfo exists =====
   logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} SUBSCRIPTION DEBUG ${fancyColors.RESET} clientInfo exists: ${!!ws.clientInfo}, topics: ${JSON.stringify(message.topics)}`);
-  if (ws.clientInfo) {
-    logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} CLIENTINFO STATE ${fancyColors.RESET} isAuthenticated: ${ws.clientInfo.isAuthenticated}, userId: ${ws.clientInfo.userId}, connectionId: ${ws.clientInfo.connectionId}`);
-  } else {
-    logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} MISSING CLIENTINFO ${fancyColors.RESET} WebSocket connection has no clientInfo object`);
-    // Detailed object inspection (safely)
-    try {
-      const wsKeys = Object.keys(ws).filter(k => k !== '_events' && k !== '_eventsCount');
-      logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} WS KEYS ${fancyColors.RESET} Available WebSocket properties: ${wsKeys.join(', ')}`);
-    } catch (err) {
-      logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} KEYS ERROR ${fancyColors.RESET} Error inspecting WebSocket: ${err.message}`);
-    }
-  }
+  logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} CLIENTINFO STATE ${fancyColors.RESET} isAuthenticated: ${ws.clientInfo.isAuthenticated}, userId: ${ws.clientInfo.userId}, connectionId: ${ws.clientInfo.connectionId}`);
   // ===== END DEBUG LOGGING =====
 
   // Validate topics
@@ -1327,7 +1362,10 @@ export async function sendInitialData(ws, topic, server) {
   try {
     // Normalize the topic to support both hyphenated and underscore formats
     const normalizedTopic = normalizeTopic(topic);
-    
+
+    // Add scope-level declaration for this function to avoid reference errors in the catch block
+    let topicForLogs = normalizedTopic;
+
     switch (normalizedTopic) {
       case TOPICS.MARKET_DATA:
         const tokens = await marketDataService.getAllTokens();
@@ -1392,7 +1430,7 @@ export async function sendInitialData(ws, topic, server) {
       // Add other topics as needed
     }
   } catch (error) {
-    logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error sending initial data for topic ${normalizedTopic}:${fancyColors.RESET}`, error);
+    logApi.error(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.RED}Error sending initial data for topic ${topicForLogs}:${fancyColors.RESET}`, error);
   }
 }
 

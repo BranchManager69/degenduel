@@ -267,7 +267,8 @@ router.get("/countdown", async (req, res) => {
         if (tokenPrice?.price && token.raw_supply && token.decimals) {
           try {
             const price = parseFloat(tokenPrice.price);
-            const adjustedSupply = token.raw_supply / Math.pow(10, token.decimals);
+            // Convert raw_supply to Number for calculation
+            const adjustedSupply = Number(token.raw_supply) / Math.pow(10, token.decimals);
             calculatedMarketCap = Math.round(price * adjustedSupply);
           } catch (e) {
             logApi.warn("Failed to calculate market cap:", e);
@@ -275,12 +276,18 @@ router.get("/countdown", async (req, res) => {
         }
 
         tokenInfo = {
-          ...token,
+          // Explicitly convert potential BigInt fields to string or number
+          id: token.id,
+          address: token.address,
+          symbol: token.symbol,
+          name: token.name,
+          decimals: token.decimals,
+          raw_supply: token.raw_supply ? String(token.raw_supply) : null,
           price: tokenPrice?.price || null,
-          market_cap: tokenPrice?.market_cap || calculatedMarketCap,
-          volume_24h: tokenPrice?.volume_24h || null,
-          fdv: tokenPrice?.fdv || null,
-          liquidity: tokenPrice?.liquidity || null,
+          market_cap: tokenPrice?.market_cap ? String(tokenPrice.market_cap) : (calculatedMarketCap !== null ? calculatedMarketCap : null),
+          volume_24h: tokenPrice?.volume_24h ? String(tokenPrice.volume_24h) : null,
+          fdv: tokenPrice?.fdv ? String(tokenPrice.fdv) : null,
+          liquidity: tokenPrice?.liquidity ? String(tokenPrice.liquidity) : null,
           change_24h: tokenPrice?.change_24h || null
         };
       }

@@ -384,7 +384,20 @@ class ConnectionManager {
             minContextSlot: (args[1] && args[1].minContextSlot !== undefined) ? Number(args[1].minContextSlot) : undefined,
           };
 
-          logApi.debug('[ConnectionManager] getMultipleAccounts: About to call RPC with config:', getMultipleAccountsConfig);
+          // Detailed logging before the RPC call
+          logApi.debug('[ConnectionManager] PRE-CALL getMultipleAccounts - publicKeyStrings JSON:', JSON.stringify(publicKeyStrings));
+          if (publicKeyStrings && publicKeyStrings.length > 0) {
+            logApi.debug('[ConnectionManager] PRE-CALL getMultipleAccounts - typeof publicKeyStrings[0]:', typeof publicKeyStrings[0]);
+          }
+          logApi.debug('[ConnectionManager] PRE-CALL getMultipleAccounts - getMultipleAccountsConfig JSON:', JSON.stringify(getMultipleAccountsConfig));
+          Object.keys(getMultipleAccountsConfig).forEach(key => {
+            const value = getMultipleAccountsConfig[key];
+            if (value !== undefined) {
+              logApi.debug(`[ConnectionManager] PRE-CALL Config key '${key}' typeof: ${typeof value} - value: ${JSON.stringify(value)}`);
+            }
+          });
+          // End detailed logging
+
           const v2Results = await rpc.getMultipleAccounts(publicKeyStrings, getMultipleAccountsConfig).send();
           logApi.debug('[ConnectionManager] getMultipleAccounts: RPC call returned. Typeof v2Results:', typeof v2Results, 'IsArray:', Array.isArray(v2Results));
           

@@ -62,7 +62,23 @@ export default class UnifiedWebSocketServer {
     this.clients = new Map();
     this.subscriptions = {};
     this.authenticatedClients = new Map();
+    this.clientsByUserId = new Map(); // Map of userId -> Set of WebSocket connections
+    this.clientSubscriptions = new Map(); // Map of WebSocket -> Set of subscribed topics
+    this.topicSubscribers = new Map(); // Map of topic -> Set of WebSocket subscribers
     this.isShuttingDown = false;
+
+    // Initialize metrics tracking
+    this.metrics = {
+      uniqueClients: 0,
+      totalConnections: 0,
+      totalMessages: 0,
+      activeSubscriptions: {},
+      errors: {
+        count: 0,
+        lastError: null
+      }
+    };
+
     this.initTopicSubscriptions();
     
     // Initialize WebSocket server 
@@ -168,7 +184,8 @@ export default class UnifiedWebSocketServer {
   setupServerEvents() {
     // Set up WebSocket server event handlers
     this.wss.on('connection', (ws, req, clientId, initialAuth) => {
-      handleConnection(ws, req, clientId, initialAuth, this.clients, this.authenticatedClients, this.subscriptions);
+      // Pass the entire server instance to the handler so it has access to all needed properties
+      handleConnection(ws, req, this);
     });
 
     this.wss.on('error', (error) => {
@@ -283,23 +300,27 @@ export default class UnifiedWebSocketServer {
 
   handleUpgrade(req, socket, head) {
     const { pathname } = parseUrl(req.url);
-    
+
     // Check if the path matches our WebSocket endpoint
-    if (pathname === '/api/v69/ws') {
+    if (pathname === this.path) {
       // Generate a unique client ID
       const clientId = uuidv4();
-      
+
       // Perform WebSocket upgrade
       this.wss.handleUpgrade(req, socket, head, (ws) => {
         // Extract initial auth token if present in query params
         const { query } = parseUrl(req.url, true);
         const initialAuth = query.token || null;
-        
+
         // Emit connection event with the upgraded socket
         this.wss.emit('connection', ws, req, clientId, initialAuth);
+
+        // Log successful upgrade and connection
+        log.info(`WebSocket client connected to ${this.path} [ID: ${clientId.substring(0, 8)}...]`);
       });
     } else {
       // Not a WebSocket upgrade request for our endpoint
+      log.debug(`Rejecting WebSocket upgrade for non-matching path: ${pathname} (expected ${this.path})`);
       socket.destroy();
     }
   }
@@ -443,5 +464,74 @@ export default class UnifiedWebSocketServer {
     registerContestEventHandlers(this);
     // Register handlers for other domains here if needed in the future
     log.info('Unified WebSocket event handlers setup complete.');
+  }
+
+  /**
+   * Initialize the WebSocket server by attaching the HTTP upgrade handler
+   * This method is critical for the WebSocket server to work properly
+   * It captures the HTTP upgrade requests and routes them to the WebSocket server
+   */
+  initialize() {
+    if (!this.server) {
+      throw new Error('HTTP server is required for WebSocket initialization');
+    }
+
+    // Get the configured path from config
+    const wsPath = config.websocket?.config?.path || '/api/v69/ws';
+
+    // Set the path property so it can be referenced elsewhere
+    this.path = wsPath;
+
+    log.info(`Initializing WebSocket server at path: ${this.path}`);
+
+    // Add the upgrade handler to the HTTP server
+    this.server.on('upgrade', (req, socket, head) => {
+      const { pathname } = parseUrl(req.url);
+
+      // Check if this is an upgrade request for our WebSocket endpoint
+      if (pathname === this.path) {
+        log.debug(`Handling WebSocket upgrade request for ${pathname}`);
+        this.handleUpgrade(req, socket, head);
+      }
+      // Otherwise, let it pass through to other handlers if any
+    });
+
+    log.info(`✅ WebSocket server upgrade handler attached to HTTP server at path: ${this.path}`);
+    return true;
+  }
+
+  /**
+   * Cleanup resources before shutdown
+   */
+  cleanup() {
+    log.info(`Cleaning up WebSocket server with ${this.clients.size} connected clients`);
+
+    // Set shutdown flag
+    this.isShuttingDown = true;
+
+    // Notify all clients that server is shutting down
+    for (const ws of this.clients.values()) {
+      try {
+        if (ws.readyState === 1) { // WebSocket.OPEN
+          ws.send(formatMessage({
+            type: config.websocket.messageTypes.SYSTEM,
+            message: 'Server shutting down',
+            code: 1001 // Going away
+          }));
+          ws.close(1001);
+        }
+      } catch (error) {
+        // Ignore errors during shutdown
+      }
+    }
+
+    // Clear client and subscription maps
+    this.clients.clear();
+    Object.keys(this.subscriptions).forEach(topic => {
+      this.subscriptions[topic].clear();
+    });
+
+    log.info('WebSocket server cleanup complete');
+    return true;
   }
 }
