@@ -103,6 +103,8 @@ const formatLog = {
 };
 // -- CURSOR AI MODIFICATION END --
 
+import serviceEvents, { SERVICE_EVENTS } from '../utils/service-suite/service-events.js';
+
 /**
  * TokenRefreshScheduler - Advanced scheduling system for token price updates
  */
@@ -952,81 +954,126 @@ class TokenRefreshScheduler extends BaseService {
     const startTime = Date.now();
     let updatedCount = 0;
     let failedToPriceCount = 0;
-    const tokensForRequeue = [];
-    const successfullyPricedTokens = new Set();
+    const tokensForRequeue = []; 
+    const successfullyPricedTokens = new Set(); 
 
-    logApi.debug(`[TokenRefreshScheduler.updateTokenPrices] Updating prices for batch of ${batch.length} tokens. Received ${Object.keys(priceData || {}).length} price entries.`);
+    logApi.debug(`${formatLog.tag()} [updateTokenPrices] Updating prices for batch of ${batch.length} tokens. Received ${Object.keys(priceData || {}).length} price entries.`);
 
-    for (const token of batch) {
+    // -- CURSOR AI MODIFICATION START --
+    const tokenPriceUpsertOps = [];
+    const tokenMetaUpdateOps = [];
+
+    for (const token of batch) { 
       const currentPriceInfo = priceData ? priceData[token.address] : null;
 
-      if (currentPriceInfo && currentPriceInfo.price) {
-        const oldPrice = token.current_price;
+      if (currentPriceInfo && currentPriceInfo.price !== undefined && currentPriceInfo.price !== null) {
         const newPrice = parseFloat(currentPriceInfo.price);
+        if (isNaN(newPrice)) {
+            logApi.warn(`${formatLog.tag()} [updateTokenPrices] Invalid price NaN for ${token.symbol || token.address}. Skipping price update.`);
+            failedToPriceCount++;
+            this.trackFailedToken(token); 
+            continue;
+        }
+
+        const existingTokenPriceRecord = await prisma.token_prices.findUnique({
+            where: { token_id: token.id },
+            select: { price: true }
+        });
+        const oldPrice = existingTokenPriceRecord ? parseFloat(existingTokenPriceRecord.price) : null;
         const priceChanged = oldPrice !== newPrice;
 
-        try {
-          await prisma.tokens.update({
-            where: { id: token.id },
-            data: {
-              current_price: newPrice,
-              previous_price: oldPrice,
-              last_price_update_at: new Date(),
-              last_jupiter_response_id: currentPriceInfo.id, // Assuming 'id' is the response/request ID from Jupiter
-              // Potentially update other fields like liquidity, market_cap if available from priceData
-              // liquidity_usd: currentPriceInfo.liquidity, // Example
-              // market_cap_usd: currentPriceInfo.marketCap, // Example
-              last_successful_refresh_at: new Date(),
-              consecutive_failed_refreshes: 0,
-            },
-          });
+        tokenPriceUpsertOps.push({
+          where: { token_id: token.id },
+          update: {
+            price: newPrice,
+            updated_at: new Date(),
+            // Add other fields here if JupiterClient.getPrices provides them (e.g., market_cap, volume_24h)
+            // market_cap: currentPriceInfo.marketCap ? parseFloat(currentPriceInfo.marketCap) : null,
+            // volume_24h: currentPriceInfo.volume?.h24 ? parseFloat(currentPriceInfo.volume.h24) : null,
+          },
+          create: {
+            token_id: token.id,
+            price: newPrice,
+            updated_at: new Date(),
+            // market_cap: currentPriceInfo.marketCap ? parseFloat(currentPriceInfo.marketCap) : null,
+            // volume_24h: currentPriceInfo.volume?.h24 ? parseFloat(currentPriceInfo.volume.h24) : null,
+          },
+        });
 
-          // Emit event for successful price update
-          serviceEvents.emit(SERVICE_EVENTS.TOKEN_PRICE_UPDATED, {
-            tokenId: token.id,
-            address: token.address,
-            symbol: token.symbol,
-            newPrice: newPrice,
-            oldPrice: oldPrice,
-            source: 'jupiter',
-            timestamp: new Date(),
-          });
-          
-          this.metricsCollector.recordTokenPriceUpdate(token.address, newPrice, oldPrice);
-          successfullyPricedTokens.add(token.address);
-          updatedCount++;
-          logApi.trace(`[TokenRefreshScheduler] Successfully updated price for ${token.symbol} (${token.address}) to ${newPrice}`);
-          
-          // Decide if token needs immediate requeue based on price change or priority
-          tokensForRequeue.push({ token, priceChanged });
-
-        } catch (dbError) {
-          logApi.error(`[TokenRefreshScheduler] DB error updating price for ${token.symbol} (${token.address}): ${dbError.message}`, { token_id: token.id, error: dbError });
-          // Even if DB update fails, we got a price, so don't treat as a failed fetch from Jupiter's perspective for this logic
-          // but we should track the failure for this token.
-          this.trackFailedToken(token); // Tracks generic failure
-          failedToPriceCount++;
+        const tokenTableUpdateData = {
+          last_successful_refresh_at: new Date(),
+          consecutive_failed_refreshes: 0,
+          // last_jupiter_response_id: currentPriceInfo.id, // Uncomment if you have this field on tokens table
+        };
+        if (priceChanged) {
+            tokenTableUpdateData.last_price_change = new Date();
         }
+        tokenMetaUpdateOps.push({
+            where: { id: token.id },
+            data: tokenTableUpdateData
+        });
+
+        serviceEvents.emit(SERVICE_EVENTS.TOKEN_PRICE_UPDATED, {
+          tokenId: token.id,
+          address: token.address,
+          symbol: token.symbol,
+          newPrice: newPrice,
+          oldPrice: oldPrice,
+          source: 'jupiter', // Or more generic like 'TokenRefreshScheduler'
+          timestamp: new Date(),
+        });
+        
+        if (this.metricsCollector && typeof this.metricsCollector.recordTokenPriceUpdate === 'function') {
+            this.metricsCollector.recordTokenPriceUpdate(token.address, newPrice, oldPrice);
+        }
+        successfullyPricedTokens.add(token.address);
+        updatedCount++;
+        logApi.trace(`[TokenRefreshScheduler] Successfully prepared price update for ${token.symbol || token.address} to ${newPrice}`);
+        
+        tokensForRequeue.push({ token, priceChanged });
+
       } else {
-        // DEGENS: Token not found in priceData or price is null/undefined.
-        // This is where the old retry logic was. Now we just log it.
-        logApi.warn(`[TokenRefreshScheduler] Price not found in batch response for ${token.symbol} (${token.address}). Will attempt in next cycle.`, { 
+        logApi.warn(`[TokenRefreshScheduler] Price not found in Jupiter response for ${token.symbol || token.address}. Will attempt in next cycle.`, { 
           token_id: token.id,
           token_address: token.address
         });
-        this.trackFailedToken(token); // Mark as failed for this cycle
+        this.trackFailedToken(token); 
         failedToPriceCount++;
       }
     }
 
-    // Requeue tokens based on priority and whether their price changed
+    if (tokenPriceUpsertOps.length > 0 || tokenMetaUpdateOps.length > 0) {
+        try {
+            await prisma.$transaction(async (tx) => {
+                if (tokenMetaUpdateOps.length > 0) {
+                    logApi.debug(`${formatLog.tag()} [updateTokenPrices] Updating ${tokenMetaUpdateOps.length} records in 'tokens' table.`);
+                    for (const op of tokenMetaUpdateOps) {
+                        await tx.tokens.update(op);
+                    }
+                }
+                if (tokenPriceUpsertOps.length > 0) {
+                    logApi.debug(`${formatLog.tag()} [updateTokenPrices] Upserting ${tokenPriceUpsertOps.length} records in 'token_prices' table.`);
+                    for (const op of tokenPriceUpsertOps) {
+                        await tx.token_prices.upsert(op);
+                    }
+                }
+            });
+            logApi.debug(`${formatLog.tag()} [updateTokenPrices] Prisma transaction for price updates completed.`);
+        } catch (dbError) {
+            logApi.error(`[TokenRefreshScheduler] DB transaction error during updateTokenPrices: ${dbError.message}`, { error: dbError });
+            failedToPriceCount += batch.length - updatedCount; 
+            updatedCount = 0; 
+        }
+    }
+    // -- CURSOR AI MODIFICATION END --
+
+    // Requeue tokens
     for (const { token, priceChanged } of tokensForRequeue) {
       this.requeueWithUpdatedPriority(token, priceChanged);
     }
     
-    // Log summary of this update operation
     const duration = Date.now() - startTime;
-    logApi.debug(`[TokenRefreshScheduler.updateTokenPrices] Finished processing batch. Updated: ${updatedCount}, Not Priced: ${failedToPriceCount}. Duration: ${duration}ms`);
+    logApi.debug(`[TokenRefreshScheduler.updateTokenPrices] Finished. DB Updated: ${updatedCount}, Not Priced: ${failedToPriceCount}. Duration: ${duration}ms`);
 
     return {
       updatedCount,
