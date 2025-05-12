@@ -268,7 +268,6 @@ class TokenEnrichmentService extends BaseService {
         await this.db.tokens.update({
           where: { id: existingToken.id },
           data: { 
-            last_discovery: new Date(),
             discovery_count: { increment: 1 }  // Use Prisma's increment operation for atomicity
           }
         });
@@ -315,8 +314,7 @@ class TokenEnrichmentService extends BaseService {
         const newToken = await this.db.tokens.create({
           data: {
             address: tokenInfo.address,
-            first_discovery: new Date(),
-            last_discovery: new Date(),
+            first_seen_on_jupiter_at: new Date(), // Corrected field name
             discovery_count: 1,
             metadata_status: 'pending',
             is_active: true

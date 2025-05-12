@@ -70,21 +70,28 @@ class JupiterBase {
    * @returns {Promise<any>} - Response data
    */
   async makeRequest(method, endpoint, data = null, params = null) {
-    logApi.debug(`${formatLog.tag()} [PriceService.makeRequest] Attempting request:`, { method, url: endpoint, params, data });
+    logApi.debug(`${formatLog.tag()} [JupiterBase.makeRequest] Attempting request:`, { method, url: endpoint, params, data });
+    const startTime = Date.now(); // Start timer
     try {
       const options = {
         method,
         url: endpoint,
         headers: this.config.getHeaders(),
-        timeout: 20000 // Increased timeout
+        timeout: 30000 // Increased timeout to 30 seconds
       };
 
       if (data) options.data = data;
       if (params) options.params = params;
 
       const response = await axios(options);
+      const durationMs = Date.now() - startTime; // Calculate duration
+
+      // Log slow response warning
+      if (durationMs > 10000) { // If request took longer than 10 seconds
+        logApi.warn(`${formatLog.tag()} [JupiterBase.makeRequest] Slow response from Jupiter API: ${endpoint} took ${durationMs}ms`, { method, url: endpoint, params, durationMs });
+      }
       
-      logApi.debug(`${formatLog.tag()} [PriceService.makeRequest] Received response:`, { status: response.status, type: typeof response.data, dataPreview: JSON.stringify(response.data)?.substring(0, 500) });
+      logApi.debug(`${formatLog.tag()} [JupiterBase.makeRequest] Received response:`, { status: response.status, type: typeof response.data, durationMs, dataPreview: JSON.stringify(response.data)?.substring(0, 500) });
       
       if (response.status !== 200) {
         throw new Error(`Jupiter API request failed with status ${response.status}`);
@@ -97,7 +104,7 @@ class JupiterBase {
       return response.data;
     } catch (error) {
       const errorMessage = error.response ? `${error.message} - ${JSON.stringify(error.response.data)}` : error.message;
-      logApi.error(`${formatLog.tag()} [PriceService.makeRequest] API Request Failed:`, {
+      logApi.error(`${formatLog.tag()} [JupiterBase.makeRequest] API Request Failed:`, {
         method,
         url: endpoint,
         params,
@@ -130,11 +137,16 @@ class TokenListService extends JupiterBase {
       const response = await this.makeRequest('GET', this.config.endpoints.tokens.getTokens);
 
       let addresses = [];
-      if (Array.isArray(response)) addresses = response.map(t => t.address).filter(Boolean);
-      else if (response && typeof response === 'object') {
+      // Check if the response is directly an array of strings
+      if (Array.isArray(response) && response.length > 0 && response.every(item => typeof item === 'string')) {
+        addresses = response;
+      } else if (Array.isArray(response)) { // Original check for array of objects
+        addresses = response.map(t => t.address).filter(Boolean);
+      } else if (response && typeof response === 'object') { // Fallback for object-based responses
         const dataArray = response.data || response.tokens || response.result;
-        if (Array.isArray(dataArray)) addresses = dataArray.map(t => t.address).filter(Boolean);
-        else if (Object.keys(response).length > 100 && Object.values(response).every(v => typeof v === 'object' && v.address)) {
+        if (Array.isArray(dataArray)) {
+          addresses = dataArray.map(t => t.address).filter(Boolean);
+        } else if (Object.keys(response).length > 100 && Object.values(response).every(v => typeof v === 'object' && v.address)) {
           addresses = Object.keys(response);
         }
       }

@@ -39,7 +39,7 @@ import VanityApiClient from '../../services/vanity-wallet/vanity-api-client.js';
 
 // V2 Solana SDK Imports needed for refactored methods
 import { generateKeyPair as generateKeyPairV2 } from '@solana/keys';
-import { createKeyPairSignerFromBytes } from '@solana/signers';
+import { createKeyPairSignerFromBytes, createKeyPairSignerFromPrivateKeyBytes } from '@solana/signers';
 import { getAddressFromPublicKey, address as v2Address } from '@solana/addresses';
 import { Buffer } from 'node:buffer';
 
@@ -2427,7 +2427,9 @@ class ContestWalletService extends BaseService {
                 isVanityWallet = true;
                 vanityType = vanityWalletDetails.vanity_type || vanityWalletDetails.pattern;
 
-                const tempSignerFromVanitySeed = await createKeyPairSignerFromBytes(seed_32_bytes_uint8array);
+                // Correctly use createKeyPairSignerFromPrivateKeyBytes for the 32-byte seed
+                const tempSignerFromVanitySeed = await createKeyPairSignerFromPrivateKeyBytes(seed_32_bytes_uint8array);
+                
                 if (tempSignerFromVanitySeed.address !== walletAddressToStore) {
                     this.logApi.error(`${formatLog.tag()} ${formatLog.error('CRITICAL MISMATCH for VANITY wallet!')} Address from seed (${tempSignerFromVanitySeed.address}) != provided address (${walletAddressToStore}).`);
                     throw ServiceError.operation('Vanity wallet key integrity check failed: Address mismatch.');
