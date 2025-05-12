@@ -358,10 +358,11 @@ class TokenDetectionService extends BaseService {
      */
     async performOperation() {
         try {
-            // ServiceManager and BaseService should ensure JupiterClient (dependency) is operational before calling this.
-            if (!this.jupiterClient || !this.jupiterClient.isOperational) { 
-                logApi.warn(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} JupiterClient not operational. Skipping token detection cycle.`);
-                throw ServiceError.dependency('Jupiter client not operational for performOperation');
+            // ServiceManager and BaseService should ensure JupiterClient (dependency) is initialized and started.
+            // Check isInitialized (property from JupiterClient) and isStarted (property from BaseService)
+            if (!this.jupiterClient || !this.jupiterClient.isInitialized || !this.jupiterClient.isStarted) { 
+                logApi.warn(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} JupiterClient not initialized or not started. Skipping token detection cycle.`);
+                throw ServiceError.dependency('Jupiter client not initialized or not started for performOperation');
             }
             const result = await this.checkForNewTokens();
             // BaseService.recordSuccess() or .handleError() will be called by the framework

@@ -6,9 +6,9 @@
  * This module implements a Dialect Blinks registry for DegenDuel's
  * Solana Actions (Blinks) functionality.
  * 
- * @version 1.0.4
+ * @version 1.0.5
  * @created 2025-05-11
- * @updated 2025-05-23 // Revert to default import for @dialectlabs/web3
+ * @updated 2025-05-23 // Revert back to top-level dynamic import for @dialectlabs/web3
  */
 
 import { logApi } from '../../utils/logger-suite/logger.js';
@@ -16,8 +16,9 @@ import { config } from '../../config/config.js';
 import { PublicKey } from '@solana/web3.js';
 import { v4 as uuidv4 } from 'uuid';
 import { Dialect } from '@dialectlabs/sdk';
-import web3Pkg from '@dialectlabs/web3';
-const { makeDialectSolana, SolanaSigner } = web3Pkg;
+
+// Top-level dynamic import for @dialectlabs/web3
+const dialectWeb3Promise = import('@dialectlabs/web3');
 
 // Cache for registered blinks
 const blinksCache = new Map();
@@ -31,7 +32,9 @@ let encryptionKey;
  */
 async function initializeDialect() {
   try {
-    // Removed await dialectWeb3Promise; dependencies are now available synchronously
+    // Wait for the dynamic import to resolve
+    const { makeDialectSolana, SolanaSigner } = await dialectWeb3Promise;
+
     // Get wallet keypair from config
     const walletPrivateKey = config.dialect?.walletPrivateKey || 
                              config.master_wallet?.branch_manager_wallet_key;
@@ -280,7 +283,7 @@ async function deleteBlink(dialectSdk, blinkId) {
 
 /**
  * Register all default blinks used by DegenDuel
- * 
+ *
  * @returns {Promise<Array>} - Array of registered blinks
  */
 async function registerDefaultBlinks(dialectSdk) {
@@ -305,6 +308,11 @@ async function registerDefaultBlinks(dialectSdk) {
           },
         },
       },
+      /*
+      // NOTE: These Blinks are commented out because they don't involve transactions
+      // and/or aren't properly implemented yet.
+      // Blinks should only be used for actions requiring a transaction signature.
+
       {
         id: 'view-contest',
         name: 'View Contest',
@@ -349,6 +357,7 @@ async function registerDefaultBlinks(dialectSdk) {
           },
         },
       },
+      */
     ];
     
     // Register each blink
