@@ -20,26 +20,26 @@
  */
 
 // Service Suite
-import { BaseService } from '../utils/service-suite/base-service.js';
-import { SERVICE_NAMES, SERVICE_LAYERS, DEFAULT_CIRCUIT_BREAKER_CONFIG, getServiceMetadata } from '../utils/service-suite/service-constants.js';
+import { BaseService } from '../../utils/service-suite/base-service.js';
+import { SERVICE_NAMES, SERVICE_LAYERS, DEFAULT_CIRCUIT_BREAKER_CONFIG, getServiceMetadata } from '../../utils/service-suite/service-constants.js';
 // Prisma
-import { prisma } from '../config/prisma.js';
+import { prisma } from '../../config/prisma.js';
 // Solana Engine
-import { jupiterClient, getJupiterClient } from './solana-engine/jupiter-client.js';
-import { heliusClient } from './solana-engine/helius-client.js';
-import dexScreenerCollector from './token-enrichment/collectors/dexScreenerCollector.js';
+import { jupiterClient, getJupiterClient } from '../solana-engine/jupiter-client.js';
+import { heliusClient } from '../solana-engine/helius-client.js';
+import dexScreenerCollector from '../token-enrichment/collectors/dexScreenerCollector.js';
 // Logger and Progress Utilities
-import { logApi } from '../utils/logger-suite/logger.js';
-import { fancyColors, serviceColors } from '../utils/colors.js';
-import { createBatchProgress } from '../utils/logger-suite/batch-progress.js';
+import { logApi } from '../../utils/logger-suite/logger.js';
+import { fancyColors, serviceColors } from '../../utils/colors.js';
+import { createBatchProgress } from '../../utils/logger-suite/batch-progress.js';
 // Token Refresh Scheduler components
-import PriorityQueue from './token-refresh-scheduler/priority-queue.js';
-import TokenRankAnalyzer from './token-refresh-scheduler/rank-analyzer.js';
-import BatchOptimizer from './token-refresh-scheduler/batch-optimizer.js';
-import MetricsCollector from './token-refresh-scheduler/metrics-collector.js';
+import PriorityQueue from './priority-queue.js';
+import TokenRankAnalyzer from './rank-analyzer.js';
+import BatchOptimizer from './batch-optimizer.js';
+import MetricsCollector from './metrics-collector.js';
 
 // Config
-import { config } from '../config/config.js';
+import { config } from '../../config/config.js';
 
 // Constants and configuration
 const DEFAULT_MAX_TOKENS_PER_BATCH = 500;  // Updated from 100 to 500 for better Jupiter batching
@@ -103,7 +103,7 @@ const formatLog = {
 };
 // -- CURSOR AI MODIFICATION END --
 
-import serviceEvents, { SERVICE_EVENTS } from '../utils/service-suite/service-events.js';
+import serviceEvents, { SERVICE_EVENTS } from '../../utils/service-suite/service-events.js';
 
 /**
  * TokenRefreshScheduler - Advanced scheduling system for token price updates

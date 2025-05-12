@@ -42,7 +42,7 @@ import liquidityService from '../../services/liquidityService.js';
 // tokenSyncService has been permanently removed
 // tokenWhitelistService has been permanently disabled (using token.is_active flag instead)
 import marketDataService from '../../services/market-data/marketDataService.js';
-import tokenRefreshIntegration from '../../services/token-refresh-integration.js';
+import tokenRefreshIntegration from '../../services/token-refresh-scheduler/token-refresh-integration.js';
 import tokenDEXDataService from '../../services/token-dex-data-service.js';
 import tokenDetectionService from '../../services/market-data/tokenDetectionService.js';
 // [the one below is brand new!]

@@ -6,9 +6,9 @@
  * This module implements a Dialect Blinks registry for DegenDuel's
  * Solana Actions (Blinks) functionality.
  * 
- * @version 1.0.5
+ * @version 1.0.7
  * @created 2025-05-11
- * @updated 2025-05-23 // Revert back to top-level dynamic import for @dialectlabs/web3
+ * @updated 2025-05-23
  */
 
 import { logApi } from '../../utils/logger-suite/logger.js';

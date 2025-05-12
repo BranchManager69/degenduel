@@ -140,8 +140,10 @@ class TokenEnrichmentService extends BaseService {
       jupiter: jupiterCollector
     };
     
-    // Statistics
+    // Merge service-specific stats into the base stats object
     this.stats = {
+      ...this.stats, // Keep the base stats (operations, performance, circuitBreaker, history)
+      // Add or overwrite with service-specific stats
       processedTotal: 0,
       processedSuccess: 0,
       processedFailed: 0,

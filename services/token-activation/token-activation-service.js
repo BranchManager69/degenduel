@@ -457,7 +457,7 @@ class TokenActivationService extends BaseService {
                     market_cap: isNaN(priceUpsertData.market_cap) ? null : priceUpsertData.market_cap,
                     fdv: isNaN(priceUpsertData.fdv) ? null : priceUpsertData.fdv,
                     volume_24h: isNaN(priceUpsertData.volume_24h) ? null : priceUpsertData.volume_24h,
-                    liquidity: isNaN(priceUpsertData.liquidity_usd) ? null : priceUpsertData.liquidity_usd,
+                    liquidity: isNaN(priceUpsertData.liquidity) ? null : priceUpsertData.liquidity,
                     updated_at: priceUpsertData.updated_at,
                 },
                 create: {
@@ -466,7 +466,7 @@ class TokenActivationService extends BaseService {
                     market_cap: isNaN(priceUpsertData.market_cap) ? null : priceUpsertData.market_cap,
                     fdv: isNaN(priceUpsertData.fdv) ? null : priceUpsertData.fdv,
                     volume_24h: isNaN(priceUpsertData.volume_24h) ? null : priceUpsertData.volume_24h,
-                    liquidity: isNaN(priceUpsertData.liquidity_usd) ? null : priceUpsertData.liquidity_usd,
+                    liquidity: isNaN(priceUpsertData.liquidity) ? null : priceUpsertData.liquidity,
                     updated_at: priceUpsertData.updated_at,
                 },
             });

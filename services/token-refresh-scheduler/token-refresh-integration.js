@@ -12,27 +12,27 @@
  */
 
 // Service Suite
-import { BaseService } from '../utils/service-suite/base-service.js';
-import serviceManager from '../utils/service-suite/service-manager.js';
-import serviceEvents from '../utils/service-suite/service-events.js';
-import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
+import { BaseService } from '../../utils/service-suite/base-service.js';
+import serviceManager from '../../utils/service-suite/service-manager.js';
+import serviceEvents from '../../utils/service-suite/service-events.js';
+import { SERVICE_NAMES } from '../../utils/service-suite/service-constants.js';
 // Logger
-import { logApi } from '../utils/logger-suite/logger.js';
-import { fancyColors } from '../utils/colors.js';
+import { logApi } from '../../utils/logger-suite/logger.js';
+import { fancyColors } from '../../utils/colors.js';
 // Prisma
-import { prisma } from '../config/prisma.js';
+import { prisma } from '../../config/prisma.js';
 // Token Refresh Scheduler
 import tokenRefreshScheduler from './token-refresh-scheduler.js';
 
 // Config
-import { config } from '../config/config.js';
+import { config } from '../../config/config.js';
 
 // Service configuration
 const TOKEN_REFRESH_CONFIG = { // <------------- WRONG!!!
   name: 'token_refresh_scheduler_service',
   displayName: 'Token Refresh Scheduler',
   description: 'Advanced service for optimally scheduling token price updates',
-  intervalMs: 0, // No automatic interval - managed internally  (EXCUSE ME!!?!?!??!?)
+  intervalMs: 60000, // Set to 1 minute
   dependencies: [
     SERVICE_NAMES.MARKET_DATA, 
     SERVICE_NAMES.SOLANA_ENGINE,
@@ -215,22 +215,22 @@ export const getSchedulerMetrics = async () => {
       try {
         // Re-initialize components if needed
         if (!tokenRefreshScheduler.metricsCollector) {
-          const MetricsCollector = (await import('./token-refresh-scheduler/metrics-collector.js')).default;
+          const MetricsCollector = (await import('./metrics-collector.js')).default;
           tokenRefreshScheduler.metricsCollector = new MetricsCollector(tokenRefreshScheduler.config);
         }
         
         if (!tokenRefreshScheduler.priorityQueue) {
-          const PriorityQueue = (await import('./token-refresh-scheduler/priority-queue.js')).default;
+          const PriorityQueue = (await import('./priority-queue.js')).default;
           tokenRefreshScheduler.priorityQueue = new PriorityQueue(tokenRefreshScheduler.config);
         }
         
         if (!tokenRefreshScheduler.rankAnalyzer) {
-          const TokenRankAnalyzer = (await import('./token-refresh-scheduler/rank-analyzer.js')).default;
+          const TokenRankAnalyzer = (await import('./rank-analyzer.js')).default;
           tokenRefreshScheduler.rankAnalyzer = new TokenRankAnalyzer(tokenRefreshScheduler.config);
         }
         
         if (!tokenRefreshScheduler.batchOptimizer) {
-          const BatchOptimizer = (await import('./token-refresh-scheduler/batch-optimizer.js')).default;
+          const BatchOptimizer = (await import('./batch-optimizer.js')).default;
           tokenRefreshScheduler.batchOptimizer = new BatchOptimizer(tokenRefreshScheduler.config);
         }
         
@@ -287,7 +287,7 @@ export const getRefreshRecommendations = async () => {
       
       // Try to reinitialize rank analyzer component
       try {
-        const TokenRankAnalyzer = (await import('./token-refresh-scheduler/rank-analyzer.js')).default;
+        const TokenRankAnalyzer = (await import('./rank-analyzer.js')).default;
         tokenRefreshScheduler.rankAnalyzer = new TokenRankAnalyzer(tokenRefreshScheduler.config);
       } catch (reinitError) {
         logApi.error(`${fancyColors.GOLD}[TokenRefreshIntegration]${fancyColors.RESET} Failed to re-initialize rank analyzer:`, reinitError);
@@ -425,7 +425,7 @@ class TokenRefreshService extends BaseService {
           orderBy: [
             { priority_score: 'desc' }
           ],
-          take: 5,
+          take: 50,
           select: {
             id: true,
             address: true,
