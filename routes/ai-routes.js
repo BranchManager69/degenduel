@@ -1,13 +1,14 @@
 // routes/ai-routes.js
 
-/** 
+/**
  * AI Response Routes
- * 
+ *
  * @description Handles AI response generation requests related to various topics and data sources.
- * 
+ *
  * @author BranchManager69
- * @version 1.9.0
+ * @version 1.9.1
  * @created 2025-05-03
+ * @updated 2025-05-12
  */
 
 import express from 'express';
@@ -15,13 +16,12 @@ import rateLimit from 'express-rate-limit';
 import { requireAuth, requireAdmin, requireSuperAdmin } from '../middleware/auth.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 
-// Specialized Generators
-import { generateAIResponse } from '../services/ai-service/ai-service.js';
-import { generateTokenAIResponse } from '../services/ai-service/ai-service.js';
-// Generic
-import { generateDidiResponse } from '../services/ai-service/ai-service.js';
-// Legacy
-import { generateLegacyChatCompletion } from '../services/ai-service/ai-service.js';
+// AI Generators
+import { 
+  generateAIResponse, 
+  generateTokenAIResponse, 
+  generateDidiResponse 
+} from '../services/ai-service/ai-service.js';
 
 // ------------------------------------------------------------------------------------------------
 
@@ -321,41 +321,20 @@ router.post('/stream', aiServiceRateLimiter, async (req, res) => {
       userNickname     // User's nickname
     });
     
-    // Pipe stream directly to response
-    stream.on('data', (chunk) => {
-      // Parse and remove the usage property
-      try {
-        const data = JSON.parse(chunk.toString().replace(/^data: /, ''));
-        if (data.choices && data.choices[0] && data.choices[0].delta) {
-          const content = data.choices[0].delta.content || '';
-          
-          // Send just the content
-          res.write(`data: ${JSON.stringify({ content })}\n\n`);
-        }
-      } catch (e) {
-        // If parsing fails, just send the raw chunk
-        res.write(`data: ${chunk.toString()}\n\n`);
-      }
-    });
-    
-    // Handle end of stream
-    stream.on('end', () => {
-      // Send conversation ID at the end
-      res.write(`data: ${JSON.stringify({ 
-        conversationId: streamConversationId,
-        isComplete: true 
-      })}\n\n`);
-      res.end();
-    });
-    
-    // Handle errors
+    // Pipe stream to response - the stream is already formatted correctly
+    stream.pipe(res);
+
+    // Handle errors with error event listener
     stream.on('error', (error) => {
       logApi.error('Streaming AI Error:', error);
-      res.write(`data: ${JSON.stringify({ 
-        error: error.message || 'Stream error',
-        isComplete: true 
-      })}\n\n`);
-      res.end();
+      // Only try to write if the response hasn't been sent yet
+      if (!res.headersSent) {
+        res.write(`data: ${JSON.stringify({
+          error: error.message || 'Stream error',
+          isComplete: true
+        })}\n\n`);
+        res.end();
+      }
     });
     
   } catch (error) {

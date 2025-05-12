@@ -26,7 +26,7 @@ class BatchProgress {
     total = 100,
     batchSize = 10,
     service = 'BATCH_PROGRESS',
-    logLevel = 'info',
+    logLevel = 'debug',
     progressChar = '█',
     emptyChar = '░',
     barLength = 20,
@@ -94,7 +94,7 @@ class BatchProgress {
       this._renderProgress();
     } else {
       // For non-TTY, log the start message
-      logApi[this.logLevel](`Starting ${this.name}: 0/${this.total} (0%)`, { 
+      logApi[this.logLevel](`Starting ${this.name}: 0/${this.total} (0%)`, {
         service: this.service,
         // Add structured analytics data for Logtail
         _batch_operation: {
@@ -546,8 +546,8 @@ class BatchProgress {
    */
   _generateCompletionMessage(stats) {
     let statusEmoji = stats.errors > 0 ? '⚠️' : '✅';
-    
-    return `${statusEmoji} ${this.name} completed: ${stats.completed}/${stats.total} items (${stats.percent}%) in ${stats.duration.formattedTime}
+
+    return `${statusEmoji} ${this.name} completed: ${stats.completed}/${stats.total} items (${stats.percent}%) in ${stats.duration.seconds}s
     Processed: ${stats.itemsPerSecond} items/sec
     Batches: ${stats.batches.completed} completed, ${stats.batches.skipped} skipped
     Issues: ${stats.errors} errors, ${stats.warnings} warnings`;

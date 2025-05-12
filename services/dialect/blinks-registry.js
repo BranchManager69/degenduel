@@ -6,73 +6,18 @@
  * This module implements a Dialect Blinks registry for DegenDuel's
  * Solana Actions (Blinks) functionality.
  * 
- * @version 1.0.0
+ * @version 1.0.4
  * @created 2025-05-11
+ * @updated 2025-05-23 // Revert to default import for @dialectlabs/web3
  */
 
 import { logApi } from '../../utils/logger-suite/logger.js';
 import { config } from '../../config/config.js';
 import { PublicKey } from '@solana/web3.js';
 import { v4 as uuidv4 } from 'uuid';
-
-// Dialect SDK imports
-// Note: We're using try/catch blocks for import to gracefully handle potential import issues
-let Dialect, makeDialectSolana, SolanaSigner;
-
-try {
-  // Dynamic import of Dialect SDK
-  const dialectSdk = await import('@dialectlabs/sdk');
-  Dialect = dialectSdk.Dialect;
-
-  // Dynamic import of Dialect Web3
-  const dialectWeb3 = await import('@dialectlabs/web3');
-  makeDialectSolana = dialectWeb3.makeDialectSolana;
-  SolanaSigner = dialectWeb3.SolanaSigner;
-} catch (error) {
-  // If import fails, log warning but continue with mock implementations
-  console.warn('Error importing Dialect SDK, using mock implementations:', error.message);
-
-  // Mock implementations for Dialect SDK
-  Dialect = {
-    sdk: () => ({
-      blinks: {
-        providers: {
-          create: async (config) => ({
-            id: 'mock-provider-id',
-            name: config.name,
-            description: config.description
-          }),
-        },
-        register: async (blink) => ({
-          id: blink.id,
-          name: blink.name,
-          description: blink.description,
-          actionUrl: blink.actionUrl,
-          parameters: blink.parameters || {}
-        }),
-        find: async (id) => ({
-          id,
-          name: `Mock Blink ${id}`,
-          description: 'Mock blink for testing',
-          actionUrl: `https://degenduel.me/api/blinks/${id}`
-        }),
-        findAll: async () => [],
-        update: async (blink) => blink,
-        delete: async () => true
-      }
-    })
-  };
-
-  // Mock implementation for Solana integration
-  makeDialectSolana = () => ({});
-  SolanaSigner = class {
-    constructor() {
-      this.address = 'MOCK_ADDRESS';
-      this.signMessage = async () => Buffer.from('MOCK_SIGNATURE');
-      this.signTransaction = async (tx) => tx;
-    }
-  };
-}
+import { Dialect } from '@dialectlabs/sdk';
+import web3Pkg from '@dialectlabs/web3';
+const { makeDialectSolana, SolanaSigner } = web3Pkg;
 
 // Cache for registered blinks
 const blinksCache = new Map();
@@ -86,6 +31,7 @@ let encryptionKey;
  */
 async function initializeDialect() {
   try {
+    // Removed await dialectWeb3Promise; dependencies are now available synchronously
     // Get wallet keypair from config
     const walletPrivateKey = config.dialect?.walletPrivateKey || 
                              config.master_wallet?.branch_manager_wallet_key;

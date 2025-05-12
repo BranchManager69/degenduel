@@ -457,7 +457,7 @@ Call these functions when applicable to provide real-time, accurate data. If a u
         model: loadout.model,
         input: messagesWithSystem,
         temperature: loadout.temperature,
-        max_tokens: loadout.maxTokens,
+        max_output_tokens: loadout.maxTokens, // Updated from max_tokens to max_output_tokens
         tools: TERMINAL_FUNCTIONS.map(fn => ({
           type: "function",
           name: fn.name,
@@ -526,7 +526,7 @@ Call these functions when applicable to provide real-time, accurate data. If a u
             parameters: fn.parameters
           })),
           temperature: loadout.temperature,
-          max_tokens: loadout.maxTokens,
+          max_output_tokens: loadout.maxTokens, // Updated from max_tokens to max_output_tokens
           stream: false,
           user: options.userId || 'anonymous'
         });
@@ -687,90 +687,115 @@ Call these functions when applicable to provide real-time, accurate data. If a u
         conversationId
       });
 
-      // Call the OpenAI Responses API
-      //   Utilizes function calling, powerful custom tools, and response streaming.
-      const stream = await this.openai.responses.create({
-        model: loadout.model,
-        input: messagesWithSystem,
-        temperature: loadout.temperature,
-        max_tokens: loadout.maxTokens,
-        stream: true,
-        tools: options.functions ? options.functions.map(fn => ({
-          type: "function",
-          name: fn.name,
-          description: fn.description,
-          parameters: fn.parameters
-        })) : [], // support function calling with proper tools format
-        tool_choice: options.functions?.length > 0 ? "required" : "auto", // Force function calling if functions are provided
-      }, { responseType: 'stream' });
-      
-      // Track for performance metrics
-      this.stats.operations.total++;
-      this.stats.operations.successful++;
-      
-      // Process the stream response
-      let fullResponse = '';
-      stream.data.on('data', chunk => {
-        // Split the chunk into payloads
-        const payloads = chunk.toString().split('\n\n').filter(Boolean)
-          .map(p => {
-            try {
-              return JSON.parse(p.replace(/^data: /, ''));
-            } catch (e) {
-              return null;
-            }
-          })
-          .filter(Boolean);
-        
-        // Process each payload in the stream
-        for (const payload of payloads) {
-          if (payload.choices[0]?.delta?.content) {
-            fullResponse += payload.choices[0].delta.content;
-          }
-          
-          // Handle function calls if present in streaming format
-          if (payload.choices?.[0]?.delta?.tool_calls) {
-            // Tool call detected in streaming
-            const toolCalls = payload.choices[0].delta.tool_calls;
-            for (const toolCall of toolCalls) {
-              if (toolCall.type === 'function') {
-                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Function call received:`, { 
-                  function: toolCall.function
-                });
+      // Create a PassThrough stream for the client response
+      const { PassThrough } = await import('stream');
+      const stream = new PassThrough();
+
+      try {
+        // Call the OpenAI API with streaming enabled
+        const openaiStream = await this.openai.responses.create({
+          model: loadout.model,
+          input: messagesWithSystem,
+          temperature: loadout.temperature,
+          max_output_tokens: loadout.maxTokens, // Using the correct parameter name
+          stream: true,
+          tools: options.functions ? options.functions.map(fn => ({
+            type: "function",
+            name: fn.name,
+            description: fn.description,
+            parameters: fn.parameters
+          })) : [], // Support function calling with proper tools format
+          tool_choice: options.functions?.length > 0 ? "required" : "auto", // Force function calling if functions are provided
+        });
+
+        // Track for performance metrics
+        this.stats.operations.total++;
+        this.stats.operations.successful++;
+  
+        // Variable to collect the full response for storing in DB
+        let fullResponse = '';
+  
+        // Start an asynchronous process to handle the OpenAI stream
+        (async () => {
+          try {
+            // Process the stream using for await...of loop (AsyncIterable interface)
+            for await (const chunk of openaiStream) {
+              // Process content from response
+              if (chunk.choices && chunk.choices[0]?.delta?.content) {
+                const content = chunk.choices[0].delta.content;
+                fullResponse += content;
+                
+                // Format and write chunk to client stream
+                const formattedChunk = JSON.stringify({ content });
+                stream.write(`data: ${formattedChunk}\n\n`);
+              }
+              
+              // Handle function calls if present
+              if (chunk.choices && chunk.choices[0]?.delta?.tool_calls) {
+                const toolCalls = chunk.choices[0].delta.tool_calls;
+                for (const toolCall of toolCalls) {
+                  if (toolCall.type === 'function') {
+                    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Function call received:`, { 
+                      function: toolCall.function
+                    });
+                  }
+                }
               }
             }
-          }
-        }
-      });
-      
-      // Handle the end of the stream
-      stream.data.on('end', async () => {
-        // Update performance metrics
-        this.stats.performance.lastOperationTimeMs = Date.now() - startTime;
-        
-        if (isAuthenticated && walletAddress && conversationId) {
-          try {
-            // Get the last user message
-            const userMessage = sanitizedMessages[sanitizedMessages.length - 1];
             
-            // Store the conversation
-            await this.storeConversation(
-              conversationId,
-              walletAddress,
-              userMessage,
-              fullResponse,
-              loadoutType
-            );
-          } catch (e) {
-            // Log storage failure
-            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Storage failure during AI conversation update for streaming response:`, e);
+            // Send completion message
+            stream.write(`data: ${JSON.stringify({ conversationId, isComplete: true })}\n\n`);
+            stream.end();
+            
+            // Store conversation after stream completes if user is authenticated
+            if (isAuthenticated && walletAddress && conversationId) {
+              try {
+                const userMessage = sanitizedMessages[sanitizedMessages.length - 1];
+                
+                await this.storeConversation(
+                  conversationId,
+                  walletAddress,
+                  userMessage,
+                  fullResponse,
+                  loadoutType
+                );
+              } catch (e) {
+                logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Storage failure during AI conversation update:`, e);
+              }
+            }
+            
+            // Update performance metrics
+            this.stats.performance.lastOperationTimeMs = Date.now() - startTime;
+            
+          } catch (error) {
+            // Log error
+            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Stream processing error:`, error);
+            
+            // Send error to client
+            stream.write(`data: ${JSON.stringify({ error: "Stream processing error", isComplete: true })}\n\n`);
+            stream.end();
           }
-        }
-      });
+        })();
+        
+      } catch (error) {
+        // Handle errors during stream creation
+        logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Failed to initialize OpenAI stream:`, error);
+        
+        // Send error message and end the stream
+        stream.write(`data: ${JSON.stringify({ 
+          error: "Failed to create AI stream: " + (error.message || "Unknown error"), 
+          isComplete: true 
+        })}\n\n`);
+        stream.end();
+        
+        // Track for performance metrics
+        this.stats.operations.total++;
+        this.stats.operations.failed++;
+      }
       
-      // Return the stream response
+      // Return the stream for the client
       return {
-        stream: stream.data,
+        stream,
         conversationId
       };
     } catch (error) {
@@ -877,92 +902,115 @@ Call these functions when applicable to provide real-time, accurate data. If a u
         conversationId
       });
 
-      // Call the OpenAI Responses API
-      //   Utilizes function calling, powerful custom tools, and response streaming.
-      const stream = await this.openai.responses.create({
-        model: loadout.model,
-        input: messagesWithSystem,
-        temperature: loadout.temperature,
-        max_tokens: loadout.maxTokens,
-        stream: true,
-        tools: options.functions ? options.functions.map(fn => ({
-          type: "function",
-          name: fn.name,
-          description: fn.description,
-          parameters: fn.parameters
-        })) : [], // support function calling with proper tools format
-        tool_choice: options.functions?.length > 0 ? "required" : "auto", // Force function calling if functions are provided
-      }, { responseType: 'stream' });
-      
-      // Track for performance metrics
-      this.stats.operations.total++;
-      this.stats.operations.successful++;
-      
-      // Process the stream response
-      let fullResponse = '';
-      stream.data.on('data', chunk => {
-        // Split the chunk into payloads
-        const payloads = chunk.toString().split('\n\n').filter(Boolean)
-          .map(p => {
-            try {
-              return JSON.parse(p.replace(/^data: /, ''));
-            } catch (e) {
-              return null;
-            }
-          })
-          .filter(Boolean);
-        
-        // Process each payload in the stream
-        for (const payload of payloads) {
-          if (payload.choices[0]?.delta?.content) {
-            fullResponse += payload.choices[0].delta.content;
-          }
-          
-          // Handle function calls if present in streaming format
-          if (payload.choices?.[0]?.delta?.tool_calls) {
-            // Tool call detected in streaming
-            const toolCalls = payload.choices[0].delta.tool_calls;
-            for (const toolCall of toolCalls) {
-              if (toolCall.type === 'function') {
-                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Function call received:`, { 
-                  function: toolCall.function
-                });
+      // Create a PassThrough stream for the client response
+      const { PassThrough } = await import('stream');
+      const stream = new PassThrough();
+
+      try {
+        // Call the OpenAI API with streaming enabled
+        const openaiStream = await this.openai.responses.create({
+          model: loadout.model,
+          input: messagesWithSystem,
+          temperature: loadout.temperature,
+          max_output_tokens: loadout.maxTokens, // Using the correct parameter name
+          stream: true,
+          tools: options.functions ? options.functions.map(fn => ({
+            type: "function",
+            name: fn.name,
+            description: fn.description,
+            parameters: fn.parameters
+          })) : [], // Support function calling with proper tools format
+          tool_choice: options.functions?.length > 0 ? "required" : "auto", // Force function calling if functions are provided
+        });
+
+        // Track for performance metrics
+        this.stats.operations.total++;
+        this.stats.operations.successful++;
+  
+        // Variable to collect the full response for storing in DB
+        let fullResponse = '';
+  
+        // Start an asynchronous process to handle the OpenAI stream
+        (async () => {
+          try {
+            // Process the stream using for await...of loop (AsyncIterable interface)
+            for await (const chunk of openaiStream) {
+              // Process content from response
+              if (chunk.choices && chunk.choices[0]?.delta?.content) {
+                const content = chunk.choices[0].delta.content;
+                fullResponse += content;
+                
+                // Format and write chunk to client stream
+                const formattedChunk = JSON.stringify({ content });
+                stream.write(`data: ${formattedChunk}\n\n`);
+              }
+              
+              // Handle function calls if present
+              if (chunk.choices && chunk.choices[0]?.delta?.tool_calls) {
+                const toolCalls = chunk.choices[0].delta.tool_calls;
+                for (const toolCall of toolCalls) {
+                  if (toolCall.type === 'function') {
+                    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Function call received:`, { 
+                      function: toolCall.function
+                    });
+                  }
+                }
               }
             }
-          }
-        }
-      });
-      
-      // Handle the end of the stream
-      stream.data.on('end', async () => {
-        // Update performance metrics
-        this.stats.performance.lastOperationTimeMs = Date.now() - startTime;
-        
-        if (isAuthenticated && walletAddress && conversationId) {
-          try {
-            // Get the last user message
-            const userMessage = sanitizedMessages[sanitizedMessages.length - 1];
             
-            // Store the conversation
-            await this.storeConversation(
-              conversationId,
-              walletAddress,
-              userMessage,
-              fullResponse,
-              loadoutType
-            );
-          } catch (e) {
-            // Log storage failure
-            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Storage failure during AI conversation update for streaming response:`, e);
+            // Send completion message
+            stream.write(`data: ${JSON.stringify({ conversationId, isComplete: true })}\n\n`);
+            stream.end();
+            
+            // Store conversation after stream completes if user is authenticated
+            if (isAuthenticated && walletAddress && conversationId) {
+              try {
+                const userMessage = sanitizedMessages[sanitizedMessages.length - 1];
+                
+                await this.storeConversation(
+                  conversationId,
+                  walletAddress,
+                  userMessage,
+                  fullResponse,
+                  loadoutType
+                );
+              } catch (e) {
+                logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Storage failure during AI conversation update:`, e);
+              }
+            }
+            
+            // Update performance metrics
+            this.stats.performance.lastOperationTimeMs = Date.now() - startTime;
+            
+          } catch (error) {
+            // Log error
+            logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Stream processing error:`, error);
+            
+            // Send error to client
+            stream.write(`data: ${JSON.stringify({ error: "Stream processing error", isComplete: true })}\n\n`);
+            stream.end();
           }
-        }
-      });
+        })();
+        
+      } catch (error) {
+        // Handle errors during stream creation
+        logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Failed to initialize OpenAI stream:`, error);
+        
+        // Send error message and end the stream
+        stream.write(`data: ${JSON.stringify({ 
+          error: "Failed to create AI stream: " + (error.message || "Unknown error"), 
+          isComplete: true 
+        })}\n\n`);
+        stream.end();
+        
+        // Track for performance metrics
+        this.stats.operations.total++;
+        this.stats.operations.failed++;
+      }
       
-      // (is this truly streaming?)
-
-      // Return the stream response
+      // Return the stream for the client
       return {
-        stream: stream.data,
+        stream,
         conversationId
       };
     } catch (error) {
@@ -1070,7 +1118,7 @@ Call these functions when applicable to provide real-time, accurate data. If a u
         model: loadout.model,
         input: messagesWithSystem, // Use 'input' field for the new API
         temperature: loadout.temperature,
-        max_tokens: loadout.maxTokens,
+        max_output_tokens: loadout.maxTokens, // Updated from max_tokens to max_output_tokens
         stream: false, // Explicitly set stream to false
         user: options.userId || 'anonymous' // Pass user identifier if available
         // Note: Function calling ('tools') is not included here by default,

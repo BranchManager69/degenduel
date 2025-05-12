@@ -167,11 +167,14 @@ class TokenEnrichmentService extends BaseService {
       
       // Use the singleton Prisma client
       this.db = prisma;
-      
-      // Register with service manager with explicit dependencies
-      const dependencies = [SERVICE_NAMES.TOKEN_DETECTION, SERVICE_NAMES.SOLANA_ENGINE];
-      serviceManager.register(this.name, dependencies);
-      
+
+      // REMOVED: Self-registration with service manager
+      // The following code was causing "dependencies is not iterable" errors because
+      // this service is already registered by ServiceInitializer.registerDataLayer()
+      // and doesn't need to register itself again during initialization.
+      // const dependencies = [SERVICE_NAMES.TOKEN_DETECTION, SERVICE_NAMES.SOLANA_ENGINE];
+      // serviceManager.register(this.name, dependencies);
+
       // Initialize collectors
       await jupiterCollector.initialize();
       

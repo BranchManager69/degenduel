@@ -222,7 +222,14 @@ function handleSocketMessage(data) {
         if (message.id && message.id.toString().startsWith('subscribe-') && message.result !== undefined) {
             const address = message.id.toString().replace('subscribe-', '');
             subscriptionIds.set(address, message.result);
-            logApi.info(`${fancyColors.GREEN}[WalletBalanceWS] Successfully subscribed to account ${address} with subscription ID ${message.result}${fancyColors.RESET}`);
+
+            // Only log 1 out of every 10 subscriptions for consistency with other wallet services
+            if (subscriptionIds.size % 10 === 0) {
+                logApi.info(`${fancyColors.GREEN}[WalletBalanceWS] Successfully subscribed to account ${address} with subscription ID ${message.result} (subscription #${subscriptionIds.size})${fancyColors.RESET}`);
+            } else {
+                // Keep detailed logs at debug level
+                logApi.debug(`${fancyColors.GREEN}[WalletBalanceWS] Successfully subscribed to account ${address} with subscription ID ${message.result}${fancyColors.RESET}`);
+            }
             return;
         }
         

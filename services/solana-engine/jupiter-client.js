@@ -239,7 +239,7 @@ class PriceService extends JupiterBase {
 
     const throttleBatches = async (batchesToProcess) => {
         const allBatchResults = {};
-      const progress = createBatchProgress({ name: 'Jupiter Price Batch', total: batchesToProcess.length, service: SERVICE_NAMES.JUPITER_CLIENT, operation: 'jupiter_price_batches' });
+      const progress = createBatchProgress({ name: 'Jupiter Price Batch', total: batchesToProcess.length, service: SERVICE_NAMES.JUPITER_CLIENT, operation: 'jupiter_price_batches', logLevel: 'debug' });
         progress.start();
       for (let i = 0; i < batchesToProcess.length; i++) {
         const batch = batchesToProcess[i];
@@ -256,7 +256,7 @@ class PriceService extends JupiterBase {
                     if (!isNaN(retryAfterSeconds)) delayForThisRetry = Math.max(delayForThisRetry, retryAfterSeconds * 1000);
                   }
                 delayForThisRetry = Math.min(delayForThisRetry, this.refreshInterval || 60000) + (Math.random() * 500);
-                  logApi.info(`${formatLog.tag()} Retrying price batch ${batchNum} (attempt ${retries + 1}) after ${delayForThisRetry.toFixed(0)}ms`);
+                  logApi.debug(`${formatLog.tag()} Retrying price batch ${batchNum} (attempt ${retries + 1}) after ${delayForThisRetry.toFixed(0)}ms`);
                   await new Promise(resolve => setTimeout(resolve, delayForThisRetry));
                 if (!(statusCode === 429)) currentBackoffMs = Math.min(currentBackoffMs * 2, this.refreshInterval || 60000);
                 }
@@ -268,7 +268,7 @@ class PriceService extends JupiterBase {
                 lastError = new Error("Empty query string for Jupiter price API");
                 break;
               }
-              logApi.info(`[PriceService.throttleBatches] Attempting Jupiter API Call for batch ${batchNum}. Query: ids=${currentQueryString.substring(0, 200)}...`);
+              logApi.debug(`[PriceService.throttleBatches] Attempting Jupiter API Call for batch ${batchNum}. Query: ids=${currentQueryString.substring(0, 200)}...`);
 
               const response = await this.makeRequest('GET', this.config.endpoints.price.getPrices, null, { ids: currentQueryString });
                 if (response && response.data && typeof response.data === 'object') {
@@ -662,11 +662,12 @@ class JupiterClient extends BaseService {
 
     const throttleBatches = async (batchesForApiCall) => {
       const allAggregatedResults = {};
-      const progress = createBatchProgress({ 
-        name: 'Jupiter Price Fetch', 
-        total: batchesForApiCall.length, 
-        service: SERVICE_NAMES.JUPITER_CLIENT, 
-        operation: 'jupiter_price_api_batches' 
+      const progress = createBatchProgress({
+        name: 'Jupiter Price Fetch',
+        total: batchesForApiCall.length,
+        service: SERVICE_NAMES.JUPITER_CLIENT,
+        operation: 'jupiter_price_api_batches',
+        logLevel: 'debug'
       });
       progress.start();
 
@@ -695,7 +696,7 @@ class JupiterClient extends BaseService {
                 if (!isNaN(retryAfterSeconds)) delayForThisRetry = Math.max(delayForThisRetry, retryAfterSeconds * 1000);
               }
               delayForThisRetry = Math.min(delayForThisRetry, (this.prices.refreshInterval || 60000)) + (Math.random() * 500);
-              logApi.info(`${formatLog.tag()} Retrying Jupiter price API batch ${batchNumForLog} (attempt ${retries + 1}) after ${delayForThisRetry.toFixed(0)}ms`);
+              logApi.debug(`${formatLog.tag()} Retrying Jupiter price API batch ${batchNumForLog} (attempt ${retries + 1}) after ${delayForThisRetry.toFixed(0)}ms`);
               await new Promise(resolve => setTimeout(resolve, delayForThisRetry));
               if (!(statusCode === 429)) currentBackoffMs = Math.min(currentBackoffMs * 2, (this.prices.refreshInterval || 60000));
             }
@@ -710,7 +711,7 @@ class JupiterClient extends BaseService {
               continue;
             }
             
-            logApi.info(`[JupiterClient.getPrices] Attempting Jupiter API Call for batch ${batchNumForLog}. Query: ids=${currentQueryStringJoined.substring(0, 200)}...`);
+            logApi.debug(`[JupiterClient.getPrices] Attempting Jupiter API Call for batch ${batchNumForLog}. Query: ids=${currentQueryStringJoined.substring(0, 200)}...`);
 
             const response = await this.prices.makeRequest('GET', this.prices.config.endpoints.price.getPrices, null, { ids: currentQueryStringJoined });
 

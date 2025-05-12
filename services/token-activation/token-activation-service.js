@@ -31,15 +31,15 @@ const METRIC_STALE_THRESHOLD_HOURS = 6; // How old metrics can be before re-chec
 // Criteria for activation (configurable, could be moved to system_settings later)
 // Tier 1: New Tokens (recently seen)
 const CRITERIA_TIER1_MIN_MARKET_CAP = 50000;   // $50k
-const CRITERIA_TIER1_MIN_VOLUME_24H = 100000;  // $100k
+const CRITERIA_TIER1_MIN_VOLUME_24H = 50000;   // $50k (reduced from $100k to activate more tokens)
 
 // Tier 2: Recent Tokens
 const CRITERIA_TIER2_MIN_MARKET_CAP = 100000;  // $100k
-const CRITERIA_TIER2_MIN_VOLUME_24H = 100000;  // $100k
+const CRITERIA_TIER2_MIN_VOLUME_24H = 50000;   // $50k (reduced from $100k to activate more tokens)
 
 // Tier 3: Established Tokens
 const CRITERIA_TIER3_MIN_MARKET_CAP = 250000;  // $250k
-const CRITERIA_TIER3_MIN_VOLUME_24H = 100000;  // $100k
+const CRITERIA_TIER3_MIN_VOLUME_24H = 50000;   // $50k (reduced from $100k to activate more tokens)
 const CRITERIA_MAX_AGE_HOURS_FOR_NEW = 24 * 3; // 3 days for "new" token auto-activation
 
 const TOKEN_DETAILS_BATCH_SIZE = 10; // How many tokens to fetch details for in one sub-batch

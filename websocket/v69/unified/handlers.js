@@ -103,7 +103,7 @@ export async function handleConnection(ws, req, server) {
     
     try {
       // ===== DEBUG LOGGING: Auth attempt from cookies =====
-      logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} AUTH ATTEMPT ${fancyColors.RESET} Starting auth from cookies`);
+      logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} AUTH ATTEMPT ${fancyColors.RESET} Starting auth from cookies`);
       // ===== END DEBUG LOGGING =====
       
       // Check for session cookie
@@ -111,7 +111,7 @@ export async function handleConnection(ws, req, server) {
       const sessionCookie = cookies.split(';').find(cookie => cookie.trim().startsWith('session='));
       
       // ===== DEBUG LOGGING: Cookie check =====
-      logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} COOKIE CHECK ${fancyColors.RESET} Cookie found: ${!!sessionCookie}, cookies: "${cookies.substring(0, 100)}${cookies.length > 100 ? '...' : ''}"`);
+      logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} COOKIE CHECK ${fancyColors.RESET} Cookie found: ${!!sessionCookie}, cookies: "${cookies.substring(0, 100)}${cookies.length > 100 ? '...' : ''}"`);
       // ===== END DEBUG LOGGING =====
       
       if (sessionCookie) {
@@ -121,7 +121,7 @@ export async function handleConnection(ws, req, server) {
         const token = sessionCookie.split('=')[1].trim();
         
         // ===== DEBUG LOGGING: Token extraction =====
-        logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} TOKEN EXTRACT ${fancyColors.RESET} Token length: ${token.length}, starts with: ${token.substring(0, 10)}...`);
+        logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} TOKEN EXTRACT ${fancyColors.RESET} Token length: ${token.length}, starts with: ${token.substring(0, 10)}...`);
         // ===== END DEBUG LOGGING =====
         
         // Store raw token for auth API calls
@@ -129,22 +129,22 @@ export async function handleConnection(ws, req, server) {
         ws.clientInfo._rawToken = token;
         
         // ===== DEBUG LOGGING: clientInfo initialization =====
-        logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} CLIENTINFO INIT ${fancyColors.RESET} Initial clientInfo object created with token`);
+        logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} CLIENTINFO INIT ${fancyColors.RESET} Initial clientInfo object created with token`);
         // ===== END DEBUG LOGGING ====
         
         // Decode the token without verifying (to avoid exceptions) 
         try {
           // ===== DEBUG LOGGING: Token decode attempt =====
-          logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} TOKEN DECODE ${fancyColors.RESET} Attempting to decode JWT token without verification`);
+          logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} TOKEN DECODE ${fancyColors.RESET} Attempting to decode JWT token without verification`);
           // ===== END DEBUG LOGGING =====
           
           const decoded = jwt.decode(token);
           
           // ===== DEBUG LOGGING: Decode result =====
           if (decoded) {
-            logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} TOKEN SUCCESS ${fancyColors.RESET} Token decoded successfully, has wallet: ${!!decoded.wallet_address}, has role: ${!!decoded.role}`);
+            logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} TOKEN SUCCESS ${fancyColors.RESET} Token decoded successfully, has wallet: ${!!decoded.wallet_address}, has role: ${!!decoded.role}`);
           } else {
-            logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} TOKEN FAIL ${fancyColors.RESET} Failed to decode token`);
+            logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} TOKEN FAIL ${fancyColors.RESET} Failed to decode token`);
           }
           // ===== END DEBUG LOGGING =====
           
@@ -155,7 +155,7 @@ export async function handleConnection(ws, req, server) {
             authFlowState.wallet = true; // Wallet address found
             
             // ===== DEBUG LOGGING: Wallet extraction =====
-            logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} WALLET FOUND ${fancyColors.RESET} Wallet: ${userId}, Role: ${role}`);
+            logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} WALLET FOUND ${fancyColors.RESET} Wallet: ${userId}, Role: ${role}`);
             // ===== END DEBUG LOGGING ====
             
             // Look up the user's nickname and balance
@@ -168,14 +168,14 @@ export async function handleConnection(ws, req, server) {
             });
             
             // ===== DEBUG LOGGING: DB lookup =====
-            logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} DB LOOKUP ${fancyColors.RESET} Looking up user in database: ${userId}`);
+            logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} DB LOOKUP ${fancyColors.RESET} Looking up user in database: ${userId}`);
             // ===== END DEBUG LOGGING =====
             
             if (user) {
               authFlowState.user = true; // User found in DB
               
               // ===== DEBUG LOGGING: User found =====
-              logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} USER FOUND ${fancyColors.RESET} Found user in database: ${userId}, has nickname: ${!!user.nickname}, has balance: ${!!user.last_known_balance}`);
+              logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_CYAN}${fancyColors.WHITE} USER FOUND ${fancyColors.RESET} Found user in database: ${userId}, has nickname: ${!!user.nickname}, has balance: ${!!user.last_known_balance}`);
               // ===== END DEBUG LOGGING =====
               
               if (user.nickname) {
@@ -191,34 +191,34 @@ export async function handleConnection(ws, req, server) {
               isAuthenticated = true;
               
               // ===== DEBUG LOGGING: Auth success =====
-              logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} AUTH SUCCESS ${fancyColors.RESET} User authenticated successfully: ${nickname || userId}`);
+              logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} AUTH SUCCESS ${fancyColors.RESET} User authenticated successfully: ${nickname || userId}`);
               // ===== END DEBUG LOGGING =====
             } else {
               // ===== DEBUG LOGGING: User not found =====
-              logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} USER NOT FOUND ${fancyColors.RESET} User not found in database: ${userId}`);
+              logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} USER NOT FOUND ${fancyColors.RESET} User not found in database: ${userId}`);
               // ===== END DEBUG LOGGING =====
             }
           }
         } catch (tokenErr) {
           // ===== DEBUG LOGGING: Token error =====
-          logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} TOKEN ERROR ${fancyColors.RESET} Error decoding token: ${tokenErr.message}`);
+          logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} TOKEN ERROR ${fancyColors.RESET} Error decoding token: ${tokenErr.message}`);
           // ===== END DEBUG LOGGING =====
           // Silently continue on token error
         }
       } else {
         // ===== DEBUG LOGGING: No cookie =====
-        logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} NO COOKIE ${fancyColors.RESET} No session cookie found in request`);
+        logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} NO COOKIE ${fancyColors.RESET} No session cookie found in request`);
         // ===== END DEBUG LOGGING =====
       }
     } catch (authErr) {
       // ===== DEBUG LOGGING: Auth error =====
-      logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} AUTH ERROR ${fancyColors.RESET} Error during authentication: ${authErr.message}`);
+      logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} AUTH ERROR ${fancyColors.RESET} Error during authentication: ${authErr.message}`);
       // ===== END DEBUG LOGGING =====
       // Silently continue on auth error
     }
     
     // ===== DEBUG LOGGING: Auth flow summary =====
-    logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} AUTH FLOW SUMMARY ${fancyColors.RESET}`, {
+    logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} AUTH FLOW SUMMARY ${fancyColors.RESET}`, {
       cookie: authFlowState.cookie,
       token: authFlowState.token,
       wallet: authFlowState.wallet,
@@ -270,7 +270,7 @@ ${bgColor}${fgColor}│ ${'Location:'.padEnd(fieldWidth)} ${(locationInfo?.forma
 ${bgColor}${fgColor}└${'─'.repeat(fieldWidth + maxValueWidth + 3)}${fancyColors.RESET}`;
 
     // ===== DEBUG LOGGING: Before final clientInfo assignment =====
-    logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} CLIENTINFO BEFORE ${fancyColors.RESET} Current state before final assignment:`, {
+    logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_MAGENTA}${fancyColors.WHITE} CLIENTINFO BEFORE ${fancyColors.RESET} Current state before final assignment:`, {
       exists: !!ws.clientInfo,
       rawTokenExists: ws.clientInfo?._rawToken ? 'yes' : 'no',
       authState: isAuthenticated ? 'authenticated' : 'not authenticated',
@@ -783,8 +783,8 @@ export async function handleSubscription(ws, message, req, server) {
   }
 
   // ===== DEBUG LOGGING: Check if clientInfo exists =====
-  logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} SUBSCRIPTION DEBUG ${fancyColors.RESET} clientInfo exists: ${!!ws.clientInfo}, topics: ${JSON.stringify(message.topics)}`);
-  logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} CLIENTINFO STATE ${fancyColors.RESET} isAuthenticated: ${ws.clientInfo.isAuthenticated}, userId: ${ws.clientInfo.userId}, connectionId: ${ws.clientInfo.connectionId}`);
+  logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} SUBSCRIPTION DEBUG ${fancyColors.RESET} clientInfo exists: ${!!ws.clientInfo}, topics: ${JSON.stringify(message.topics)}`);
+  logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} CLIENTINFO STATE ${fancyColors.RESET} isAuthenticated: ${ws.clientInfo.isAuthenticated}, userId: ${ws.clientInfo.userId}, connectionId: ${ws.clientInfo.connectionId}`);
   // ===== END DEBUG LOGGING =====
 
   // Validate topics
@@ -800,7 +800,7 @@ export async function handleSubscription(ws, message, req, server) {
   const hasRestrictedTopic = normalizedTopics.some(topic => restrictedTopics.includes(topic));
   
   // ===== DEBUG LOGGING: Topic restriction check =====
-  logApi.info(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} TOPIC CHECK ${fancyColors.RESET} hasRestrictedTopic: ${hasRestrictedTopic}, clientInfo exists: ${!!ws.clientInfo}`);
+  logApi.debug(`${wsColors.tag}[uni-ws]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} TOPIC CHECK ${fancyColors.RESET} hasRestrictedTopic: ${hasRestrictedTopic}, clientInfo exists: ${!!ws.clientInfo}`);
   // ===== END DEBUG LOGGING =====
   
   // Try/catch to safely handle potential null/undefined

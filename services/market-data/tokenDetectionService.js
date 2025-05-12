@@ -19,7 +19,7 @@
 import { BaseService } from '../../utils/service-suite/base-service.js';
 import { ServiceError } from '../../utils/service-suite/service-error.js';
 import serviceManager from '../../utils/service-suite/service-manager.js';
-import { SERVICE_NAMES } from '../../utils/service-suite/service-constants.js';
+import { SERVICE_NAMES, getServiceMetadata, DEFAULT_CIRCUIT_BREAKER_CONFIG } from '../../utils/service-suite/service-constants.js';
 import serviceEvents from '../../utils/service-suite/service-events.js';
 // Logger
 import { logApi } from '../../utils/logger-suite/logger.js';
@@ -52,12 +52,16 @@ const CONFIG = {
  */
 class TokenDetectionService extends BaseService {
     constructor() {
+        const serviceName = SERVICE_NAMES.TOKEN_DETECTION_SERVICE || 'token_detection_service'; 
+        const metadata = getServiceMetadata(serviceName) || {};
         super({
-            name: 'token_detection_service',
-            description: 'Detects new tokens and schedules metadata processing',
-            layer: 'MONITORING', 
-            criticalLevel: 'medium',
-            checkIntervalMs: 30 * 1000 // 30 seconds
+            name: serviceName,
+            description: metadata.description || 'Detects new tokens and schedules metadata processing',
+            dependencies: [SERVICE_NAMES.JUPITER_CLIENT],
+            layer: metadata.layer || 'MONITORING', 
+            criticalLevel: metadata.criticalLevel || 'medium',
+            checkIntervalMs: metadata.checkIntervalMs || CONFIG.CHECK_INTERVAL_SECONDS * 1000,
+            circuitBreaker: metadata.circuitBreaker || { ...DEFAULT_CIRCUIT_BREAKER_CONFIG, enabled: true, failureThreshold: 5 }
         });
         
         // Service state
@@ -67,8 +71,10 @@ class TokenDetectionService extends BaseService {
         this.jupiterClient = null;
         this.marketDb = null;
         
-        // Stats
+        // Merge service-specific stats into the base stats object
         this.stats = {
+            ...this.stats, // Keep the base stats (operations, performance, circuitBreaker, history)
+            // Add or overwrite with service-specific stats
             lastCheck: null,
             totalDetected: 0,
             tokensAdded: 0,
@@ -90,35 +96,24 @@ class TokenDetectionService extends BaseService {
         try {
             logApi.info(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} Initializing token detection service...`);
 
-            // Register with service manager if not already registered
-            if (!serviceManager.services.has(this.name)) {
-                serviceManager.register(this.name, this);
-            }
+            await super.initialize();
 
-            // Get Jupiter client
             this.jupiterClient = getJupiterClient();
 
-            if (!this.jupiterClient || !this.jupiterClient.isInitialized) {
-                // Fixed property name from 'initialized' to 'isInitialized' to match JupiterClient class
-                logApi.warn(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Jupiter client not initialized, will retry later${fancyColors.RESET}`);
-                return false;
+            if (!this.jupiterClient || !this.jupiterClient.isInitialized) { 
+                logApi.error(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.RED}CRITICAL: Jupiter client not fully initialized when TokenDetectionService.initialize() was called. This indicates a potential issue with service dependency management or startup order. JupiterClient.isInitialized: ${this.jupiterClient?.isInitialized}${fancyColors.RESET}`);
+                throw ServiceError.dependency("JupiterClient not initialized for TokenDetectionService. Dependency management should ensure this.");
             }
 
-            // Register event listeners
             serviceEvents.on('token:new', this.handleNewToken.bind(this));
 
-            // Start check interval
-            this.startCheckInterval();
-
-            // Start cleanup interval
             this.startCleanupInterval();
 
-            this.isInitialized = true;
             logApi.info(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} INITIALIZED ${fancyColors.RESET} Token detection service ready`);
             return true;
         } catch (error) {
             logApi.error(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.RED}Initialization failed:${fancyColors.RESET}`, error);
-            this.handleError(error);
+            await this.handleError(error); 
             return false;
         }
     }
@@ -363,23 +358,18 @@ class TokenDetectionService extends BaseService {
      */
     async performOperation() {
         try {
-            // Check service health
-            await this.checkServiceHealth();
-            
-            // Check for new tokens
+            // ServiceManager and BaseService should ensure JupiterClient (dependency) is operational before calling this.
+            if (!this.jupiterClient || !this.jupiterClient.isOperational) { 
+                logApi.warn(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} JupiterClient not operational. Skipping token detection cycle.`);
+                throw ServiceError.dependency('Jupiter client not operational for performOperation');
+            }
             const result = await this.checkForNewTokens();
-            
-            return {
-                success: !result.error,
-                result
-            };
+            // BaseService.recordSuccess() or .handleError() will be called by the framework
+            return !result.error; // Return true if no error from checkForNewTokens
         } catch (error) {
             logApi.error(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.RED}Operation failed:${fancyColors.RESET}`, error);
-            await this.handleError(error);
-            return {
-                success: false,
-                error: error.message
-            };
+            // No need to call await this.handleError(error) here, BaseService wrapper does it.
+            throw error; // Re-throw for BaseService to handle circuit breaking
         }
     }
     
@@ -424,19 +414,22 @@ class TokenDetectionService extends BaseService {
             this.isProcessingBatch = false;
             this.processingQueue = [];
             
-            // Initialize stats with safe default values
+            // Merge with existing stats, then reset service-specific parts
             this.stats = {
-                operations: {
-                    total: 0,
-                    successful: 0,
-                    failed: 0
-                },
+                ...this.stats, // Preserve base stats structure
+                // Reset service-specific stats
                 lastCheck: null,
                 totalDetected: 0,
                 tokensAdded: 0,
                 tokensRemoved: 0,
                 lastBatchSize: 0,
-                detectionHistory: []
+                detectionHistory: [],
+                // Ensure base operation stats are also reset as per original intent
+                operations: {
+                    total: 0,
+                    successful: 0,
+                    failed: 0
+                }
             };
             
             logApi.info(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} CLEANUP ${fancyColors.RESET} Service resources cleaned up`);

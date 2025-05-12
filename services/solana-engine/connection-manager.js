@@ -401,14 +401,27 @@ class ConnectionManager {
           const v2Results = await rpc.getMultipleAccounts(publicKeyStrings, getMultipleAccountsConfig).send();
           logApi.debug('[ConnectionManager] getMultipleAccounts: RPC call returned. Typeof v2Results:', typeof v2Results, 'IsArray:', Array.isArray(v2Results));
           
-          if (!Array.isArray(v2Results)) {
-            const resultType = typeof v2Results;
-            const resultPreview = JSON.stringify(v2Results)?.substring(0, 500);
-            logApi.error('[ConnectionManager] getMultipleAccounts CRITICAL_ERROR_PATH: Expected an array from RPC call, but received type: ' + resultType + '. Preview: ' + resultPreview, { v2Results });
-            throw new Error('FATAL_UNEXPECTED_RPC_RESPONSE_TYPE [getMultipleAccounts]: Received type \'' + resultType + '\' instead of array. Preview: ' + resultPreview);
+          // Helper function to safely stringify results, handling BigInts
+          const safeStringify = (obj, space = 2) => {
+            try {
+              return JSON.stringify(obj, (key, value) => 
+                typeof value === 'bigint' ? value.toString() : value, 
+              space);
+            } catch (e) {
+              return `[Serialization Error: ${e.message}]`;
+            }
+          };
+          
+          // Check if the response object exists and if its 'value' property is an array
+          if (!v2Results || !Array.isArray(v2Results.value)) {
+            const resultType = typeof v2Results?.value;
+            const resultPreview = safeStringify(v2Results)?.substring(0, 500);
+            logApi.error('[ConnectionManager] getMultipleAccounts CRITICAL_ERROR_PATH: Expected an array in response.value, but received type: ' + resultType + '. Full Response Preview: ' + resultPreview, { v2Results: safeStringify(v2Results, null) });
+            throw new Error('FATAL_UNEXPECTED_RPC_RESPONSE_TYPE [getMultipleAccounts]: Expected array in response.value, received type \'' + resultType + '\'. Preview: ' + resultPreview);
           }
-
-          return v2Results.map(accountInfo => {
+          
+          // Map over the value array inside the response object
+          return v2Results.value.map(accountInfo => {
             if (!accountInfo) return null;
             
             let processedData = accountInfo.data;

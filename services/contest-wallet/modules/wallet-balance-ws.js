@@ -284,7 +284,14 @@ function handleSocketMessage(data) {
             const address = message.id.toString().replace('subscribe-', '');
             subscriptionIds.set(address, message.result);
             stats.subscribeSuccesses++;
-            logApi.info(`${fancyColors.GREEN}[ContestWalletBalanceWS] Successfully subscribed to account ${address} with subscription ID ${message.result}${fancyColors.RESET}`);
+
+            // Only log 1 out of every 10 subscriptions to reduce log spam
+            if (stats.subscribeSuccesses % 10 === 0) {
+                logApi.info(`${fancyColors.GREEN}[ContestWalletBalanceWS] Successfully subscribed to account ${address} with subscription ID ${message.result} (subscription #${stats.subscribeSuccesses})${fancyColors.RESET}`);
+            } else {
+                // Keep detailed logs at debug level
+                logApi.debug(`${fancyColors.GREEN}[ContestWalletBalanceWS] Successfully subscribed to account ${address} with subscription ID ${message.result}${fancyColors.RESET}`);
+            }
             return;
         }
         
