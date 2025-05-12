@@ -1124,7 +1124,7 @@ class TokenEnrichmentService extends BaseService {
         if (websiteUrl) {
           try {
             // Get the website label if available from DexScreener
-            const websiteLabel = enrichedData.dexscreener?.websiteLabel || 'Official';
+            const websiteLabel = data.dexscreener?.websiteLabel || 'Official'; // Corrected: use 'data' parameter
             
             await this.db.token_websites.upsert({
               where: { 
