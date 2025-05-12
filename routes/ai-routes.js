@@ -37,16 +37,30 @@ const aiServiceRateLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req) => {
     // Use user ID for authenticated users, IP for others
-    if (req.user?.role.toLowerCase() === 'admin' || req.user?.role.toLowerCase() === 'superadmin') {
+    if (req.user?.role?.toLowerCase() === 'admin' || req.user?.role?.toLowerCase() === 'superadmin') {
       return 'admin';
     }
-    return req.user?.id || req.ip;
+
+    // For authenticated users, use their ID
+    if (req.user?.id) {
+      return `user_${req.user.id}`;
+    }
+
+    // For unauthenticated users, use their IP but with a lower limit
+    return `anon_${req.ip}`;
   },
+  // Custom handler based on authenticated state
   handler: (req, res) => {
-    logApi.warn('Rate limit exceeded for AI service by user:', req.user?.id || req.ip);
+    const isAuthenticated = !!req.user;
+    const identifier = req.user?.id || req.ip;
+
+    logApi.warn(`Rate limit exceeded for AI service by ${isAuthenticated ? 'user' : 'anonymous visitor'}: ${identifier}`);
+
     res.status(429).json({
       error: 'Rate limit exceeded for AI service',
-      type: 'rate_limit'
+      type: 'rate_limit',
+      authenticated: isAuthenticated,
+      retryAfter: Math.ceil(5 * 60) // 5 minutes in seconds
     });
   }
 });
@@ -74,6 +88,7 @@ function getErrorType(status) {
  *     tags: [AI]
  *     security:
  *       - bearerAuth: []
+ *       - {}  # Empty object means authentication is optional
  *     requestBody:
  *       required: true
  *       content:
@@ -129,7 +144,7 @@ function getErrorType(status) {
  *       500:
  *         description: Server error
  */
-router.post('/response', requireAuth, aiServiceRateLimiter, async (req, res) => {
+router.post('/response', aiServiceRateLimiter, async (req, res) => {
   try {
     // Extract request parameters
     const { messages, conversationId, context = 'terminal' } = req.body;
@@ -160,12 +175,13 @@ router.post('/response', requireAuth, aiServiceRateLimiter, async (req, res) => 
       }
     }
 
-    // Get authenticated user's information
+    // Get user information (may be null for unauthenticated users)
+    // Note: This endpoint now allows both authenticated and unauthenticated users
     const user = req.user;
     const userId = user?.id || null;
     const walletAddress = user?.wallet_address || null;
     const userRole = user?.role || null;
-    const userNickname = user?.nickname || user?.username || 'user';
+    const userNickname = user?.nickname || user?.username || 'anonymous';
     
     // Generate AI response with function calling, data fetching, database access, external API access, custom DegenDuel clients, user context, terminal context, etc.
     const fullResult = await generateTokenAIResponse(messages, {
@@ -208,6 +224,7 @@ router.post('/response', requireAuth, aiServiceRateLimiter, async (req, res) => 
  *     tags: [AI]
  *     security:
  *       - bearerAuth: []
+ *       - {}  # Empty object means authentication is optional
  *     requestBody:
  *       required: true
  *       content:
@@ -250,7 +267,7 @@ router.post('/response', requireAuth, aiServiceRateLimiter, async (req, res) => 
  *       500:
  *         description: Server error
  */
-router.post('/stream', requireAuth, aiServiceRateLimiter, async (req, res) => {
+router.post('/stream', aiServiceRateLimiter, async (req, res) => {
   try {
     // Extract request parameters
     const { messages, conversationId, context = 'terminal' } = req.body;
@@ -281,12 +298,13 @@ router.post('/stream', requireAuth, aiServiceRateLimiter, async (req, res) => {
       }
     }
 
-    // Get authenticated user's information
+    // Get user information (may be null for unauthenticated users)
+    // Note: This endpoint now allows both authenticated and unauthenticated users
     const user = req.user;
     const userId = user?.id || null;
     const walletAddress = user?.wallet_address || null;
     const userRole = user?.role || null;
-    const userNickname = user?.nickname || user?.username || 'user';
+    const userNickname = user?.nickname || user?.username || 'anonymous';
     
     // Set response headers for streaming
     res.setHeader('Content-Type', 'text/event-stream');
