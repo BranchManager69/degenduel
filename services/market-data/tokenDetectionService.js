@@ -35,7 +35,7 @@ import marketDataRepository from './marketDataRepository.js'; // what is this?
 import { config } from '../../config/config.js';
 const CONFIG = {
     // How often to check for new tokens (in seconds)
-    CHECK_INTERVAL_SECONDS: 30,
+    CHECK_INTERVAL_SECONDS: 3600, // Changed to 1 hour (3600 seconds)
     // Cleanup old token sets more frequently to save Redis memory
     CLEANUP_INTERVAL_MINUTES: 5,
     // Maximum number of tokens to process in a batch
