@@ -89,29 +89,30 @@ class TokenDetectionService extends BaseService {
     async initialize() {
         try {
             logApi.info(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} Initializing token detection service...`);
-            
+
             // Register with service manager if not already registered
             if (!serviceManager.services.has(this.name)) {
                 serviceManager.register(this.name, this);
             }
-            
+
             // Get Jupiter client
             this.jupiterClient = getJupiterClient();
-            
-            if (!this.jupiterClient || !this.jupiterClient.initialized) {
+
+            if (!this.jupiterClient || !this.jupiterClient.isInitialized) {
+                // Fixed property name from 'initialized' to 'isInitialized' to match JupiterClient class
                 logApi.warn(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Jupiter client not initialized, will retry later${fancyColors.RESET}`);
                 return false;
             }
-            
+
             // Register event listeners
             serviceEvents.on('token:new', this.handleNewToken.bind(this));
-            
+
             // Start check interval
             this.startCheckInterval();
-            
+
             // Start cleanup interval
             this.startCleanupInterval();
-            
+
             this.isInitialized = true;
             logApi.info(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} INITIALIZED ${fancyColors.RESET} Token detection service ready`);
             return true;
@@ -171,29 +172,17 @@ class TokenDetectionService extends BaseService {
         const startTime = Date.now();
         
         try {
-            // Get current token list from Jupiter using the tokens.tokenList property
-            const tokenList = this.jupiterClient.tokenList;
-            
+            // Get current token list from Jupiter using the tokens.fetchJupiterTokenAddresses method
+            const tokenList = await this.jupiterClient.tokens.fetchJupiterTokenAddresses();
+
             if (!Array.isArray(tokenList) || tokenList.length === 0) {
                 logApi.warn(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Empty or invalid token list from Jupiter${fancyColors.RESET}`);
                 return { error: 'Invalid token list' };
             }
             
-            // Extract addresses from token list
-            const tokenAddresses = [];
-            
-            for (const token of tokenList) {
-                // Handle different Jupiter token list formats
-                if (typeof token === 'string') {
-                    // Simple address format
-                    tokenAddresses.push(token);
-                } else if (typeof token === 'object' && token !== null) {
-                    // Object format with address property
-                    if (token.address) {
-                        tokenAddresses.push(token.address);
-                    }
-                }
-            }
+            // The fetchJupiterTokenAddresses method already returns an array of token addresses
+            // so we can use it directly
+            const tokenAddresses = tokenList;
             
             if (tokenAddresses.length === 0) {
                 logApi.warn(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.YELLOW}No valid token addresses extracted from Jupiter list${fancyColors.RESET}`);
