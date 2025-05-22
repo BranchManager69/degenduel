@@ -117,7 +117,7 @@ router.get('/status', async (req, res) => {
         // Check if user has Twitter linked
         const twitterProfile = await prisma.user_social_profiles.findFirst({
           where: {
-            user_id: jwtStatus.details.id, // Use user.id for lookup
+            wallet_address: jwtStatus.details.wallet_address, // Use wallet_address for lookup
             platform: 'twitter'
           }
         });
@@ -160,7 +160,7 @@ router.get('/status', async (req, res) => {
         // Check if user has Discord linked
         const discordProfile = await prisma.user_social_profiles.findFirst({
           where: {
-            user_id: jwtStatus.details.id, // Use user.id for lookup
+            wallet_address: jwtStatus.details.wallet_address, // Use wallet_address for lookup
             platform: 'discord'
           }
         });
@@ -201,11 +201,11 @@ router.get('/status', async (req, res) => {
 
     try {
       if (jwtStatus.active) {
-        const userId = jwtStatus.details.id; // Use user.id
+        const walletAddress = jwtStatus.details.wallet_address; // Use wallet_address
         
         const privyProfile = await prisma.user_social_profiles.findFirst({
           where: {
-            user_id: userId,
+            wallet_address: walletAddress,
             platform: 'privy',
           }
         });
