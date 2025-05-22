@@ -740,7 +740,9 @@ const config = {
       portfolio_snapshot_service: true,
       dialect_service: false, // Dialect integration service (Blinks/Solana Actions)
       // Additional services would be defined here as we expand this pattern
-      // etc.
+      contest_image_service: true, // [ADDED 5/22/25] Why wasn't this already enabled in prod?
+      contest_service: true, // [ADDED 5/22/25] (wait what even is this?) Why wasn't this already enabled in prod?
+      jupiter_client: true, // [ADDED 5/22/25] Why wasn't this already enabled in prod?
     },
     
     // Development profile - services disabled by default (just AI API for now)
