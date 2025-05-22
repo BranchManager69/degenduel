@@ -32,9 +32,9 @@ import jupiterCollector from './collectors/jupiterCollector.js';
 
 // Configuration
 const CONFIG = {
-  BATCH_SIZE: 50, // Number of tokens to process in one logical batch (API calls + DB transaction)
-  BATCH_DELAY_MS: 1000, // Delay between processing logical batches
-  MAX_CONCURRENT_BATCHES: 1, // Process one logical batch at a time to manage DB load
+  BATCH_SIZE: 10, // Further Reduced from 15 (was 50). For main enrichment transactions.
+  BATCH_DELAY_MS: 5000, // Increased from 3000. Delay between main enrichment transactions.
+  MAX_CONCURRENT_BATCHES: 1, 
   THROTTLE_MS: 100,
   DEXSCREENER_THROTTLE_MS: 500,
   PRIORITY_TIERS: { HIGH: 1, MEDIUM: 2, LOW: 3 },
@@ -44,7 +44,35 @@ const CONFIG = {
     CHAIN_ONLY: ['helius', 'jupiter']
   },
   RETRY_INTERVALS: [5 * 60 * 1000, 30 * 60 * 1000, 6 * 60 * 60 * 1000, 24 * 60 * 60 * 1000],
-  PRIORITY_SCORE: { /* ... as before ... */ }
+  PRIORITY_SCORE: {
+    WEIGHTS: {
+      VOLUME: 0.5,
+      VOLATILITY: 0.4,
+      LIQUIDITY: 0.1
+    },
+    VOLUME_TIMEFRAMES: {
+      MINUTES_5: 0.4,
+      HOURS_1: 0.3,
+      HOURS_6: 0.2,
+      HOURS_24: 0.1
+    },
+    VOLATILITY_TIMEFRAMES: {
+      MINUTES_5: 0.4,
+      HOURS_1: 0.3,
+      HOURS_6: 0.2,
+      HOURS_24: 0.1
+    },
+    BASE_SCORES: {
+      NEW_TOKEN: 80,
+      PARTIAL_DATA: 60,
+      COMPLETE_DATA: 40,
+      FAILED_REFRESH: 70
+    },
+    DECAY: {
+      SUCCESSFUL_REFRESH: 0.8,
+      HOURS_SINCE_REFRESH: 0.1
+    }
+  }
 };
 
 class TokenEnrichmentService extends BaseService {
@@ -122,89 +150,131 @@ class TokenEnrichmentService extends BaseService {
   }
   
   registerEventListeners() {
-    serviceEvents.on('token:new', async (tokenInfo) => {
-      try { await this.handleNewToken(tokenInfo); }
-      catch (error) {
-        await this.handleError(error);
-        logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error handling token:new event:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
+    // Remove listener for individual 'token:new'
+    // serviceEvents.on('token:new', async (tokenInfo) => { ... });
+
+    // Add listener for batched 'tokens:discovered' event
+    serviceEvents.on('tokens:discovered', async (eventData) => {
+      try {
+        if (eventData && Array.isArray(eventData.addresses) && eventData.addresses.length > 0) {
+          await this.handleDiscoveredTokensBatch(eventData.addresses);
+        }
+      } catch (error) {
+        await this.handleError(error); // Ensure BaseService error handling is called
+        logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error handling tokens:discovered event:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
       }
     });
+    
+    // Listen for manual enrichment requests (can still use enqueueTokenEnrichment for single adds)
     serviceEvents.on('token:enrich', async (tokenInfo) => {
-      try { await this.enqueueTokenEnrichment(tokenInfo.address, CONFIG.PRIORITY_TIERS.HIGH); }
-      catch (error) {
+      try {
+        // For single ad-hoc enrichment, calculate priority or let enqueue do it by passing null
+        await this.enqueueTokenEnrichment(tokenInfo.address, CONFIG.PRIORITY_TIERS.HIGH, null); 
+      } catch (error) {
         await this.handleError(error);
         logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error handling token:enrich event:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
       }
     });
+    
     serviceEvents.on('system:maintenance', (data) => {
       this.pauseProcessing = data.active;
       logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${data.active ? 'Paused' : 'Resumed'} processing due to maintenance mode`);
     });
   }
   
-  async handleNewToken(tokenInfo) {
-    try {
-      const existingToken = await this.db.tokens.findFirst({
-        where: { address: tokenInfo.address }
-      });
-      if (existingToken) {
-        await this.db.tokens.update({
-          where: { id: existingToken.id },
-          data: { discovery_count: { increment: 1 } }
-        });
-        logApi.debug(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Incremented discovery count for ${tokenInfo.address}`);
-        const refreshMetadata = existingToken.refresh_metadata || {};
-        const lastEnrichmentAttempt = refreshMetadata.last_enrichment_attempt ? new Date(refreshMetadata.last_enrichment_attempt) : existingToken.last_refresh_attempt;
-        const attemptCount = refreshMetadata.enrichment_attempts || 0;
-        const daysSinceLastAttempt = lastEnrichmentAttempt ? (new Date() - lastEnrichmentAttempt) / (1000 * 60 * 60 * 24) : 999;
-        const isPending = existingToken.metadata_status === 'pending';
-        const isFailed = existingToken.metadata_status === 'failed';
-        const isOldAttempt = daysSinceLastAttempt > 1;
-        const hasLowAttempts = attemptCount < 3;
-        const shouldReEnrich = (isPending && (isOldAttempt || hasLowAttempts)) || (isFailed && isOldAttempt) || !lastEnrichmentAttempt || daysSinceLastAttempt > 7;
-        if (shouldReEnrich) {
-          await this.enqueueTokenEnrichment(tokenInfo.address, CONFIG.PRIORITY_TIERS.MEDIUM);
-        }
-      } else {
-        await this.db.tokens.create({
-          data: {
-            address: tokenInfo.address,
-            first_seen_on_jupiter_at: new Date(),
+  async handleDiscoveredTokensBatch(addressesFromEvent) {
+    logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Received batch of ${addressesFromEvent.length} discovered tokens to process.`);
+    
+    const processingChunkSize = 50; // Further Reduced from 100. For createMany.
+    const delayBetweenChunksMs = 15000; // Increased from 10000. Delay between createMany chunks (15 seconds).
+
+    for (let i = 0; i < addressesFromEvent.length; i += processingChunkSize) {
+      const currentChunkAddresses = addressesFromEvent.slice(i, i + processingChunkSize);
+      logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Processing chunk ${Math.floor(i / processingChunkSize) + 1}: ${currentChunkAddresses.length} tokens for creation & enqueue.`);
+
+      const newTokensData = currentChunkAddresses.map(address => ({
+        address: address,
+        first_seen_on_jupiter_at: new Date(),
             discovery_count: 1,
             metadata_status: 'pending',
-            is_active: true 
+        is_active: true // Default new tokens to active; TokenActivationService will evaluate later
+      }));
+
+      try {
+        if (newTokensData.length > 0) {
+          const creationResult = await this.db.tokens.createMany({
+            data: newTokensData,
+            skipDuplicates: true, // Important to avoid errors if a token somehow gets re-processed before enrichment
+          });
+          logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} CHUNK CREATED ${fancyColors.RESET} ${creationResult.count} new token records (attempted: ${currentChunkAddresses.length}).`);
+
+          // Now enqueue them all for enrichment with a default high priority score
+          let enqueuedInChunkCount = 0;
+          for (const address of currentChunkAddresses) { 
+            // Enqueue based on the chunk we attempted to create.
+            // enqueueTokenEnrichment for new tokens with score already avoids DB hit.
+            await this.enqueueTokenEnrichment(address, CONFIG.PRIORITY_TIERS.HIGH, CONFIG.PRIORITY_SCORE.BASE_SCORES.NEW_TOKEN || 80);
+            enqueuedInChunkCount++;
           }
-        });
-        logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} NEW TOKEN ${fancyColors.RESET} Created record for ${tokenInfo.address}`);
-        await this.enqueueTokenEnrichment(tokenInfo.address, CONFIG.PRIORITY_TIERS.HIGH);
+          logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Enqueued ${enqueuedInChunkCount} tokens from current chunk for enrichment.`);
       }
     } catch (error) {
-      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error handling new token:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
-      logApi.debug(`[TokenEnrichmentSvc] Error details: ${error.code || ''} ${error.name || ''}`);
+        logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error in handleDiscoveredTokensBatch (chunk ${Math.floor(i / processingChunkSize) + 1}) creating/enqueueing tokens:${fancyColors.RESET}`, error);
+        // If createMany fails for a chunk, we log and continue to the next chunk.
+        // Individual enqueue errors are handled within enqueueTokenEnrichment.
+      }
+
+      if (i + processingChunkSize < addressesFromEvent.length) {
+        logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Delaying ${delayBetweenChunksMs}ms before next discovery chunk...`);
+        await this.sleep(delayBetweenChunksMs); 
+      }
     }
+    logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Finished processing all chunks of discovered tokens.`);
+  }
+
+  async sleep(ms) { // Make sure this utility method is present in your class
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
   
-  async enqueueTokenEnrichment(tokenAddress, priorityTier = CONFIG.PRIORITY_TIERS.MEDIUM, priorityScore = null) {
+  async enqueueTokenEnrichment(tokenAddress, priorityTier = CONFIG.PRIORITY_TIERS.MEDIUM, initialPriorityScore = null) {
     try {
-      if (priorityScore === null) {
+      let finalPriorityScore = initialPriorityScore;
+      
+      // This block should now only be hit if initialPriorityScore is explicitly passed as null from somewhere OTHER than handleNewToken,
+      // or if a default score from CONFIG.PRIORITY_SCORE.BASE_SCORES was not available.
+      if (finalPriorityScore === null) { 
+        logApi.warn(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} enqueueTokenEnrichment called with null initialPriorityScore for ${tokenAddress}. Calculating score (should be rare).`);
         try {
           const token = await this.db.tokens.findFirst({ where: { address: tokenAddress }, include: { token_prices: true } });
           if (token) {
-            priorityScore = this.calculatePriorityScore(token);
-            await this.db.tokens.update({ where: { id: token.id }, data: { priority_score: priorityScore, last_priority_calculation: new Date() } });
-          } else { priorityScore = 0; }
+            finalPriorityScore = this.calculatePriorityScore(token);
+          } else {
+            logApi.warn(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Token ${tokenAddress} not found when trying to calculate score in enqueue.`);
+            finalPriorityScore = 0; 
+          }
         } catch (scoreError) {
-          logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error getting priority score for ${tokenAddress}:${fancyColors.RESET} ${scoreError.message || 'Unknown error'}`);
-          priorityScore = 0;
+          logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error getting priority score for token ${tokenAddress} in enqueue:${fancyColors.RESET} ${scoreError.message || 'Unknown error'}`);
+          finalPriorityScore = CONFIG.PRIORITY_SCORE.BASE_SCORES.PARTIAL_DATA || 60; 
         }
       }
-      const queueItem = { address: tokenAddress, priorityTier, priorityScore, addedAt: new Date(), attempts: 0 };
+      
+      const queueItem = {
+        address: tokenAddress,
+        priorityTier,
+        priorityScore: finalPriorityScore, 
+        addedAt: new Date(),
+        attempts: 0
+      };
+      
       this.processingQueue.push(queueItem);
+      
       if (this.stats) {
         this.stats.enqueuedTotal = (this.stats.enqueuedTotal || 0) + 1;
         this.stats.currentQueueSize = this.processingQueue ? this.processingQueue.length : 0;
       }
-      logApi.debug(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Enqueued ${tokenAddress} (tier: ${priorityTier}, score: ${priorityScore}, queue: ${this.stats.currentQueueSize})`);
+      
+      logApi.debug(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Enqueued ${tokenAddress} (tier: ${priorityTier}, score: ${finalPriorityScore}, queue: ${this.stats.currentQueueSize})`);
+      
       if (!this.isProcessingBatch && this.activeApiCollectionBatches < CONFIG.MAX_CONCURRENT_BATCHES) {
         this.processNextMasterBatch();
       }
@@ -226,7 +296,7 @@ class TokenEnrichmentService extends BaseService {
     }, 5000);
     logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Started queue processing monitor`);
   }
-
+  
   emitHeartbeat() {
     try {
       const safeStats = {
@@ -251,7 +321,7 @@ class TokenEnrichmentService extends BaseService {
       logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error emitting heartbeat:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
     }
   }
-
+  
   async prepareTokenDbOperations(tokenAddress, collectedData, existingTokenWithPrice) {
     const dbOps = [];
     if (!existingTokenWithPrice) {
@@ -271,28 +341,45 @@ class TokenEnrichmentService extends BaseService {
         color: combinedData.color || '#888888', image_url: combinedData.imageUrl,
         header_image_url: combinedData.headerUrl, open_graph_image_url: combinedData.openGraphUrl,
         description: combinedData.description, last_refresh_success: new Date(), metadata_status: metadataStatus,
+        last_refresh_attempt: new Date(), 
         refresh_metadata: {
             ...(existingTokenWithPrice.refresh_metadata || {}),
-            last_enrichment_success: new Date().toISOString(),
+            enrichment_attempts: (existingTokenWithPrice.refresh_metadata?.enrichment_attempts || 0) + 1, 
+            last_enrichment_attempt: new Date().toISOString(), 
+            last_enrichment_success: new Date().toISOString(), 
             enrichment_status: metadataStatus,
             enhanced_market_data: {
-                priceChanges: combinedData.priceChanges,
-                volumes: combinedData.volumes,
-                transactions: combinedData.transactions,
+                priceChanges: combinedData.priceChanges || {},
+                volumes: combinedData.volumes || {},
+                transactions: combinedData.transactions || {},
                 pairCreatedAt: combinedData.pairCreatedAt ? combinedData.pairCreatedAt.toISOString() : null,
-                boosts: combinedData.boosts
+                boosts: combinedData.boosts || null,
+                // Ensure numeric fields are correctly parsed or null
+                liquidity: (combinedData.liquidity !== undefined && !isNaN(parseFloat(combinedData.liquidity))) ? parseFloat(combinedData.liquidity) : null,
+                market_cap: (combinedData.marketCap !== undefined && !isNaN(parseFloat(combinedData.marketCap))) ? parseFloat(combinedData.marketCap) : null,
+                fdv: (combinedData.fdv !== undefined && !isNaN(parseFloat(combinedData.fdv))) ? parseFloat(combinedData.fdv) : null,
+                volume_24h: (combinedData.volume24h !== undefined && !isNaN(parseFloat(combinedData.volume24h))) ? parseFloat(combinedData.volume24h) : null
             }
         }
     };
     dbOps.push(prisma.tokens.update({ where: { id: existingTokenWithPrice.id }, data: tokenUpdatePayload }));
 
+    // Upsert token_prices (payload already ensures numbers/null from combinedData via mergeTokenData)
     if (combinedData.price !== undefined && combinedData.price !== null && !isNaN(parseFloat(combinedData.price))) {
         const price = parseFloat(combinedData.price);
-        // Add token_prices upsert
+        const priceUpsertPayload = {
+            price: price.toString(), // Prisma Decimal fields take string representation of number
+            change_24h: combinedData.priceChange24h, // Should be number or null from mergeTokenData
+            market_cap: combinedData.marketCap,     // Should be number or null
+            fdv: combinedData.fdv,                  // Should be number or null
+            liquidity: combinedData.liquidity,      // Should be number or null
+            volume_24h: combinedData.volume24h,   // Should be number or null
+            updated_at: new Date()
+        };
         dbOps.push(prisma.token_prices.upsert({
             where: { token_id: existingTokenWithPrice.id },
-            update: { price: price.toString(), change_24h: combinedData.priceChange24h || null, market_cap: combinedData.marketCap || null, fdv: combinedData.fdv || null, liquidity: combinedData.liquidity || null, volume_24h: combinedData.volume24h || null, updated_at: new Date() },
-            create: { token_id: existingTokenWithPrice.id, price: price.toString(), change_24h: combinedData.priceChange24h || null, market_cap: combinedData.marketCap || null, fdv: combinedData.fdv || null, liquidity: combinedData.liquidity || null, volume_24h: combinedData.volume24h || null, updated_at: new Date() }
+            update: priceUpsertPayload,
+            create: { token_id: existingTokenWithPrice.id, ...priceUpsertPayload }
         }));
         // Add token_price_history create
         dbOps.push(prisma.token_price_history.create({ data: { token_id: existingTokenWithPrice.id, price: price.toString(), source: 'enrichment_service', timestamp: new Date() } }));
@@ -363,7 +450,7 @@ class TokenEnrichmentService extends BaseService {
     let collectionSuccess = false;
     try {
       // Step 1: Collect data for all tokens in the batch using parallel API calls
-      const apiPromises = [
+        const apiPromises = [
         this.collectors.jupiter.getTokenInfoBatch(batchTokenAddresses),
         this.collectors.helius.getTokenMetadataBatch(batchTokenAddresses),
         this.collectors.dexscreener.getTokensByAddressBatch(batchTokenAddresses)
@@ -430,7 +517,7 @@ class TokenEnrichmentService extends BaseService {
         const existingToken = existingTokensMap.get(item.address);
 
         if (enrichedData && existingToken) {
-            await this.incrementEnrichmentAttempts(item.address); // Still do this individually
+            // REMOVED: await this.incrementEnrichmentAttempts(item.address); 
             const ops = await this.prepareTokenDbOperations(item.address, enrichedData, existingToken);
             if (ops.length > 0) {
                 allDbOperationsForBatch.push(...ops);
@@ -534,147 +621,11 @@ class TokenEnrichmentService extends BaseService {
     
     this.isProcessingBatch = false;
     if (this.processingQueue.length > 0 && this.activeApiCollectionBatches < CONFIG.MAX_CONCURRENT_BATCHES) {
-      setTimeout(() => {
-        if (!this.isCircuitBreakerOpen()) {
-          this.processNextBatch();
-        }
-      }, CONFIG.BATCH_DELAY_MS);
-    }
-  
-    try {
-      // Sort queue primarily by priorityScore (high scores first) then by other factors
-      this.processingQueue.sort((a, b) => {
-        // Primary sorting by priorityScore (higher score = higher priority)
-        if (a.priorityScore !== b.priorityScore) {
-          return b.priorityScore - a.priorityScore;
-        }
-        
-        // Secondary sorting by tier (lower tier number = higher priority)
-        if (a.priorityTier !== b.priorityTier) {
-          return a.priorityTier - b.priorityTier;
-        }
-        
-        // Tertiary sorting by age (older items first)
-        return a.addedAt - b.addedAt;
-      });
-      
-      // Take the next batch
-      const batch = this.processingQueue.splice(0, CONFIG.BATCH_SIZE);
-      
-      // Safely update stats
-      if (this.stats) {
-        this.stats.currentQueueSize = this.processingQueue ? this.processingQueue.length : 0;
-      }
-      
-      // Extract addresses from batch
-      const batchAddresses = batch.map(item => item.address);
-      
-      logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} BATCH START ${fancyColors.RESET} Processing batch of ${batchAddresses.length} tokens using parallel API calls`);
-      
-      // Optimized Collect data in parallel to reduce overall time
-      try {
-        // Start all API requests in parallel
-        const apiPromises = [
-          jupiterCollector.getTokenInfoBatch(batchAddresses),
-          heliusCollector.getTokenMetadataBatch(batchAddresses),
-          dexScreenerCollector.getTokensByAddressBatch(batchAddresses)
-        ];
-        
-        // Wait for all API responses
-        const [jupiterData, heliusData, dexScreenerData] = await Promise.all(apiPromises);
-        
-        // Log API success/failure metrics
-        const jupiterSuccess = Object.keys(jupiterData || {}).length;
-        const heliusSuccess = Object.keys(heliusData || {}).length;
-        const dexScreenerSuccess = Object.keys(dexScreenerData || {}).length;
-        
-        logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} API success: Jupiter ${jupiterSuccess}/${batchAddresses.length}, Helius ${heliusSuccess}/${batchAddresses.length}, DexScreener ${dexScreenerSuccess}/${batchAddresses.length}`);
-        
-        // Process each token with the collected data
-        const processingPromises = batch.map(item => {
-          // Create a combined data object for this token
-          const tokenData = {
-            address: item.address,
-            jupiter: jupiterData[item.address] || null,
-            helius: heliusData[item.address] || null,
-            dexscreener: dexScreenerData[item.address] || null
-          };
-          
-          // Check data completeness for each token
-          const hasJupiter = !!tokenData.jupiter;
-          const hasHelius = !!tokenData.helius;
-          const hasDexScreener = !!tokenData.dexscreener;
-          
-          // Log if any API failed to return data for this token (for monitoring issues)
-          if (!hasJupiter || !hasHelius || !hasDexScreener) {
-            logApi.debug(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} INCOMPLETE DATA ${fancyColors.RESET} Token ${item.address}: Jupiter ${hasJupiter ? '✅' : '❌'}, Helius ${hasHelius ? '✅' : '❌'}, DexScreener ${hasDexScreener ? '✅' : '❌'}`);
-          }
-          
-          // Process and store the token data
-          return this.processAndStoreToken(item.address, tokenData);
-        });
-        
-        // Wait for all tokens to be processed
-        const results = await Promise.allSettled(processingPromises);
-        
-        // Calculate success statistics
-        const successCount = results.filter(r => r.status === 'fulfilled' && r.value === true).length;
-        const failCount = batch.length - successCount;
-        
-        // Calculate and update token priority scores for successfully processed tokens
-        const successfulTokens = batch.filter((item, index) => 
-          results[index].status === 'fulfilled' && results[index].value === true
-        );
-        
-        if (successfulTokens.length > 0) {
-          await this.updateTokenPriorityScores(successfulTokens.map(item => item.address));
-        }
-        
-        logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} BATCH COMPLETE ${fancyColors.RESET} Processed ${batchAddresses.length} tokens in batch mode: ${successCount} success, ${failCount} failed`);
-      } catch (batchError) {
-        logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} ⚠️ BATCH FAILURE ⚠️ ${fancyColors.RESET} ${fancyColors.RED}Falling back to individual processing:${fancyColors.RESET} ${batchError.message || 'Unknown error'}`);
-        logApi.debug(`[TokenEnrichmentSvc] Batch failure details: ${batchError.code || ''} ${batchError.name || ''}`);
-        
-        // Fallback to processing tokens individually
-        logApi.warn(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Starting individual fallback processing for ${batch.length} tokens${fancyColors.RESET}`);
-        
-        // Process each token with individual API calls (fallback)
-        const processingPromises = batch.map(item => this.enrichToken(item.address));
-        const fallbackResults = await Promise.allSettled(processingPromises);
-        
-        // Calculate fallback success statistics
-        const fallbackSuccessCount = fallbackResults.filter(r => r.status === 'fulfilled' && r.value === true).length;
-        const fallbackFailCount = batch.length - fallbackSuccessCount;
-        
-        logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} FALLBACK COMPLETE ${fancyColors.RESET} Individually processed ${batch.length} tokens: ${fallbackSuccessCount} success, ${fallbackFailCount} failed`);
-        
-        // Update priority scores for successful fallbacks too
-        const successfulTokens = batch.filter((item, index) => 
-          fallbackResults[index].status === 'fulfilled' && fallbackResults[index].value === true
-        );
-        
-        if (successfulTokens.length > 0) {
-          await this.updateTokenPriorityScores(successfulTokens.map(item => item.address));
-        }
-      }
-      
-      // Clean up
-      this.activeBatches--;
-      this.batchProcessing = this.activeBatches > 0;
-      
-      // Continue with next batch if there are more items
-      if (this.processingQueue.length > 0 && this.activeBatches < CONFIG.MAX_CONCURRENT_BATCHES) {
         setTimeout(() => {
-          this.processNextBatch();
+        if (!this.isCircuitBreakerOpen()) {
+          this.processNextMasterBatch();
+        }
         }, CONFIG.BATCH_DELAY_MS);
-      }
-    } catch (error) {
-      logApi.error(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.RED}Error processing batch:${fancyColors.RESET} ${error.message || 'Unknown error'}`);
-      logApi.debug(`[TokenEnrichmentSvc] Batch processing error details: ${error.code || ''} ${error.name || ''}`);
-      
-      // Reduce active batches count and reset processing flag if needed
-      this.activeBatches--;
-      this.batchProcessing = this.activeBatches > 0;
     }
   }
   
@@ -1352,31 +1303,27 @@ class TokenEnrichmentService extends BaseService {
     
     // Merge market data (from DexScreener primarily)
     if (data.dexscreener) {
-      // Basic market data
-      result.priceChange24h = data.dexscreener.priceChange24h;
-      result.volume24h = data.dexscreener.volume24h;
-      result.liquidity = data.dexscreener.liquidity?.usd || data.dexscreener.liquidity; // Handle both formats
-      result.fdv = data.dexscreener.fdv;
-      result.marketCap = data.dexscreener.marketCap;
+      result.price = (data.dexscreener.priceUsd !== undefined && !isNaN(parseFloat(data.dexscreener.priceUsd))) ? parseFloat(data.dexscreener.priceUsd) : ((data.dexscreener.price !== undefined && !isNaN(parseFloat(data.dexscreener.price))) ? parseFloat(data.dexscreener.price) : null);
+      result.priceChange24h = !isNaN(parseFloat(data.dexscreener.priceChange?.h24)) ? parseFloat(data.dexscreener.priceChange.h24) : null;
+      result.volume24h = !isNaN(parseFloat(data.dexscreener.volume?.h24)) ? parseFloat(data.dexscreener.volume.h24) : null;
       
-      // NEW: Add detailed price changes for all timeframes
+      const rawLiquidity = data.dexscreener.liquidity;
+      if (rawLiquidity && typeof rawLiquidity === 'object' && rawLiquidity.usd !== undefined && !isNaN(parseFloat(rawLiquidity.usd))) {
+        result.liquidity = parseFloat(rawLiquidity.usd);
+      } else if (!isNaN(parseFloat(rawLiquidity))) {
+        result.liquidity = parseFloat(rawLiquidity);
+      } else {
+        result.liquidity = null;
+      }
+
+      result.fdv = !isNaN(parseFloat(data.dexscreener.fdv)) ? parseFloat(data.dexscreener.fdv) : null;
+      result.marketCap = !isNaN(parseFloat(data.dexscreener.marketCap)) ? parseFloat(data.dexscreener.marketCap) : null;
+      
       result.priceChanges = data.dexscreener.priceChange || {};
-      
-      // NEW: Add detailed volume data for all timeframes
       result.volumes = data.dexscreener.volume || {};
-      
-      // NEW: Add transaction counts
       result.transactions = data.dexscreener.txns || {};
-      
-      // NEW: Add pair creation date if available
-      if (data.dexscreener.pairCreatedAt) {
-        result.pairCreatedAt = data.dexscreener.pairCreatedAt;
-      }
-      
-      // NEW: Add boost information if available
-      if (data.dexscreener.boosts) {
-        result.boosts = data.dexscreener.boosts;
-      }
+      if (data.dexscreener.pairCreatedAt) result.pairCreatedAt = data.dexscreener.pairCreatedAt;
+      if (data.dexscreener.boosts) result.boosts = data.dexscreener.boosts;
     }
     
     // Merge social data

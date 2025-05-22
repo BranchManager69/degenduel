@@ -27,8 +27,7 @@ const isDev = env === 'development';
 // Create the base Prisma client first
 const basePrisma = new PrismaClient({
   log: [
-    // Removed query logging to reduce noise
-    // { level: 'query', emit: 'event' },
+    { level: 'query', emit: 'event' },
     { level: 'info',  emit: 'event' },
     { level: 'warn',  emit: 'event' },
     { level: 'error', emit: 'event' },
@@ -38,7 +37,7 @@ const basePrisma = new PrismaClient({
 
 // Register event listeners on the base client
 // No longer logging every query to reduce noise
-// basePrisma.$on('query', e => logApi.debug('Query:', e));
+basePrisma.$on('query', e => logApi.debug('Query:', e));
 basePrisma.$on('info',  e => logApi.info('Info:', e));
 basePrisma.$on('warn',  e => logApi.warn('Warning:', e));
 basePrisma.$on('error', e => logApi.error('Error:', e));

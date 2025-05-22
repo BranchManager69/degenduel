@@ -6,16 +6,20 @@
  * This module implements a Dialect Blinks registry for DegenDuel's
  * Solana Actions (Blinks) functionality.
  * 
- * @version 1.0.7
+ * @version 1.0.9
  * @created 2025-05-11
- * @updated 2025-05-23
+ * @updated 2025-05-14
  */
 
 import { logApi } from '../../utils/logger-suite/logger.js';
 import { config } from '../../config/config.js';
 import { PublicKey } from '@solana/web3.js';
 import { v4 as uuidv4 } from 'uuid';
-import { Dialect } from '@dialectlabs/sdk';
+
+// Removed static imports for Dialect and web3 parts
+// import { Dialect } from '@dialectlabs/sdk';
+// import web3PkgFromDialect from '@dialectlabs/web3';
+// const { makeDialectSolana, SolanaSigner } = web3PkgFromDialect;
 
 // Top-level dynamic import for @dialectlabs/web3
 const dialectWeb3Promise = import('@dialectlabs/web3');
@@ -32,8 +36,9 @@ let encryptionKey;
  */
 async function initializeDialect() {
   try {
-    // Wait for the dynamic import to resolve
+    // Dynamically import @dialectlabs/web3 parts and @dialectlabs/sdk
     const { makeDialectSolana, SolanaSigner } = await dialectWeb3Promise;
+    const { Dialect } = await import('@dialectlabs/sdk');
 
     // Get wallet keypair from config
     const walletPrivateKey = config.dialect?.walletPrivateKey || 
@@ -283,7 +288,7 @@ async function deleteBlink(dialectSdk, blinkId) {
 
 /**
  * Register all default blinks used by DegenDuel
- *
+ * 
  * @returns {Promise<Array>} - Array of registered blinks
  */
 async function registerDefaultBlinks(dialectSdk) {

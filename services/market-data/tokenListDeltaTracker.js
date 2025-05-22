@@ -62,10 +62,11 @@ import { fancyColors } from '../../utils/colors.js';
 class TokenListDeltaTracker {
   constructor() {
     this.KEY_PREFIX = 'jupiter_tokens';
-    this.LATEST_KEY = `${this.KEY_PREFIX}_latest`;
-    this.PREVIOUS_KEY = `${this.KEY_PREFIX}_previous`;
-    this.EXPIRY_SECONDS = 60; // Keep sets for just 1 minute
-    this.MAX_STORED_SETS = 2; // Only keep the latest and previous sets
+    this.LATEST_KEY = `${this.KEY_PREFIX}_latest`; // Pointer to the name of the latest set
+    this.PREVIOUS_KEY = `${this.KEY_PREFIX}_previous`; // Pointer to the name of the previous set
+    this.SET_EXPIRY_SECONDS = 3 * 24 * 60 * 60; // Keep actual token sets for 3 days
+    this.POINTER_EXPIRY_SECONDS = 3 * 24 * 60 * 60 + 3600; // Keep pointers slightly longer (3 days + 1 hour)
+    // this.MAX_STORED_SETS = 2; // This isn't strictly used by cleanupOldSets as it deletes non-latest/previous named sets
   }
 
   /**
@@ -88,61 +89,35 @@ class TokenListDeltaTracker {
       // Get Redis client
       const client = redisManager.client;
       const timestamp = Date.now();
-      const currentKey = `${this.KEY_PREFIX}_${timestamp}`;
+      const currentKeyName = `${this.KEY_PREFIX}_set_${timestamp}`;
       
-      // Get the previous latest key before we do anything else
-      const previousLatest = await client.get(this.LATEST_KEY);
+      const previousLatestKeyName = await client.get(this.LATEST_KEY);
       
-      // First, clean up any old keys to avoid accumulating data
-      await this.cleanupOldSets(true); // force cleanup
+      await this.cleanupOldSets(); // Call cleanup
       
-      // Store the new set
       const pipeline = client.pipeline();
-      
-      // Add all addresses to a new set in batches to prevent stack overflow
-      const BATCH_SIZE = 1000; // Process in batches of 1000 tokens
+      const BATCH_SIZE = 1000;
       for (let i = 0; i < tokenAddresses.length; i += BATCH_SIZE) {
         const batch = tokenAddresses.slice(i, i + BATCH_SIZE);
-        pipeline.sadd(currentKey, ...batch);
+        pipeline.sadd(currentKeyName, ...batch);
+      }
+      pipeline.expire(currentKeyName, this.SET_EXPIRY_SECONDS); // Use new expiry for the token set
+      await pipeline.exec();
+      
+      if (previousLatestKeyName) {
+        // Set PREVIOUS_KEY to point to the name of the set that was previously latest
+        await client.set(this.PREVIOUS_KEY, previousLatestKeyName, 'EX', this.POINTER_EXPIRY_SECONDS);
+      }
+      // Set LATEST_KEY to point to the name of the current set
+      await client.set(this.LATEST_KEY, currentKeyName, 'EX', this.POINTER_EXPIRY_SECONDS);
+      
+      if (!previousLatestKeyName) {
+        logApi.info(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} First token list tracked: ${tokenAddresses.length} tokens`);
+        return { added: tokenAddresses, removed: [], unchanged: 0, totalNew: tokenAddresses.length };
       }
       
-      // Set a shorter expiry - 60 seconds instead of 5 minutes
-      pipeline.expire(currentKey, this.EXPIRY_SECONDS);
-      
-      // Execute pipeline and get results
-      const results = await pipeline.exec();
-      
-      // Handle any pipeline errors
-      if (!results) {
-        throw new Error('Redis pipeline execution failed');
-      }
-      
-      // Update keys - save previous key before updating latest
-      if (previousLatest) {
-        await client.set(this.PREVIOUS_KEY, previousLatest, 'EX', this.EXPIRY_SECONDS);
-      }
-      
-      // Set the current key as the latest with expiry
-      await client.set(this.LATEST_KEY, currentKey, 'EX', this.EXPIRY_SECONDS * 2);
-      
-      // If there's no previous key, everything is new
-      if (!previousLatest) {
-        logApi.info(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} ${fancyColors.CYAN}First token list tracked: ${tokenAddresses.length} tokens${fancyColors.RESET}`);
-        return {
-          added: tokenAddresses,
-          removed: [],
-          unchanged: 0,
-          totalNew: tokenAddresses.length
-        };
-      }
-      
-      // Find new tokens (in current but not previous)
-      const newTokens = await client.sdiff(currentKey, previousLatest);
-      
-      // Find removed tokens (in previous but not current)
-      const removedTokens = await client.sdiff(previousLatest, currentKey);
-      
-      // Calculate unchanged count
+      const newTokens = await client.sdiff(currentKeyName, previousLatestKeyName);
+      const removedTokens = await client.sdiff(previousLatestKeyName, currentKeyName);
       const unchanged = tokenAddresses.length - newTokens.length;
       
       logApi.info(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} ${fancyColors.GREEN}Change detected: ${fancyColors.RESET}+${newTokens.length} new, -${removedTokens.length} removed, ${unchanged} unchanged tokens`);
@@ -186,40 +161,34 @@ class TokenListDeltaTracker {
   
   /**
    * Clean up old token sets to save memory
-   * @param {boolean} [force=false] - Force cleanup regardless of timestamps
    * @returns {Promise<number>} - Number of keys removed
    */
-  async cleanupOldSets(force = false) {
+  async cleanupOldSets() { // Removed force parameter, cleanup is now more about dangling sets
     try {
       const client = redisManager.client;
+      const keys = await client.keys(`${this.KEY_PREFIX}_set_*`); // Only get actual set keys
       
-      // Get all token set keys
-      const keys = await client.keys(`${this.KEY_PREFIX}_*`);
-      
-      // Get latest and previous key references
-      const latestKey = await client.get(this.LATEST_KEY);
-      const previousKey = await client.get(this.PREVIOUS_KEY);
+      const latestKeyName = await client.get(this.LATEST_KEY);
+      const previousKeyName = await client.get(this.PREVIOUS_KEY);
       
       let removedCount = 0;
-      
-      // Skip the reference pointers themselves
-      const keysToKeep = [this.LATEST_KEY, this.PREVIOUS_KEY, latestKey, previousKey].filter(Boolean);
+      const keysToKeep = [latestKeyName, previousKeyName].filter(Boolean);
       
       for (const key of keys) {
-        // Skip if this is a key we want to keep
-        if (keysToKeep.includes(key)) continue;
-        
-        // Delete all other keys for aggressive cleanup
-        await client.del(key);
-        removedCount++;
-        
-        logApi.debug(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} Cleaned up token set: ${key}`);
+        if (!keysToKeep.includes(key)) {
+          // This key is a set but not pointed to by LATEST or PREVIOUS, so it's old/dangling
+          await client.del(key);
+          removedCount++;
+          logApi.debug(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} Cleaned up old/dangling token set: ${key}`);
+        }
       }
-      
+      // LATEST_KEY and PREVIOUS_KEY (pointers) will expire on their own via POINTER_EXPIRY_SECONDS
+      // Actual sets pointed to by them will expire via SET_EXPIRY_SECONDS
+      // This cleanup catches sets that are no longer pointed to for any reason before their own expiry.
+
       if (removedCount > 0) {
-        logApi.info(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} ${fancyColors.CYAN}Cleaned up ${removedCount} old token sets${fancyColors.RESET}`);
+        logApi.info(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} ${fancyColors.CYAN}Cleaned up ${removedCount} old/dangling token sets${fancyColors.RESET}`);
       }
-      
       return removedCount;
     } catch (error) {
       logApi.error(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} ${fancyColors.RED}Error cleaning up old token sets:${fancyColors.RESET}`, error);

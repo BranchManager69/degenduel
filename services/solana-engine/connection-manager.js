@@ -419,7 +419,7 @@ class ConnectionManager {
             logApi.error('[ConnectionManager] getMultipleAccounts CRITICAL_ERROR_PATH: Expected an array in response.value, but received type: ' + resultType + '. Full Response Preview: ' + resultPreview, { v2Results: safeStringify(v2Results, null) });
             throw new Error('FATAL_UNEXPECTED_RPC_RESPONSE_TYPE [getMultipleAccounts]: Expected array in response.value, received type \'' + resultType + '\'. Preview: ' + resultPreview);
           }
-          
+
           // Map over the value array inside the response object
           return v2Results.value.map(accountInfo => {
             if (!accountInfo) return null;

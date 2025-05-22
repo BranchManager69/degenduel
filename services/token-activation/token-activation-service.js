@@ -25,7 +25,7 @@ import { jupiterConfig } from '../../config/external-api/jupiter-config.js'; // 
 import { logError, set, inc } from '../../utils/service-suite/safe-service.js';
 
 const DEFAULT_CHECK_INTERVAL_MS = 3 * 60 * 1000; // Every 3 minutes (reduced from 15 minutes)
-const CANDIDATE_BATCH_SIZE = 500; // How many inactive/stale tokens to check metrics for at a time
+const CANDIDATE_BATCH_SIZE = 100; // How many inactive/stale tokens to check metrics for at a time (Changed from 500)
 const METRIC_STALE_THRESHOLD_HOURS = 6; // How old metrics can be before re-checking for active tokens
 
 // Criteria for activation (configurable, could be moved to system_settings later)
@@ -349,202 +349,145 @@ class TokenActivationService extends BaseService {
     
     if (lastCycleDetailsRef) {
         set(lastCycleDetailsRef, 'metricsRefreshedCount', addresses.length); 
-        set(lastCycleDetailsRef, 'dbTokensUpdated', 0);
-        set(lastCycleDetailsRef, 'dbPricesUpserted', 0);
-        set(lastCycleDetailsRef, 'dbSocialsUpdated', 0);
-        set(lastCycleDetailsRef, 'dbWebsitesUpdated', 0);
+        set(lastCycleDetailsRef, 'dbTokensUpdated', 0); // Will be set by actual transaction result count
+        set(lastCycleDetailsRef, 'dbPricesUpserted', 0); // Will be set by actual transaction result count
+        set(lastCycleDetailsRef, 'dbSocialsUpdated', 0); // Will be set by actual transaction result count
+        set(lastCycleDetailsRef, 'dbWebsitesUpdated', 0); // Will be set by actual transaction result count
         set(lastCycleDetailsRef, 'errorMessage', null);
     }
 
     try {
       const dexScreenerResultsMap = await dexScreenerCollector.getTokensByAddressBatch(addresses);
-      logApi.info(`${formatLog.tag()} Fetched DexScreener data for ${Object.keys(dexScreenerResultsMap).length} addresses.`);
-
       const heliusRawResults = await heliusClient.tokens.getTokensMetadata(addresses);
       const heliusResultsMap = new Map();
-      heliusRawResults.forEach(item => {
-        if (item && item.mint) {
-          heliusResultsMap.set(item.mint, item);
-        }
-      });
-      logApi.info(`${formatLog.tag()} Fetched Helius metadata for ${heliusResultsMap.size} addresses.`);
+      heliusRawResults.forEach(item => { if (item?.mint) heliusResultsMap.set(item.mint, item); });
+      logApi.info(`${formatLog.tag()} Fetched API data for ${addresses.length} tokens.`);
 
-      const tokenUpdateOps = [];
-      const tokenPriceUpsertOps = [];
-      const allNewSocialsOps = [];
-      const allNewWebsitesOps = [];
-      const processedTokenIdsForSocials = [];
+      // Pre-fetch all necessary token records from DB for the entire 'addresses' list
+      const tokenRecordsMap = new Map();
+      if (addresses.length > 0) {
+        const tokensFromDb = await prisma.tokens.findMany({
+            where: { address: { in: addresses } },
+            select: { id: true, address: true, symbol: true, name: true, decimals: true, total_supply: true, coingeckoId: true }
+        });
+        tokensFromDb.forEach(t => tokenRecordsMap.set(t.address, t));
+      }
 
-      for (const address of addresses) {
-        const dexData = dexScreenerResultsMap[address];
-        const heliusData = heliusResultsMap.get(address);
+      const SUB_BATCH_SIZE = 20; 
+      let overallTokensProcessedCount = 0;
+      let overallPricesUpsertedCount = 0;
+      let overallSocialsCreatedCount = 0;
+      let overallWebsitesCreatedCount = 0;
 
-        if (!dexData && !heliusData) {
-          logApi.warn(`${formatLog.tag()} No data found for address: ${address} from either DexScreener or Helius.`);
-          continue;
-        }
+      for (let i = 0; i < addresses.length; i += SUB_BATCH_SIZE) {
+        const subBatchAddresses = addresses.slice(i, i + SUB_BATCH_SIZE);
+        const allDbOperationsInSubBatch = [];
+        const processedTokenIdsForSocialsAndWebsitesInSubBatch = [];
+        let tokensProcessedInSubBatch = 0;
+        let pricesUpsertedInSubBatch = 0;
+        let socialsCreatedInSubBatch = 0;
+        let websitesCreatedInSubBatch = 0;
 
-          const tokenRecord = await prisma.tokens.findUnique({
-            where: { address },
-            select: { id: true, symbol: true, name: true, decimals: true, total_supply: true, coingeckoId: true }
-          });
+        logApi.info(`${formatLog.tag()} Processing DB sub-batch ${Math.floor(i / SUB_BATCH_SIZE) + 1} for ${subBatchAddresses.length} tokens.`);
 
-          if (!tokenRecord) {
-            logApi.warn(`${formatLog.tag()} Token record not found in DB for address: ${address} during metric refresh.`);
+        for (const address of subBatchAddresses) {
+          const dexData = dexScreenerResultsMap[address]; 
+          const heliusData = heliusResultsMap.get(address);
+          
+          const tokenRecord = tokenRecordsMap.get(address); // Get from pre-fetched map
+
+          if (!tokenRecord || (!dexData && !heliusData)) { // If no record or no API data, skip
+            if(!tokenRecord) logApi.warn(`${formatLog.tag()} Token record not found in pre-fetched map for address: ${address}`);
+            else logApi.warn(`${formatLog.tag()} No API data for ${address}`);
             continue;
           }
-        processedTokenIdsForSocials.push(tokenRecord.id);
+          
+          processedTokenIdsForSocialsAndWebsitesInSubBatch.push(tokenRecord.id);
 
-        // Prepare token table update data
-        const tokenUpdateData = {
-          metadata_last_updated_at: new Date(),
-        };
-
-        // Decimals: Prioritize Helius
-        if (heliusData && heliusData.decimals !== undefined && heliusData.decimals !== null) {
-          tokenUpdateData.decimals = heliusData.decimals;
-        }
-
-        // Name & Symbol: Prioritize Helius (on-chain) if available, else DexScreener
-        if (heliusData && heliusData.name) {
-          tokenUpdateData.name = heliusData.name;
-        } else if (dexData && dexData.name) {
-          tokenUpdateData.name = dexData.name;
+          const tokenUpdateData = { metadata_last_updated_at: new Date() };
+          if (heliusData?.decimals !== undefined && heliusData.decimals !== null) tokenUpdateData.decimals = heliusData.decimals;
+          if (heliusData?.name) tokenUpdateData.name = heliusData.name; else if (dexData?.name) tokenUpdateData.name = dexData.name;
+          if (heliusData?.symbol) tokenUpdateData.symbol = heliusData.symbol; else if (dexData?.symbol) tokenUpdateData.symbol = dexData.symbol;
+          if (dexData?.metadata?.imageUrl) tokenUpdateData.image_url = dexData.metadata.imageUrl;
+          if (heliusData?.total_supply && (tokenRecord.total_supply === null || tokenRecord.total_supply === undefined)) {
+            try { const ts = parseFloat(heliusData.total_supply); if(!isNaN(ts)) tokenUpdateData.total_supply = ts; } catch (e) { /* ignore */ }
           }
-        if (heliusData && heliusData.symbol) {
-          tokenUpdateData.symbol = heliusData.symbol;
-        } else if (dexData && dexData.symbol) {
-          tokenUpdateData.symbol = dexData.symbol;
-        }
 
-        // Logo URL: DexScreener
-        if (dexData && dexData.metadata && dexData.metadata.imageUrl) {
-          tokenUpdateData.image_url = dexData.metadata.imageUrl;
-        }
+          if (Object.keys(tokenUpdateData).length > 1) {
+            allDbOperationsInSubBatch.push(prisma.tokens.update({ where: { id: tokenRecord.id }, data: tokenUpdateData }));
+            tokensProcessedInSubBatch++;
+          }
 
-        // Total Supply: Use Helius if available as initial, but TokenPriceWebSocketService handles ongoing.
-        // Only set if not already set or if Helius value is significantly different and newer.
-        if (heliusData && heliusData.total_supply && (tokenRecord.total_supply === null || tokenRecord.total_supply === undefined)) {
-          try {
-            tokenUpdateData.total_supply = parseFloat(heliusData.total_supply);
-            if(isNaN(tokenUpdateData.total_supply)) delete tokenUpdateData.total_supply;
-          } catch (e) { /* ignore parse error */ }
-        }
-
-        if (Object.keys(tokenUpdateData).length > 1) { // more than just metadata_last_updated_at
-          tokenUpdateOps.push({ where: { id: tokenRecord.id }, data: tokenUpdateData });
-        }
-
-        // Prepare token_prices table upsert data (from DexScreener)
-        if (dexData) {
-          const priceUpsertData = {
-            token_id: tokenRecord.id,
-            price: dexData.price !== undefined && dexData.price !== null ? parseFloat(dexData.price) : null,
-            market_cap: dexData.marketCap !== undefined && dexData.marketCap !== null ? parseFloat(dexData.marketCap) : null,
-            fdv: dexData.fdv !== undefined && dexData.fdv !== null ? parseFloat(dexData.fdv) : null,
-            volume_24h: dexData.volume && dexData.volume.h24 !== undefined && dexData.volume.h24 !== null ? parseFloat(dexData.volume.h24) : null,
-            liquidity: dexData.liquidity && dexData.liquidity.usd !== undefined && dexData.liquidity.usd !== null ? parseFloat(dexData.liquidity.usd) : null,
-            updated_at: new Date(),
-            // Store raw dexscreener data if needed for specific fields not yet mapped
-            // raw_dexscreener_data: dexData, 
-          };
-          // Filter out null prices before pushing, as price is non-nullable in schema
-          if (priceUpsertData.price !== null && !isNaN(priceUpsertData.price)) {
-             tokenPriceUpsertOps.push({
+          if (dexData) {
+            const price = dexData.price !== undefined && dexData.price !== null ? parseFloat(dexData.price) : null;
+            if (price !== null && !isNaN(price)) {
+              const priceUpsertPayload = {
+                price: price,
+                market_cap: isNaN(parseFloat(dexData.marketCap)) ? null : parseFloat(dexData.marketCap),
+                fdv: isNaN(parseFloat(dexData.fdv)) ? null : parseFloat(dexData.fdv),
+                volume_24h: dexData.volume?.h24 !== undefined && dexData.volume.h24 !== null ? parseFloat(dexData.volume.h24) : null,
+                liquidity: dexData.liquidity?.usd !== undefined && dexData.liquidity.usd !== null ? parseFloat(dexData.liquidity.usd) : null,
+                updated_at: new Date(),
+              };
+              allDbOperationsInSubBatch.push(prisma.token_prices.upsert({
                 where: { token_id: tokenRecord.id },
-                update: {
-                    price: priceUpsertData.price,
-                    market_cap: isNaN(priceUpsertData.market_cap) ? null : priceUpsertData.market_cap,
-                    fdv: isNaN(priceUpsertData.fdv) ? null : priceUpsertData.fdv,
-                    volume_24h: isNaN(priceUpsertData.volume_24h) ? null : priceUpsertData.volume_24h,
-                    liquidity: isNaN(priceUpsertData.liquidity) ? null : priceUpsertData.liquidity,
-                    updated_at: priceUpsertData.updated_at,
-                },
-                create: {
-                    token_id: priceUpsertData.token_id,
-                    price: priceUpsertData.price,
-                    market_cap: isNaN(priceUpsertData.market_cap) ? null : priceUpsertData.market_cap,
-                    fdv: isNaN(priceUpsertData.fdv) ? null : priceUpsertData.fdv,
-                    volume_24h: isNaN(priceUpsertData.volume_24h) ? null : priceUpsertData.volume_24h,
-                    liquidity: isNaN(priceUpsertData.liquidity) ? null : priceUpsertData.liquidity,
-                    updated_at: priceUpsertData.updated_at,
-                },
-            });
-          } else {
-            logApi.debug(`${formatLog.tag()} Skipping price upsert for ${address} due to null/NaN price from DexScreener.`);
-                  }
-
-          // Prepare token_socials and token_websites data
-          if (dexData.socials) {
-            for (const [type, url] of Object.entries(dexData.socials)) {
-              if (url && typeof url === 'string') { // Ensure URL is a string
-                allNewSocialsOps.push({ token_id: tokenRecord.id, type: type.toLowerCase(), url: url });
+                update: priceUpsertPayload,
+                create: { token_id: tokenRecord.id, ...priceUpsertPayload },
+              }));
+              pricesUpsertedInSubBatch++;
+            }
+            if (dexData.socials) {
+              for (const [type, url] of Object.entries(dexData.socials)) {
+                if (url && typeof url === 'string') {
+                  allDbOperationsInSubBatch.push(prisma.token_socials.create({ data: { token_id: tokenRecord.id, type: type.toLowerCase(), url: url } }));
+                  socialsCreatedInSubBatch++; 
+                }
               }
+            }
+            if (dexData.websites && Array.isArray(dexData.websites)) {
+              dexData.websites.forEach(site => {
+                if (site.url && typeof site.url === 'string') {
+                  allDbOperationsInSubBatch.push(prisma.token_websites.create({ data: { token_id: tokenRecord.id, label: site.label || 'website', url: site.url } }));
+                  websitesCreatedInSubBatch++;
+                }
+              });
             }
           }
-          if (dexData.websites && Array.isArray(dexData.websites)) {
-            dexData.websites.forEach(site => {
-              if (site.url && typeof site.url === 'string') {
-                // Assuming a separate table for websites, or a generic type in token_socials
-                // For this example, let's assume token_socials handles websites with type 'website'
-                // And token_websites is a separate table.
-                 allNewWebsitesOps.push({ token_id: tokenRecord.id, label: site.label || 'website', url: site.url });
-                 // If also adding to token_socials:
-                 // allNewSocials.push({ token_id: tokenRecord.id, type: 'website', url: site.url });
-                      }
-                  });
-              }
-            }
-      } // End of address loop
+        } // End of sub-batch address loop
+
+        if (allDbOperationsInSubBatch.length > 0) {
+            const deleteSocialsOps = processedTokenIdsForSocialsAndWebsitesInSubBatch.length > 0 ? 
+                [prisma.token_socials.deleteMany({ where: { token_id: { in: processedTokenIdsForSocialsAndWebsitesInSubBatch } } })] : [];
+            const deleteWebsitesOps = processedTokenIdsForSocialsAndWebsitesInSubBatch.length > 0 ? 
+                [prisma.token_websites.deleteMany({ where: { token_id: { in: processedTokenIdsForSocialsAndWebsitesInSubBatch } } })] : [];
+            
+            const finalSubBatchOps = [...deleteSocialsOps, ...deleteWebsitesOps, ...allDbOperationsInSubBatch];
+            
+            logApi.info(`${formatLog.tag()} Executing DB sub-batch transaction with ${finalSubBatchOps.length} operations for ${tokensProcessedInSubBatch} tokens.`);
+            await prisma.$transaction(finalSubBatchOps);
+            logApi.info(`${formatLog.tag()} DB sub-batch transaction completed for ${tokensProcessedInSubBatch} tokens.`);
+
+            overallTokensProcessedCount += tokensProcessedInSubBatch;
+            overallPricesUpsertedCount += pricesUpsertedInSubBatch;
+            overallSocialsCreatedCount += socialsCreatedInSubBatch;
+            overallWebsitesCreatedCount += websitesCreatedInSubBatch;
+        }
+        
+        // Add a delay between sub-batch transactions to reduce contention
+        if (i + SUB_BATCH_SIZE < addresses.length) { // Don't delay after the very last sub-batch
+            logApi.debug(`${formatLog.tag()} Delaying 500ms after DB sub-batch for _refreshMetricsForTokens...`);
+            await new Promise(resolve => setTimeout(resolve, 500)); 
+        }
+
+      } // End of main sub-batch loop
 
       if (lastCycleDetailsRef) {
-        set(lastCycleDetailsRef, 'dbTokensUpdated', tokenUpdateOps.length);
-        set(lastCycleDetailsRef, 'dbPricesUpserted', tokenPriceUpsertOps.length);
-        set(lastCycleDetailsRef, 'dbSocialsUpdated', allNewSocialsOps.length);
-        set(lastCycleDetailsRef, 'dbWebsitesUpdated', allNewWebsitesOps.length);
+        set(lastCycleDetailsRef, 'dbTokensUpdated', overallTokensProcessedCount);
+        set(lastCycleDetailsRef, 'dbPricesUpserted', overallPricesUpsertedCount);
+        set(lastCycleDetailsRef, 'dbSocialsUpdated', overallSocialsCreatedCount);
+        set(lastCycleDetailsRef, 'dbWebsitesUpdated', overallWebsitesCreatedCount);
       }
-
-      if (tokenUpdateOps.length > 0 || tokenPriceUpsertOps.length > 0 || allNewSocialsOps.length > 0 || allNewWebsitesOps.length > 0) {
-        await prisma.$transaction(async (tx) => {
-          logApi.info(`${formatLog.tag()} Starting Prisma transaction for DB updates...`);
-
-          // Update tokens table
-          if (tokenUpdateOps.length > 0) {
-            logApi.info(`${formatLog.tag()} Updating ${tokenUpdateOps.length} records in 'tokens' table.`);
-            for (const op of tokenUpdateOps) {
-              await tx.tokens.update(op);
-            }
-          }
-
-          // Upsert token_prices table
-          if (tokenPriceUpsertOps.length > 0) {
-            logApi.info(`${formatLog.tag()} Upserting ${tokenPriceUpsertOps.length} records in 'token_prices' table.`);
-            for (const op of tokenPriceUpsertOps) {
-              await tx.token_prices.upsert(op);
-            }
-          }
-          
-          if (processedTokenIdsForSocials.length > 0) {
-            // Delete existing socials and websites for these tokens then create new ones
-            if (allNewSocialsOps.length > 0) {
-              logApi.info(`${formatLog.tag()} Deleting existing socials for ${processedTokenIdsForSocials.length} tokens then creating ${allNewSocialsOps.length} new records.`);
-              await tx.token_socials.deleteMany({ where: { token_id: { in: processedTokenIdsForSocials } } });
-              const socialsCreateResult = await tx.token_socials.createMany({ data: allNewSocialsOps, skipDuplicates: true });
-              if (lastCycleDetailsRef) set(lastCycleDetailsRef, 'dbSocialsUpdated', socialsCreateResult.count);
-            }
-
-            if (allNewWebsitesOps.length > 0) { // Assuming token_websites table exists
-              logApi.info(`${formatLog.tag()} Deleting existing websites for ${processedTokenIdsForSocials.length} tokens then creating ${allNewWebsitesOps.length} new records.`);
-              await tx.token_websites.deleteMany({ where: { token_id: { in: processedTokenIdsForSocials } } });
-              const websitesCreateResult = await tx.token_websites.createMany({ data: allNewWebsitesOps, skipDuplicates: true });
-              if (lastCycleDetailsRef) set(lastCycleDetailsRef, 'dbWebsitesUpdated', websitesCreateResult.count);
-            }
-          }
-          logApi.info(`${formatLog.tag()} Prisma transaction completed successfully.`);
-        });
-      } else {
-        logApi.info(`${formatLog.tag()} No database updates required from _refreshMetricsForTokens.`);
-      }
+      logApi.info(`${formatLog.tag()} Prisma transactions completed successfully for _refreshMetricsForTokens.`);
 
     } catch (error) {
       logError(logApi, this.name, `Error in _refreshMetricsForTokens: ${error.message}`, { count: addresses.length, firstAddress: addresses[0] });

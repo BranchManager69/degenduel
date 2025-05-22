@@ -732,13 +732,13 @@ const config = {
       token_refresh_scheduler_service: true, // Renamed key to underscore format
       token_dex_data_service: true, // DEX pool data service
       token_detection_service: true, // New token detection service
-      token_enrichment_service: true, // New token enrichment service
-      token_activation_service: true,
+      token_enrichment_service: false, // ???
+      token_activation_service: false, // ???
       discord_notification_service: true,
       discord_interactive_service: true,
       launch_event_service: true,
       portfolio_snapshot_service: true,
-      dialect_service: true, // Dialect integration service (Blinks/Solana Actions)
+      dialect_service: false, // Dialect integration service (Blinks/Solana Actions)
       // Additional services would be defined here as we expand this pattern
       // etc.
     },
@@ -782,10 +782,9 @@ const config = {
       token_refresh_scheduler_service: false, // Renamed key to underscore format, kept disabled in dev
       token_dex_data_service: false, // Disable DEX pool data service in development
       token_detection_service: false, // Disable token detection service in development
-      token_enrichment_service: false, // Disable token enrichment service in development
+      token_enrichment_service: false, // Temporarily disable
+      token_activation_service: false, // Temporarily disable
       portfolio_snapshot_service: false, // Disable portfolio snapshot service to prevent double-snapshotting in development (causes race conditions)
-      token_activation_service: false, // Disabled in development
-      token_monitor: false, // [ADDED 5/11/25] Explicitly disable token monitor service in development
       contest_image_service: false, // [ADDED 5/11/25] Explicitly disable contest image service in development
       contest_service: false, // [ADDED 5/11/25] Explicitly disable contest service in development
       jupiter_client: false, // [ADDED 5/11/25] Explicitly disable JupiterClient service in development

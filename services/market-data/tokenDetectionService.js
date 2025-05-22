@@ -195,21 +195,27 @@ class TokenDetectionService extends BaseService {
                 this.stats.totalDetected += changes.added.length;
                 this.stats.tokensAdded += changes.added.length;
                 
-                // Keep history of detection events (limited to last 100)
+                let tokensToProcessThisCycle = changes.added;
+                const MAX_NEW_TOKENS_PER_CYCLE = 10000; // Limit how many new tokens we try to process at once
+
+                if (changes.added.length > MAX_NEW_TOKENS_PER_CYCLE) {
+                    logApi.warn(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} Detected ${changes.added.length} new tokens, processing only ${MAX_NEW_TOKENS_PER_CYCLE} this cycle to manage load.`);
+                    tokensToProcessThisCycle = changes.added.slice(0, MAX_NEW_TOKENS_PER_CYCLE);
+                    // The rest will be picked up by tokenListDeltaTracker as still "new" in the next run
+                }
+
                 this.stats.detectionHistory.unshift({
                     timestamp: new Date().toISOString(),
-                    added: changes.added.length,
+                    added: tokensToProcessThisCycle.length, // Log how many we are actually processing
                     removed: changes.removed.length,
                     total: changes.totalTracked
                 });
                 
-                // Limit history size
                 if (this.stats.detectionHistory.length > 100) {
                     this.stats.detectionHistory = this.stats.detectionHistory.slice(0, 100);
                 }
                 
-                // Schedule processing of new tokens
-                this.queueTokensForProcessing(changes.added);
+                this.queueTokensForProcessing(tokensToProcessThisCycle);
             }
             
             if (changes.removed.length > 0) {
@@ -278,25 +284,24 @@ class TokenDetectionService extends BaseService {
         
         this.isProcessingBatch = true;
         
-        // Get next batch
-        const batch = this.processingQueue.slice(0, CONFIG.BATCH_SIZE);
+        const batchOfAddresses = this.processingQueue.slice(0, CONFIG.BATCH_SIZE);
         this.processingQueue = this.processingQueue.slice(CONFIG.BATCH_SIZE);
         
         try {
-            logApi.info(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.CYAN}Processing batch of ${batch.length} tokens${fancyColors.RESET}`);
-            
-            // For each token, emit an event for enrichment
-            batch.forEach(tokenAddress => {
-                serviceEvents.emit('token:new', {
-                    address: tokenAddress,
-                    discoveredAt: new Date().toISOString()
-                });
+          logApi.info(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.CYAN}Emitting discovery event for batch of ${batchOfAddresses.length} tokens${fancyColors.RESET}`);
+          
+          // Emit a single event with the batch of addresses
+          if (batchOfAddresses.length > 0) {
+            serviceEvents.emit('tokens:discovered', { 
+              addresses: batchOfAddresses,
+              discoveredAt: new Date().toISOString()
             });
-            
-            // Add a delay before processing next batch
-            setTimeout(() => {
-                this.processNextBatch();
-            }, CONFIG.BATCH_DELAY_MS);
+          }
+          
+          // Add a delay before processing next batch from the internal queue
+          setTimeout(() => {
+            this.processNextBatch();
+          }, CONFIG.BATCH_DELAY_MS);
         } catch (error) {
             logApi.error(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.RED}Error processing token batch:${fancyColors.RESET}`, error);
             

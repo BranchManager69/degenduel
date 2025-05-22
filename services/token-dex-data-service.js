@@ -926,233 +926,147 @@ class TokenDEXDataService extends BaseService {
   }
 
   /**
-   * Refresh pools for multiple tokens
-   * @param {string[]} tokenAddresses - Array of token addresses
-   * @returns {Object} - Result of the batch refresh operation
-   */
-  async refreshPoolsForMultipleTokens(tokenAddresses) {
-    let successCount = 0;
-    let failureCount = 0;
-    let poolsFound = 0;
-    let poolsUpdated = 0;
-
-    // Mark all tokens as being refreshed
-    await prisma.tokens.updateMany({
-      where: {
-        address: {
-          in: tokenAddresses
-        }
-      },
-      data: {
-        last_refresh_attempt: new Date()
-      }
-    });
-
-    // Use the DexScreener client's batch capability
-    try {
-      logApi.info(`${formatLog.tag()} ${formatLog.header('BATCH FETCHING')} pools for ${formatLog.count(tokenAddresses.length)} tokens`);
-      
-      // Batch-fetch pools for all tokens
-      const batchResults = await dexscreenerClient.getMultipleTokenPools('solana', tokenAddresses);
-      
-      // Process each token's results
-      for (const tokenAddress of tokenAddresses) {
-        try {
-          const tokenResult = batchResults[tokenAddress];
-          
-          // Skip tokens with errors from the batch request
-          if (!tokenResult || tokenResult.error) {
-            failureCount++;
-            continue;
-          }
-          
-          // Create a compatible pool data structure
-          const poolsData = {
-            pairs: tokenResult.pairs || []
-          };
-          
-          // Manually refresh this token with the pre-fetched data
-          const refreshResult = await this.processPoolData(tokenAddress, poolsData);
-          
-          if (refreshResult.success) {
-            successCount++;
-            poolsFound += refreshResult.poolsFound || 0;
-            poolsUpdated += refreshResult.poolsUpdated || 0;
-          } else {
-            failureCount++;
-          }
-        } catch (tokenError) {
-          logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Error processing token ${tokenAddress}:`)} ${tokenError.message}`);
-          failureCount++;
-        }
-      }
-      
-      logApi.info(`${formatLog.tag()} ${formatLog.success('Batch refresh completed:')} ${formatLog.count(successCount)}/${formatLog.count(tokenAddresses.length)} successful, ${formatLog.count(poolsUpdated)} pools updated`);
-      
-      return {
-        successCount,
-        failureCount,
-        poolsFound,
-        poolsUpdated
-      };
-    } catch (error) {
-      logApi.error(`${formatLog.tag()} ${formatLog.error('Error during batch refresh:')} ${error.message}`);
-      
-      // If batch method fails, fall back to individual refreshes
-      logApi.info(`${formatLog.tag()} ${formatLog.info('Falling back to individual token refreshes...')}`);
-      
-      for (const tokenAddress of tokenAddresses) {
-        try {
-          const result = await this.refreshPoolsForToken(tokenAddress);
-          if (result.success) {
-            successCount++;
-            poolsFound += result.poolsFound || 0;
-            poolsUpdated += result.poolsUpdated || 0;
-          } else {
-            failureCount++;
-          }
-        } catch (tokenError) {
-          logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Error refreshing token ${tokenAddress}:`)} ${tokenError.message}`);
-          failureCount++;
-        }
-      }
-      
-      return {
-        successCount,
-        failureCount,
-        poolsFound,
-        poolsUpdated,
-        fallbackUsed: true
-      };
-    }
-  }
-
-  /**
    * Process pool data for a token (separated for reuse with pre-fetched data)
+   * This will now PREPARE an array of DB operations, not execute them.
    * @param {string} tokenAddress - Token address
    * @param {Object} poolsData - Pool data from DexScreener
-   * @returns {Object} - Result of processing
+   * @param {PrismaClient} tx - Optional Prisma transaction client (for use within a larger transaction)
+   * @returns {Promise<Array<PrismaPromise<any>>>} - Array of Prisma operations
    */
-  async processPoolData(tokenAddress, poolsData) {
+  async preparePoolDbOperations(tokenAddress, poolsData, txClient = prisma) {
+    const dbOps = [];
     try {
       if (!poolsData || !poolsData.pairs || !Array.isArray(poolsData.pairs)) {
-        return { 
-          success: false, 
-          poolsFound: 0, 
-          poolsUpdated: 0 
-        };
+        logApi.warn(`${formatLog.tag()} No valid pool data provided for ${tokenAddress} in preparePoolDbOperations`);
+        return dbOps;
       }
 
-      // Filter to Solana pools
-      const solanaPoolsRaw = poolsData.pairs.filter(pair => 
-        pair && pair.chainId === 'solana' && pair.dexId && pair.pairAddress
-      );
-
-      // Apply minimum liquidity filter and sort by liquidity
+      const solanaPoolsRaw = poolsData.pairs.filter(p => p && p.chainId === 'solana' && p.dexId && p.pairAddress);
       const solanaPoolsFiltered = solanaPoolsRaw
-        .filter(pair => {
-          const liquidity = parseFloat(pair.liquidity?.usd || '0');
-          return liquidity >= this.config.minLiquidityUsd;
-        })
-        .sort((a, b) => {
-          const liquidityA = parseFloat(a.liquidity?.usd || '0');
-          const liquidityB = parseFloat(b.liquidity?.usd || '0');
-          return liquidityB - liquidityA;
-        });
-
-      // Limit to max pools per token
+        .filter(p => parseFloat(p.liquidity?.usd || '0') >= this.config.minLiquidityUsd)
+        .sort((a, b) => parseFloat(b.liquidity?.usd || '0') - parseFloat(a.liquidity?.usd || '0'));
       const solanaPoolsLimited = solanaPoolsFiltered.slice(0, this.config.maxPoolsPerToken);
 
-      // Begin transaction to update pools
-      const updateResult = await prisma.$transaction(async (tx) => {
-        // First, get existing pools for this token
-        const existingPools = await tx.token_pools.findMany({
-          where: { tokenAddress }
-        });
-
+      const existingPools = await txClient.token_pools.findMany({ where: { tokenAddress } });
         const existingPoolAddresses = new Set(existingPools.map(p => p.address));
         const newPoolAddresses = new Set(solanaPoolsLimited.map(p => p.pairAddress));
         
-        // Pools to add (in new pools but not in existing)
         const poolsToAdd = solanaPoolsLimited.filter(p => !existingPoolAddresses.has(p.pairAddress));
-        
-        // Pools to remove (in existing but not in new pools)
         const poolsToRemove = existingPools.filter(p => !newPoolAddresses.has(p.address));
 
-        // Prepare data for creating new pools
-        const poolCreateData = poolsToAdd.map(pool => ({
+      if (poolsToRemove.length > 0) {
+        dbOps.push(txClient.token_pools.deleteMany({
+          where: { tokenAddress, address: { in: poolsToRemove.map(p => p.address) } }
+        }));
+      }
+
+      const poolCreateOps = poolsToAdd.map(pool => txClient.token_pools.create({
+        data: {
           address: pool.pairAddress,
           tokenAddress: tokenAddress,
-          dex: pool.dexId.toUpperCase(), // Normalize DEX ID
+          dex: pool.dexId.toUpperCase(),
           programId: pool.programAddress || pool.pairAddress, 
-          dataSize: 0, // Default values
-          tokenOffset: 0, // Default values
-          createdAt: new Date(),
-          lastUpdated: new Date()
-        }));
+          dataSize: 0, tokenOffset: 0, createdAt: new Date(), lastUpdated: new Date()
+        }
+      }));
+      dbOps.push(...poolCreateOps);
+      
+      const currentRefreshMetadata = (await txClient.tokens.findUnique({where: {address: tokenAddress}, select: {refresh_metadata: true}}))?.refresh_metadata || {};
 
-        // Delete pools that are no longer in the filtered list
-        if (poolsToRemove.length > 0) {
-          await tx.token_pools.deleteMany({
-            where: {
-              tokenAddress,
-              address: {
-                in: poolsToRemove.map(p => p.address)
+      dbOps.push(txClient.tokens.update({
+        where: { address: tokenAddress },
+        data: {
+          last_refresh_success: new Date(), // Mark success for this specific token
+          refresh_metadata: {
+            ...(currentRefreshMetadata),
+            lastPoolRefresh: new Date().toISOString(),
+            poolsFound: solanaPoolsRaw.length,
+            poolsStored: existingPools.length - poolsToRemove.length + poolCreateOps.length
               }
             }
-          });
+      }));
+      
+      // Note: The old processPoolData returned more detailed counts.
+      // For batched operations, we mostly care that ops are generated.
+      // The calling function (refreshPoolsForMultipleTokens) will sum up.
+      return dbOps;
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} Error preparing pool DB ops for ${tokenAddress}: ${error.message}`);
+      return []; // Return empty array on error to not break a larger transaction
+    }
+  }
+
+  async refreshPoolsForMultipleTokens(tokenAddresses) {
+    let overallSuccessCount = 0;
+    let overallFailureCount = 0;
+    let totalPoolsFound = 0;
+    let totalPoolsUpdated = 0; // This will be harder to track accurately without individual results from preparePoolDbOperations
+    const allDbOperationsForBatch = [];
+
+    // Mark all tokens as being attempted for refresh
+    allDbOperationsForBatch.push(prisma.tokens.updateMany({
+      where: { address: { in: tokenAddresses } },
+      data: { last_refresh_attempt: new Date() }
+    }));
+
+    try {
+      logApi.info(`${formatLog.tag()} ${formatLog.header('BATCH FETCHING')} pools for ${formatLog.count(tokenAddresses.length)} tokens from DexScreener`);
+      const batchApiResults = await dexscreenerClient.getMultipleTokenPools('solana', tokenAddresses);
+      
+      for (const tokenAddress of tokenAddresses) {
+        const tokenDexData = batchApiResults[tokenAddress];
+        if (!tokenDexData || tokenDexData.error) {
+          logApi.warn(`${formatLog.tag()} Failed to fetch DexScreener data for ${tokenAddress} in batch: ${tokenDexData?.error || 'No data'}`);
+          overallFailureCount++;
+          // Mark this specific token as failed to refresh its pools if API call failed
+          allDbOperationsForBatch.push(prisma.tokens.update({
+            where: {address: tokenAddress},
+            data: { refresh_metadata: { lastPoolRefreshError: new Date().toISOString(), errorMessage: `DexScreener API failed: ${tokenDexData?.error || 'No data'}` } }
+          }));
+          continue;
         }
 
-        // Create new pools
-        let createdCount = 0;
-        for (const poolData of poolCreateData) {
-          try {
-            await tx.token_pools.create({
-              data: poolData
-            });
-            createdCount++;
-          } catch (error) {
-            // Skip logging for duplicate key errors
-            if (!error.message.includes('duplicate key')) {
-              logApi.warn(`${formatLog.tag()} ${formatLog.warning(`Error creating pool ${poolData.address}:`)} ${error.message}`);
-            }
-          }
+        const poolsData = { pairs: tokenDexData.pairs || [] };
+        // Pass prisma directly, not a tx client, as these ops are collected for one big transaction
+        const tokenDbOps = await this.preparePoolDbOperations(tokenAddress, poolsData, prisma);
+        
+        if (tokenDbOps.length > 0) {
+          allDbOperationsForBatch.push(...tokenDbOps);
+          overallSuccessCount++; 
+          // Note: It's harder to accurately sum poolsFound/poolsUpdated here as preparePoolDbOperations was simplified.
+          // We can log the length of ops generated per token if needed for debugging.
+        } else {
+          // If no ops, it might mean no pools found or an error in preparation for this specific token.
+          // preparePoolDbOperations logs errors internally.
+          overallFailureCount++; 
         }
+      }
 
-        // Mark token as successfully refreshed
-        await tx.tokens.update({
-          where: { address: tokenAddress },
-          data: { 
-            last_refresh_success: new Date(),
-            refresh_metadata: {
-              lastPoolRefresh: new Date().toISOString(),
-              poolsFound: solanaPoolsRaw.length,
-              poolsStored: existingPools.length - poolsToRemove.length + createdCount
-            }
-          }
-        });
+      if (allDbOperationsForBatch.length > 0) {
+        logApi.info(`${formatLog.tag()} Executing transaction with ${allDbOperationsForBatch.length} DB operations for ${tokenAddresses.length} tokens.`);
+        await prisma.$transaction(allDbOperationsForBatch);
+        logApi.info(`${formatLog.tag()} ${formatLog.success('DEX Pool Batch DB transaction completed for')} ${overallSuccessCount} tokens.`);
+      } else {
+        logApi.info(`${formatLog.tag()} No DB operations to perform for DEX pool batch.`);
+      }
 
-        return {
-          poolsFound: solanaPoolsRaw.length,
-          poolsFiltered: solanaPoolsLimited.length,
-          poolsAdded: createdCount,
-          poolsRemoved: poolsToRemove.length,
-          poolsTotal: existingPools.length - poolsToRemove.length + createdCount
-        };
-      });
+    } catch (error) {
+      logApi.error(`${formatLog.tag()} ${formatLog.error('Critical error during refreshPoolsForMultipleTokens:')} ${error.message}`);
+      overallFailureCount = tokenAddresses.length; // Assume all failed if the batch API call itself failed critically
+    }
+    
+    // Update aggregate stats (simplified for now)
+    this.refreshStats.totalUpdates++;
+    if (overallSuccessCount > 0) this.refreshStats.successfulUpdates++;
+    if (overallFailureCount > 0 && overallSuccessCount === 0) this.refreshStats.failedUpdates++;
+    // More detailed pool counts would require more complex aggregation if needed.
 
       return {
-        success: true,
-        poolsFound: updateResult.poolsFound,
-        poolsUpdated: updateResult.poolsAdded + updateResult.poolsRemoved,
-        poolsTotal: updateResult.poolsTotal
-      };
-    } catch (error) {
-      return { 
-        success: false, 
-        error: error.message 
-      };
-    }
+      successCount: overallSuccessCount,
+      failureCount: overallFailureCount,
+      poolsFound: totalPoolsFound, // This will be 0 unless we enhance preparePoolDbOperations to return counts
+      poolsUpdated: totalPoolsUpdated // Same as above
+    };
   }
 
   /**

@@ -326,7 +326,7 @@ export class BaseService {
                 // Ensure we have a valid delay value
                 const validDelay = Math.max(1000, nextAttemptDelay || 5000);
                 
-                logApi.info(`${fancyColors.BG_RED}${fancyColors.BOLD} SERVICE CIRCUIT BREAKER ${fancyColors.RESET} ${serviceColors.failed}${this.name}${fancyColors.RESET}${fancyColors.BLACK} will attempt reset in ${fancyColors.BOLD}${validDelay/1000} seconds${fancyColors.RESET}`);
+                logApi.info(`${fancyColors.BG_RED}${fancyColors.BOLD} SERVICE CIRCUIT BREAKER ${fancyColors.RESET} ${this.name}${fancyColors.RESET}${fancyColors.BLACK} will attempt reset in ${fancyColors.BOLD}${validDelay/1000} seconds${fancyColors.RESET}`);
                 
                 // Schedule next recovery attempt
                 if (this.recoveryTimeout) clearTimeout(this.recoveryTimeout);
