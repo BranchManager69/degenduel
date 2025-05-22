@@ -416,6 +416,17 @@ async function handleSystemRequest(ws, message, sendMessage, sendError) {
           requestId: message.requestId
         });
         break;
+        
+      case 'ping':
+        // Handle ping requests with pong response
+        sendMessage(ws, {
+          type: MESSAGE_TYPES.RESPONSE,
+          topic: TOPICS.SYSTEM,
+          action: 'pong',
+          data: { timestamp: new Date().toISOString() },
+          requestId: message.requestId
+        });
+        break;
       
       default:
         sendError(ws, `Unknown action for system: ${message.action}`, 4009);
