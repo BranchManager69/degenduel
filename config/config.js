@@ -730,7 +730,7 @@ const config = {
       solana_service: true,
       solana_engine_service: true, // New SolanaEngine service
       token_refresh_scheduler_service: true, // Renamed key to underscore format
-      token_dex_data_service: true, // DEX pool data service
+      token_dex_data_service: false, // DEX pool data service
       token_detection_service: true, // New token detection service
       token_enrichment_service: false, // ???
       token_activation_service: false, // ???
