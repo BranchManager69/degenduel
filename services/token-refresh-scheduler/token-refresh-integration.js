@@ -417,22 +417,24 @@ class TokenRefreshService extends BaseService {
         logApi.info(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Restarting token refresh scheduler`);
         // Try to restart the scheduler if it's not running
         await tokenRefreshScheduler.start();
-      } else {
-        // Execute a token refresh cycle to verify system is working
-        // Find highest priority tokens to refresh as a test
+      } /*
+      // NO LONGER NEEDED:
+      else {
+        // Run a token refresh cycle to verify system is working
+        // 1.) Find highest priority tokens to refresh as a test
         const tokens = await prisma.tokens.findMany({
           where: { is_active: true },
           orderBy: [
             { priority_score: 'desc' }
           ],
-          take: 50,
+          take: 3,
           select: {
             id: true,
             address: true,
-            symbol: true
+            symbol: true,
           }
         });
-        
+        // 2.) Execute a token refresh cycle to verify system is working
         if (tokens && tokens.length > 0) {
           const addresses = tokens.map(t => t.address);
           logApi.info(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Performing test refresh of ${tokens.length} tokens`);
@@ -461,9 +463,10 @@ class TokenRefreshService extends BaseService {
             }
           }
         }
+        
       }
-      
       logApi.info(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Operation completed successfully`);
+      */
       return true;
     } catch (error) {
       logApi.error(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} ${fancyColors.RED}Operation error:${fancyColors.RESET}`, error);

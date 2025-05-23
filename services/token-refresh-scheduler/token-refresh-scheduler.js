@@ -42,7 +42,7 @@ import MetricsCollector from './metrics-collector.js';
 import { config } from '../../config/config.js';
 
 // Constants and configuration
-const DEFAULT_MAX_TOKENS_PER_BATCH = 500;  // Updated from 100 to 500 for better Jupiter batching
+const DEFAULT_MAX_TOKENS_PER_BATCH = 100;  // Optimized for Jupiter API free plan (100 tokens per request, 1 req/sec)
 const DEFAULT_MIN_INTERVAL_SECONDS = 15;   // Minimum refresh interval
 const DEFAULT_BATCH_DELAY_MS = 3000;       // Min 3000ms delay between batch executions to avoid rate limiting
 const DEFAULT_API_RATE_LIMIT = 30;         // Requests per second (30% of 100 limit to be conservative)
@@ -354,8 +354,12 @@ class TokenRefreshScheduler extends BaseService {
     try {
       logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} STEP 2: Calling prisma.tokens.findMany (with MINIMAL select)...`);
       tokens = await prisma.tokens.findMany({
-        where: { is_active: true },
-        take: 100,
+        where: { 
+          is_active: true,
+          token_prices: {
+            price: { not: null }
+          }
+        },
         select: {
           id: true,
           address: true,
@@ -985,6 +989,7 @@ class TokenRefreshScheduler extends BaseService {
     // -- CURSOR AI MODIFICATION START --
     const tokenPriceUpsertOps = [];
     const tokenMetaUpdateOps = [];
+    const failedTokens = [];
 
     for (const token of batch) { 
       const currentPriceInfo = priceData ? priceData[token.address] : null;
@@ -1056,13 +1061,17 @@ class TokenRefreshScheduler extends BaseService {
         tokensForRequeue.push({ token, priceChanged });
 
       } else {
-        logApi.warn(`[TokenRefreshScheduler] Price not found in Jupiter response for ${token.symbol || token.address}. Will attempt in next cycle.`, { 
-          token_id: token.id,
-          token_address: token.address
-        });
+        // Collect failed tokens for batch logging
+        failedTokens.push(token.symbol || token.address.substring(0, 8));
         this.trackFailedToken(token); 
         failedToPriceCount++;
+        // DON'T add to tokensForRequeue - let failed tokens drop out of queue
       }
+    }
+
+    // Log all failed tokens in one line
+    if (failedTokens.length > 0) {
+      logApi.warn(`[TokenRefreshScheduler] ${failedTokens.length} tokens failed price lookup: ${failedTokens.slice(0, 5).join(', ')}${failedTokens.length > 5 ? ` (+${failedTokens.length - 5} more)` : ''}`);
     }
 
     if (tokenPriceUpsertOps.length > 0 || tokenMetaUpdateOps.length > 0) {
