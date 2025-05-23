@@ -12,6 +12,7 @@ import { cpus, loadavg, totalmem, freemem } from 'os';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
 import { logApi } from '../../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../../utils/colors.js';
 import prisma from '../../../config/prisma.js';
@@ -321,7 +322,29 @@ class LocalVanityGenerator {
         const publicKey_32_bytes_uint8array = Uint8Array.from(keypairArray_64.slice(32, 64));
         
         // Get the v2 address string from the raw public key bytes
-        const publicKeyString_v2 = await getAddressFromPublicKey(publicKey_32_bytes_uint8array);
+        // Convert raw bytes to Ed25519 CryptoKey as required by Solana v2
+        let publicKeyString_v2;
+        try {
+          // Step 1: Convert the raw public key bytes to an Ed25519 CryptoKey (ESM project)
+          const publicKeyCryptoKey = await crypto.webcrypto.subtle.importKey(
+            'raw', // Format of the key to import
+            publicKey_32_bytes_uint8array, // The raw key material
+            { name: 'Ed25519' }, // Algorithm details
+            true, // Whether the key is extractable (usually true for public keys)
+            ['verify'] // Key usages: 'verify' is appropriate for a public key
+          );
+
+          // Step 2: Use the CryptoKey with getAddressFromPublicKey
+          publicKeyString_v2 = await getAddressFromPublicKey(publicKeyCryptoKey);
+
+          logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} Successfully generated vanity address using CryptoKey: ${publicKeyString_v2} for job ${job.id}`);
+
+        } catch (error) {
+          logApi.error(`${fancyColors.RED}[LocalVanityGenerator]${fancyColors.RESET} Failed to generate address for job ${job.id}. Error during CryptoKey import or getAddressFromPublicKey: ${error.message}`);
+          
+          // Rethrow the error to ensure the job is marked as failed if the primary path doesn't work
+          throw new Error(`Vanity address generation failed for job ${job.id}: ${error.message}`);
+        }
         logApi.info(`${fancyColors.MAGENTA}[LocalVanityGenerator]${fancyColors.RESET} Generated vanity address: ${publicKeyString_v2} for job ${job.id}`);
 
         // 🔽 DROP A PLAINTEXT VERSION (This part stores the full 64-byte array as JSON string)

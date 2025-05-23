@@ -661,7 +661,7 @@ class VanityWalletService extends BaseService {
             await this.generateVanityAddress(pattern, options);
           }
         } else {
-          logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${serviceSpecificColors.vanityWallet.success}Target met: ${pendingCount}/${target} ${pattern} jobs in progress${fancyColors.RESET}`);
+          logApi.info(`${serviceSpecificColors.vanityWallet.tag}[VanityWalletService]${fancyColors.RESET} ${serviceSpecificColors.vanityWallet.success}Target satisfied: ${effectiveCount}/${target} ${pattern} total (${count} available + ${pendingCount} in progress)${fancyColors.RESET}`);
         }
       }
       

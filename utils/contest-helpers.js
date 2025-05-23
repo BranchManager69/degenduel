@@ -117,6 +117,7 @@ export function validateContestParams(params) {
       }
     }
     
+    
     if (params.min_participants) {
       const minParticipants = parseInt(params.min_participants, 10);
       if (isNaN(minParticipants) || minParticipants < 2) {

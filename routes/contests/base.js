@@ -162,6 +162,7 @@ router.post('/', requireAuth, async (req, res) => {
       allowed_buckets: body.allowed_buckets || [],
       status: 'pending',
       visibility: body.visibility || 'public'
+      // prize_pool will be calculated automatically - don't accept from frontend
     };
 
     // Validate contest parameters
@@ -203,11 +204,14 @@ router.post('/', requireAuth, async (req, res) => {
     // Create the contest and its wallet in a transaction
     const createdContestResult = await prisma.$transaction(async (tx) => {
       // Step 1: Create the main contest record (without inline wallet creation)
+      // Calculate initial prize pool based on entry fee (will grow as participants join)
+      const initialPrizePool = sanitizedData.entry_fee; // Start with entry fee amount
+      
       const newContest = await tx.contests.create({
         data: {
           ...sanitizedData,
           created_by_user: user.wallet_address, // Corrected field name from created_by
-          prize_pool: sanitizedData.entry_fee, 
+          prize_pool: initialPrizePool, // Auto-calculated, not from frontend
           // contest_wallets relation will be handled by ContestWalletService
         }
       });

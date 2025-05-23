@@ -21,6 +21,7 @@ import {
   generateAuthenticationOptions,
   verifyAuthenticationResponse
 } from '@simplewebauthn/server';
+import { isoUint8Array } from '@simplewebauthn/server/helpers';
 
 // Helper function to replace the previous base64url import
 const base64url = {
@@ -195,8 +196,8 @@ router.post('/register-options', requireAuth, async (req, res) => {
       rpName,
       rpID,
       // WebAuthn userID should be a stable, unique identifier for the user. 
-      // Using the database integer ID (converted to string/buffer) is best practice.
-      userID: userIdInt.toString(), // Convert integer ID to string for WebAuthn
+      // Using the database integer ID (converted to proper Uint8Array format) is best practice.
+      userID: isoUint8Array.fromUTF8String(`DD${userIdInt}`), // Convert to proper format with prefix
       userName: userNickname, 
       attestationType: 'direct', // Request attestation for better device info
       excludeCredentials: userCredentials.map(cred => ({
