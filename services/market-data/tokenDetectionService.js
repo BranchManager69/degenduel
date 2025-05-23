@@ -29,7 +29,9 @@ import { getJupiterClient } from '../solana-engine/jupiter-client.js';
 // Token List Delta Tracker
 import tokenListDeltaTracker from './tokenListDeltaTracker.js';
 // Market Data Repository
-import marketDataRepository from './marketDataRepository.js'; // what is this?
+import marketDataRepository from './marketDataRepository.js';
+// Database
+import { prisma } from '../../config/prisma.js';
 
 // Config
 import { config } from '../../config/config.js';
@@ -290,8 +292,14 @@ class TokenDetectionService extends BaseService {
         try {
           logApi.info(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.CYAN}Emitting discovery event for batch of ${batchOfAddresses.length} tokens${fancyColors.RESET}`);
           
-          // Emit a single event with the batch of addresses
+          // Process each token individually to get full enrichment
           if (batchOfAddresses.length > 0) {
+            for (const address of batchOfAddresses) {
+              // Call handleNewToken directly for each new token
+              await this.handleNewToken(address);
+            }
+            
+            // Also emit the batch event for any other listeners
             serviceEvents.emit('tokens:discovered', { 
               addresses: batchOfAddresses,
               discoveredAt: new Date().toISOString()
@@ -318,16 +326,80 @@ class TokenDetectionService extends BaseService {
      */
     async handleNewToken(tokenInfo) {
         try {
-            // This is just a placeholder - actual implementation will depend on your token processing strategy
-            // This would typically involve fetching metadata, initializing database records, etc.
-            logApi.debug(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} Received new token event: ${tokenInfo.address}`);
+            const tokenAddress = tokenInfo.address || tokenInfo;
+            logApi.info(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} Processing new token: ${tokenAddress}`);
             
-            // In a real implementation, you would enrich token data and save it to the database
-            // Example of what could happen:
             // 1. Check if token already exists in database
-            // 2. Fetch metadata from various sources
-            // 3. Fetch price data if available
-            // 4. Create database record
+            const existingToken = await prisma.tokens.findUnique({
+                where: { address: tokenAddress }
+            });
+            
+            if (existingToken) {
+                logApi.debug(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} Token ${tokenAddress} already exists, skipping`);
+                return;
+            }
+            
+            // 2. Fetch symbol and name from Helius
+            let tokenSymbol = null;
+            let tokenName = null;
+            try {
+                const heliusClient = await import('../solana-engine/helius-client.js');
+                const metadata = await heliusClient.heliusClient.tokens.getTokensMetadata([tokenAddress]);
+                if (metadata && metadata[0]) {
+                    tokenSymbol = metadata[0].symbol;
+                    tokenName = metadata[0].name;
+                    logApi.debug(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} Got symbol: ${tokenSymbol}, name: ${tokenName} from Helius`);
+                }
+            } catch (heliusError) {
+                logApi.warn(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} Failed to get metadata from Helius for ${tokenAddress}: ${heliusError.message}`);
+            }
+            
+            // 3. Fetch price, market cap, and volume from DexScreener
+            let priceData = null;
+            let marketCap = null;
+            let volume24h = null;
+            try {
+                const dexScreenerCollector = await import('../token-enrichment/collectors/dexScreenerCollector.js');
+                const dexData = await dexScreenerCollector.default.getTokensByAddressBatch([tokenAddress]);
+                if (dexData && dexData[tokenAddress]) {
+                    const tokenData = dexData[tokenAddress];
+                    priceData = tokenData.price;
+                    marketCap = tokenData.marketCap;
+                    volume24h = tokenData.volume?.h24;
+                    logApi.debug(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} Got price: ${priceData}, market cap: ${marketCap}, volume: ${volume24h} from DexScreener`);
+                }
+            } catch (dexError) {
+                logApi.warn(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} Failed to get market data from DexScreener for ${tokenAddress}: ${dexError.message}`);
+            }
+            
+            // 4. Create database record with all available data
+            const tokenCreateData = {
+                tokenData: {
+                    address: tokenAddress,
+                    symbol: tokenSymbol,
+                    name: tokenName,
+                    is_active: false, // Will be set by token activation service based on criteria
+                    created_at: new Date(),
+                    updated_at: new Date()
+                },
+                priceData: priceData ? {
+                    price: parseFloat(priceData),
+                    market_cap: marketCap ? parseFloat(marketCap) : null,
+                    volume_24h: volume24h ? parseFloat(volume24h) : null,
+                    updated_at: new Date()
+                } : null
+            };
+            
+            // Use marketDataRepository to create the token with all data
+            await marketDataRepository.processTokenCreations(
+                [tokenCreateData],
+                {}, // existingTokenMap - empty since this is a new token
+                (str, maxLength) => str ? str.substring(0, maxLength) : str, // validateStringLength function
+                prisma
+            );
+            
+            logApi.info(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.GREEN}Successfully created token ${tokenAddress} with symbol: ${tokenSymbol}, price: ${priceData}, market cap: ${marketCap}${fancyColors.RESET}`);
+            
         } catch (error) {
             logApi.error(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.RED}Error handling new token:${fancyColors.RESET}`, error);
         }

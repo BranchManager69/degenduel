@@ -1068,20 +1068,62 @@ class TokenRefreshScheduler extends BaseService {
     if (tokenPriceUpsertOps.length > 0 || tokenMetaUpdateOps.length > 0) {
         try {
             await prisma.$transaction(async (tx) => {
+                // Bulk update tokens table
                 if (tokenMetaUpdateOps.length > 0) {
-                    logApi.debug(`${formatLog.tag()} [updateTokenPrices] Updating ${tokenMetaUpdateOps.length} records in 'tokens' table.`);
+                    logApi.debug(`${formatLog.tag()} [updateTokenPrices] Bulk updating ${tokenMetaUpdateOps.length} records in 'tokens' table.`);
+                    
+                    // Group updates by what fields are being updated
+                    const refreshSuccessUpdates = [];
+                    const priceChangeUpdates = [];
+                    
                     for (const op of tokenMetaUpdateOps) {
-                        await tx.tokens.update(op);
+                        if (op.data.last_price_change) {
+                            priceChangeUpdates.push(op.where.id);
+                        }
+                        refreshSuccessUpdates.push(op.where.id);
+                    }
+                    
+                    // Bulk update last_refresh_success for all tokens
+                    if (refreshSuccessUpdates.length > 0) {
+                        await tx.tokens.updateMany({
+                            where: { id: { in: refreshSuccessUpdates } },
+                            data: { last_refresh_success: new Date() }
+                        });
+                    }
+                    
+                    // Bulk update last_price_change for tokens where price changed
+                    if (priceChangeUpdates.length > 0) {
+                        await tx.tokens.updateMany({
+                            where: { id: { in: priceChangeUpdates } },
+                            data: { last_price_change: new Date() }
+                        });
                     }
                 }
+                
+                // Bulk upsert token prices using raw SQL for maximum performance
                 if (tokenPriceUpsertOps.length > 0) {
-                    logApi.debug(`${formatLog.tag()} [updateTokenPrices] Upserting ${tokenPriceUpsertOps.length} records in 'token_prices' table.`);
-                    for (const op of tokenPriceUpsertOps) {
-                        await tx.token_prices.upsert(op);
-                    }
+                    logApi.debug(`${formatLog.tag()} [updateTokenPrices] Bulk upserting ${tokenPriceUpsertOps.length} records in 'token_prices' table.`);
+                    
+                    // Build bulk upsert query
+                    const values = tokenPriceUpsertOps.map(op => 
+                        `(${op.create.token_id}, ${op.create.price}, '${op.create.updated_at.toISOString()}')`
+                    ).join(', ');
+                    
+                    const bulkUpsertSQL = `
+                        INSERT INTO token_prices (token_id, price, updated_at)
+                        VALUES ${values}
+                        ON CONFLICT (token_id)
+                        DO UPDATE SET
+                            price = EXCLUDED.price,
+                            updated_at = EXCLUDED.updated_at
+                    `;
+                    
+                    await tx.$executeRawUnsafe(bulkUpsertSQL);
                 }
+            }, {
+                timeout: 10000, // Increase timeout to 10 seconds for bulk operations
             });
-            logApi.debug(`${formatLog.tag()} [updateTokenPrices] Prisma transaction for price updates completed.`);
+            logApi.debug(`${formatLog.tag()} [updateTokenPrices] Bulk Prisma transaction for price updates completed.`);
         } catch (dbError) {
             logApi.error(`[TokenRefreshScheduler] DB transaction error during updateTokenPrices: ${dbError.message}`, { error: dbError });
             failedToPriceCount += batch.length - updatedCount; 
