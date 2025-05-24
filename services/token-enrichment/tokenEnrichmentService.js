@@ -197,7 +197,7 @@ class TokenEnrichmentService extends BaseService {
         first_seen_on_jupiter_at: new Date(),
             discovery_count: 1,
             metadata_status: 'pending',
-        is_active: true // Default new tokens to active; TokenActivationService will evaluate later
+        is_active: false // Will be activated by TokenActivationService after validation
       }));
 
       try {

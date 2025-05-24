@@ -442,7 +442,7 @@ class PoolDataManager {
               address: tokenAddress,
               name: tokenName || 'Unknown Token',
               symbol: tokenSymbol || 'UNKNOWN',
-              is_active: true,
+              is_active: false, // Will be activated by TokenActivationService after validation
               is_whitelisted: false,
               priority_score: 10, // Default low priority
               created_at: new Date(),

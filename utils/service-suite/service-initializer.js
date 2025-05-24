@@ -377,48 +377,9 @@ class ServiceInitializer {
         if (config.services.user_balance_tracking) {
             await ensureSchemaExists();
             serviceManager.register(userBalanceTrackingService, [SERVICE_NAMES.SOLANA_ENGINE]);
-            
-            // Debug log to check what's being registered next
-            logApi.info(`${fancyColors.RED}DEBUG: After registering user_balance_tracking_service${fancyColors.RESET}`);
-            
-            // EXTENSIVE DEBUGGING: Let's try to find what's causing the undefined registration
-            logApi.info(`${fancyColors.RED}⚠️ DEBUGGING ISSUE: Checking active config entries before vanity_wallet_service${fancyColors.RESET}`);
-            
-            // SAFETY CHECK: Ensure solana_service is never used
-            // Instead of direct assignment which won't work with getters/setters,
-            // log a clear warning message
-            
-            logApi.info(`${fancyColors.RED}⚠️ Ensuring solana_service remains disabled - it has been replaced by solana_engine_service${fancyColors.RESET}`);
-            
-            // No need to modify config.service_profiles - the getter on config.services.solana_service
-            // should already return false as configured in other parts of the code
-            
-            logApi.info(`${fancyColors.RED}⚠️ SIMPLIFIED FIX: Using safer approach to handle deprecated solana_service${fancyColors.RESET}`);
-            
-            // Check if there's a direct property access or assignment issue here
-            try {
-                // Object.defineProperty(global, 'DEBUG_CAUSE_OF_UNDEFINED', { 
-                //     get: function() { 
-                //         logApi.info(`${fancyColors.RED}⚠️ SOMEONE IS TRYING TO ACCESS DEBUG_CAUSE_OF_UNDEFINED${fancyColors.RESET}`);
-                //         return undefined;
-                //     }
-                // });
-                
-                // DO NOT try to modify the serviceManager.register function
-                // This was causing an issue where we were overwriting the function with a wrapper
-                // that didn't properly validate the service object
-                logApi.info(`${fancyColors.RED}⚠️ REMOVED PROBLEMATIC REGISTER FUNCTION WRAPPER${fancyColors.RESET}`);
-                
-                // We now rely on the improved validation in the actual serviceManager.register function
-            } catch (err) {
-                logApi.error(`Debug setup error: ${err.message}`);
-            }
         } else {
             logApi.info(`${fancyColors.YELLOW}Skipping registration of user_balance_tracking_service - disabled in config${fancyColors.RESET}`);
         }
-        
-        // Register vanity wallet service only if enabled in config - ADD EXTREME SAFETY CHECKS
-        logApi.info(`${fancyColors.RED}⚠️ DEBUGGING: About to register vanity_wallet_service${fancyColors.RESET}`);
         
         // Register vanity wallet service if enabled
         if (config.services.vanity_wallet_service) {

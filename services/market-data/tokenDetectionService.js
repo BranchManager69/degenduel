@@ -339,22 +339,9 @@ class TokenDetectionService extends BaseService {
                 return;
             }
             
-            // 2. Fetch symbol and name from Helius
+            // 2. Fetch symbol, name, price, market cap, and volume from DexScreener (PRIMARY SOURCE)
             let tokenSymbol = null;
             let tokenName = null;
-            try {
-                const heliusClient = await import('../solana-engine/helius-client.js');
-                const metadata = await heliusClient.heliusClient.tokens.getTokensMetadata([tokenAddress]);
-                if (metadata && metadata[0]) {
-                    tokenSymbol = metadata[0].symbol;
-                    tokenName = metadata[0].name;
-                    logApi.debug(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} Got symbol: ${tokenSymbol}, name: ${tokenName} from Helius`);
-                }
-            } catch (heliusError) {
-                logApi.warn(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} Failed to get metadata from Helius for ${tokenAddress}: ${heliusError.message}`);
-            }
-            
-            // 3. Fetch price, market cap, and volume from DexScreener
             let priceData = null;
             let marketCap = null;
             let volume24h = null;
@@ -366,10 +353,35 @@ class TokenDetectionService extends BaseService {
                     priceData = tokenData.price;
                     marketCap = tokenData.marketCap;
                     volume24h = tokenData.volume?.h24;
-                    logApi.debug(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} Got price: ${priceData}, market cap: ${marketCap}, volume: ${volume24h} from DexScreener`);
+                    
+                    // 🎯 PRIMARY: Use DexScreener metadata as primary source
+                    tokenSymbol = tokenData.symbol;
+                    tokenName = tokenData.name;
+                    
+                    logApi.debug(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} Got symbol: ${tokenSymbol}, name: ${tokenName}, price: ${priceData}, market cap: ${marketCap}, volume: ${volume24h} from DexScreener (PRIMARY)`);
                 }
             } catch (dexError) {
-                logApi.warn(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} Failed to get market data from DexScreener for ${tokenAddress}: ${dexError.message}`);
+                logApi.warn(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} Failed to get data from DexScreener for ${tokenAddress}: ${dexError.message}`);
+            }
+            
+            // 3. Fetch symbol and name from Helius (FALLBACK if DexScreener failed)
+            if (!tokenSymbol || !tokenName) {
+                try {
+                    const heliusClient = await import('../solana-engine/helius-client.js');
+                    const metadata = await heliusClient.heliusClient.tokens.getTokensMetadata([tokenAddress]);
+                    if (metadata && metadata[0]) {
+                        if (!tokenSymbol && metadata[0].symbol) {
+                            tokenSymbol = metadata[0].symbol;
+                            logApi.info(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Using Helius symbol as fallback: ${tokenSymbol}${fancyColors.RESET}`);
+                        }
+                        if (!tokenName && metadata[0].name) {
+                            tokenName = metadata[0].name;
+                            logApi.info(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.YELLOW}Using Helius name as fallback: ${tokenName}${fancyColors.RESET}`);
+                        }
+                    }
+                } catch (heliusError) {
+                    logApi.warn(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} Failed to get fallback metadata from Helius for ${tokenAddress}: ${heliusError.message}`);
+                }
             }
             
             // 4. Create database record with all available data

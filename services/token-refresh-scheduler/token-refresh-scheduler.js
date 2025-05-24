@@ -42,9 +42,9 @@ import MetricsCollector from './metrics-collector.js';
 import { config } from '../../config/config.js';
 
 // Constants and configuration
-const DEFAULT_MAX_TOKENS_PER_BATCH = 100;  // Optimized for Jupiter API free plan (100 tokens per request, 1 req/sec)
+const DEFAULT_MAX_TOKENS_PER_BATCH = 100;  // Optimized for Jupiter API (100 tokens per request)
 const DEFAULT_MIN_INTERVAL_SECONDS = 15;   // Minimum refresh interval
-const DEFAULT_BATCH_DELAY_MS = 3000;       // Min 3000ms delay between batch executions to avoid rate limiting
+const DEFAULT_BATCH_DELAY_MS = 3000;       // Delay between batches       // Min 3000ms delay between batch executions to avoid rate limiting
 const DEFAULT_API_RATE_LIMIT = 30;         // Requests per second (30% of 100 limit to be conservative)
 const DEFAULT_METRICS_INTERVAL_MS = 60000; // Metrics reporting interval (1 minute)
 
@@ -353,21 +353,65 @@ class TokenRefreshScheduler extends BaseService {
     logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} STEP 1: Attempting to load active tokens from DB...`);
     let tokens = [];
     try {
-      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} STEP 2: Calling prisma.tokens.findMany (with MINIMAL select)...`);
+      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} STEP 2: Calling prisma.tokens.findMany (with COMPLETE select for priority calculation)...`);
+      
+      // Get tokens that are actively traded (price updated in last 7 days) AND exist in Jupiter's current list
+      const sevenDaysAgo = new Date(Date.now() - (7 * 24 * 60 * 60 * 1000));
+      const twoDaysAgo = new Date(Date.now() - (2 * 24 * 60 * 60 * 1000)); // Jupiter sync within 48 hours
+      
       tokens = await prisma.tokens.findMany({
         where: { 
           is_active: true,
+          last_jupiter_sync_at: { gte: twoDaysAgo }, // Only tokens synced with Jupiter in last 48h
           token_prices: {
-            price: { not: null }
+            AND: [
+              { price: { not: null } },
+              { price: { gt: 0 } },  // Must have positive price
+              { updated_at: { gte: sevenDaysAgo } }  // Updated in last 7 days
+            ]
           }
         },
         select: {
           id: true,
           address: true,
           symbol: true,
-        }
+          priority_score: true,
+          refresh_interval_seconds: true,
+          last_refresh_success: true,
+          last_refresh_attempt: true,
+          last_price_change: true,
+          token_prices: {
+            select: {
+              price: true,
+              volume_24h: true,
+              market_cap: true,
+              updated_at: true
+            }
+          },
+          rank_history: {
+            select: {
+              rank: true,
+              timestamp: true
+            },
+            orderBy: {
+              timestamp: 'desc'
+            },
+            take: 1  // Only need the latest rank
+          },
+          contest_portfolios: {
+            select: {
+              id: true
+            },
+            take: 1  // Just need to know if any exist
+          }
+        },
+        orderBy: [
+          { token_prices: { updated_at: 'desc' } },  // Most recently updated first
+          { priority_score: 'desc' }  // Then by priority score
+        ],
+        take: 5000  // Reasonable limit to prevent memory issues
       });
-      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} STEP 3: Found ${tokens ? tokens.length : 'null object'} tokens marked is_active: true (after take: 100, minimal select).`);
+      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} STEP 3: Found ${tokens ? tokens.length : 'null object'} actively traded tokens (price updated in last 7 days AND synced with Jupiter in last 48h).`);
       if (!tokens || tokens.length === 0) {
         logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} No active tokens in DB. Clearing queues by re-initializing.`);
         this.activeTokens.clear();
@@ -389,13 +433,25 @@ class TokenRefreshScheduler extends BaseService {
       this.activeTokens.clear();
       this.prioritizationCache.clear();
       
-      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} STEP 4: Processing ${tokens.length} active tokens for priority queue...`);
+      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} STEP 4: Processing ${tokens.length} actively traded tokens for priority queue...`);
+      
+      let enqueuedCount = 0;
+      let skippedCount = 0;
+      
       for (const [index, token] of tokens.entries()) {
         if (!token || !token.id) {
           logApi.warn(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Invalid token at index ${index}, skipping.`);
+          skippedCount++;
           continue;
         }
-        logApi.debug(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} LOOP START: Processing token ${index + 1}/${tokens.length}: ${token.symbol || token.address} (minimal data loaded)`);
+        
+        // Log sample tokens for debugging
+        if (index < 5) {
+          const priceAge = token.token_prices?.updated_at ? 
+            Math.round((Date.now() - new Date(token.token_prices.updated_at).getTime()) / (1000 * 60 * 60)) : 'unknown';
+          logApi.debug(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} SAMPLE TOKEN ${index + 1}: ${token.symbol || token.address} - Price: $${token.token_prices?.price || 'null'}, Age: ${priceAge}h, Volume: $${token.token_prices?.volume_24h || 'null'}`);
+        }
+        
         this.activeTokens.add(token.id);
         const priorityData = this.calculateTokenPriority(token);
         if (priorityData) {
@@ -408,20 +464,28 @@ class TokenRefreshScheduler extends BaseService {
             nextRefreshTime: this.calculateNextRefreshTime(token, priorityData),
             interval: priorityData.refreshInterval
           });
-          logApi.debug(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} LOOP END: Enqueued ${token.symbol || token.address} with priority ${priorityData.score}`);
+          enqueuedCount++;
+          
+          if (index < 10) {
+            logApi.debug(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} ENQUEUED: ${token.symbol || token.address} with priority ${priorityData.score}, tier: ${priorityData.baseTier}, interval: ${priorityData.refreshInterval}s`);
+          }
         } else {
-          logApi.warn(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} LOOP END: Could not calculate priority for token ID ${token.id} (${token.symbol || token.address}) with minimal data, skipping enqueue.`);
+          logApi.warn(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Could not calculate priority for token ID ${token.id} (${token.symbol || token.address}), skipping enqueue.`);
+          skippedCount++;
         }
       }
-      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} STEP 5: Loaded ${this.priorityQueue.size()} active tokens into priority queue.`);
+      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} STEP 5: Successfully enqueued ${enqueuedCount}/${tokens.length} tokens (${skippedCount} skipped) into priority queue.`);
+      
       if (tokens.length > 0 && this.rankAnalyzer) {
-        logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} STEP 6: Analyzing token distribution (with minimal data)...`);
+        logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} STEP 6: Analyzing token distribution for actively traded tokens...`);
         const tokenStats = this.rankAnalyzer.analyzeTokenDistribution(tokens);
         logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} STEP 7: Token distribution analysis complete:`, tokenStats);
       } else if (!this.rankAnalyzer) {
         logApi.warn("[TokenRefreshSched] RankAnalyzer not available for token distribution analysis.");
       }
-      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} STEP 8: loadActiveTokens completed successfully (with minimal select).`);
+      
+      // Log summary of what we loaded
+      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} STEP 8: ${fancyColors.BG_GREEN}${fancyColors.BLACK} LOAD COMPLETE ${fancyColors.RESET} Successfully loaded ${enqueuedCount} actively traded tokens (filtered from ${tokens.length} candidates, skipped ${skippedCount} invalid tokens)`);
       return this.activeTokens.size;
     } catch (error) {
       logApi.error(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} CRITICAL ERROR in loadActiveTokens:`, error);
@@ -612,7 +676,20 @@ class TokenRefreshScheduler extends BaseService {
       5000 // Check for due tokens every 5 seconds
     );
     
-    logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} STARTED ${fancyColors.RESET} Token refresh scheduler started`);
+    // Set up periodic cleanup of stale tokens (every 6 hours)
+    this.cleanupInterval = setInterval(
+      this.runPeriodicCleanup.bind(this),
+      6 * 60 * 60 * 1000 // 6 hours
+    );
+    
+    // Run initial cleanup after 5 minutes
+    setTimeout(() => {
+      this.runPeriodicCleanup().catch(error => {
+        logApi.error(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Initial cleanup failed:`, error);
+      });
+    }, 5 * 60 * 1000);
+    
+    logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} STARTED ${fancyColors.RESET} Token refresh scheduler started with cleanup enabled`);
   }
 
   /**
@@ -637,6 +714,12 @@ class TokenRefreshScheduler extends BaseService {
     if (this.metricsInterval) {
       clearInterval(this.metricsInterval);
       this.metricsInterval = null;
+    }
+    
+    // Clear cleanup interval
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
     }
     
     logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} ${fancyColors.BG_YELLOW}${fancyColors.BLACK} STOPPED ${fancyColors.RESET} Token refresh scheduler stopped`);
@@ -1341,6 +1424,40 @@ class TokenRefreshScheduler extends BaseService {
     // Log adjustment if it changes significantly
     if (Math.abs(this.rateLimitAdjustmentFactor - 1.0) > 0.1) {
       logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Adjusted rate limit factor to ${this.rateLimitAdjustmentFactor.toFixed(2)}`);
+    }
+  }
+
+  /**
+   * Run periodic cleanup of stale tokens
+   */
+  async runPeriodicCleanup() {
+    try {
+      if (!this.isRunning) {
+        logApi.debug(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Scheduler not running, skipping cleanup`);
+        return;
+      }
+      
+      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} ${fancyColors.BG_BLUE}${fancyColors.WHITE} CLEANUP ${fancyColors.RESET} Running periodic token cleanup`);
+      
+      // Use JupiterClient's cleanup method
+      if (this.jupiterClient && typeof this.jupiterClient.cleanupStaleTokens === 'function') {
+        const cleanedCount = await this.jupiterClient.cleanupStaleTokens(72); // 72 hours
+        
+        if (cleanedCount > 0) {
+          logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} ${fancyColors.GREEN}Cleanup completed: ${cleanedCount} stale tokens marked as inactive${fancyColors.RESET}`);
+          
+          // Reload active tokens to reflect cleanup changes
+          await this.loadActiveTokens();
+          logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Token queue reloaded after cleanup`);
+        } else {
+          logApi.debug(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Cleanup completed: no stale tokens found`);
+        }
+      } else {
+        logApi.warn(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} JupiterClient cleanup method not available`);
+      }
+    } catch (error) {
+      logApi.error(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Error during periodic cleanup:`, error);
+      // Don't throw - cleanup failures shouldn't stop the scheduler
     }
   }
 
