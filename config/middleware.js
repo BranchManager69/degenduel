@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import { requireAdmin, requireAuth, requireSuperAdmin } from '../middleware/auth.js';
 import { restrictDevAccess } from '../middleware/devAccessMiddleware.js';
 import { environmentMiddleware } from '../middleware/environmentMiddleware.js';
+import { ipTrackingMiddleware } from '../middleware/ipTrackingMiddleware.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import { config } from './config.js';
 // ⛔ REMOVED: import { websocketBypassMiddleware } from '../middleware/debugMiddleware.js';
@@ -322,9 +323,13 @@ export function configureMiddleware(app) {
         // Log basic info immediately for performance
         logApi.info(`${req.method} ${req.url}`, {
           environment: req.environment,
-          origin: req.headers.origin,
           ip: clientIp,
-          userAgent: req.headers['user-agent']
+          userAgent: req.headers['user-agent'],
+          user: req.user ? {
+            wallet_address: req.user.wallet_address,
+            nickname: req.user.nickname,
+            role: req.user.role
+          } : null
         });
         
         // Then asynchronously fetch IP info if we have the API key

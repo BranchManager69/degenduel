@@ -1,6 +1,6 @@
 // middleware/ipTrackingMiddleware.js
 
-import prisma from '../config/prisma.js';
+import { prisma } from '../config/prisma.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import { fancyColors } from '../utils/colors.js';
 
@@ -83,104 +83,149 @@ function extractGeoInfo(req) {
 }
 
 /**
- * Main IP tracking middleware
+ * IP Tracking Middleware
+ * 
+ * Tracks IP addresses for authenticated users in the user_ip_history table.
+ * Updates access counts, timestamps, and geographic information.
  */
 export const ipTrackingMiddleware = async (req, res, next) => {
-  // Skip if tracking is disabled or path is excluded
-  if (!IP_TRACKING_CONFIG.enabled || shouldExcludePath(req.path)) {
-    return next();
-  }
-  
-  // Skip if method is not being tracked
-  if (!IP_TRACKING_CONFIG.trackMethods.includes(req.method)) {
-    return next();
-  }
-  
-  // Continue immediately to not block the request
-  next();
-  
-  // Only track authenticated users
+  // Only track for authenticated users
   if (!req.user || !req.user.wallet_address) {
-    return;
+    return next();
   }
-  
+
   try {
-    const clientIp = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    // Extract IP address (same logic as logging middleware)
+    const clientIp = req.ip || 
+                    req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
+                    req.headers['x-real-ip'] || 
+                    req.connection.remoteAddress || 
+                    null;
+
+    if (!clientIp) {
+      return next();
+    }
+
+    // Skip private/local IPs for production tracking
+    const isPrivateIp = /^(10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|192\.168\.|127\.|::1|localhost)/.test(clientIp);
+    
+    const userAgent = req.headers['user-agent'] || null;
     const walletAddress = req.user.wallet_address;
-    const userAgent = req.get('user-agent');
-    
-    // Extract geo information from request
-    const geoInfo = extractGeoInfo(req);
-    
-    // Check if we've seen this user-IP combination before
-    const existingRecord = await prisma.user_ip_history.findUnique({
+
+    // Upsert IP history record
+    const ipRecord = await prisma.user_ip_history.upsert({
       where: {
         user_ip_unique: {
           wallet_address: walletAddress,
           ip_address: clientIp
         }
+      },
+      update: {
+        last_seen: new Date(),
+        access_count: {
+          increment: 1
+        },
+        user_agent: userAgent, // Update user agent in case it changed
+        // Don't update geographic data on every request to avoid API calls
+      },
+      create: {
+        wallet_address: walletAddress,
+        ip_address: clientIp,
+        user_agent: userAgent,
+        access_count: 1,
+        is_suspicious: false, // Could add logic to detect suspicious patterns
+        metadata: {
+          first_request_path: req.originalUrl || req.url,
+          first_request_method: req.method,
+          environment: req.environment
+        }
       }
     });
-    
-    if (existingRecord) {
-      // Only update if sufficient time has passed
-      if (shouldUpdateTimestamp(walletAddress)) {
-        // Update existing record
-        await prisma.user_ip_history.update({
-          where: { id: existingRecord.id },
-          data: {
-            last_seen: new Date(),
-            access_count: { increment: 1 },
-            // Update user agent if it changed
-            ...(userAgent !== existingRecord.user_agent && { user_agent: userAgent }),
-            // Update geo info if it wasn't available before
-            ...(geoInfo.country_code && !existingRecord.country_code && { country_code: geoInfo.country_code }),
-            ...(geoInfo.region && !existingRecord.region && { region: geoInfo.region }),
-            ...(geoInfo.city && !existingRecord.city && { city: geoInfo.city })
+
+    // If this is a new IP for this user, try to get geographic data
+    if (ipRecord.access_count === 1 && !isPrivateIp) {
+      // Use existing IP info service from logApi (async, don't wait)
+      if (typeof logApi.getIpInfo === 'function') {
+        logApi.getIpInfo(clientIp).then(async (ipInfo) => {
+          if (ipInfo && !ipInfo.bogon && !ipInfo.error) {
+            try {
+              // Truncate geographic data to fit database column constraints
+              const truncatedData = {
+                country_code: ipInfo.country ? ipInfo.country.substring(0, 2) : null,
+                region: ipInfo.region ? ipInfo.region.substring(0, 100) : null,
+                city: ipInfo.city ? ipInfo.city.substring(0, 100) : null,
+              };
+
+              await prisma.user_ip_history.update({
+                where: {
+                  user_ip_unique: {
+                    wallet_address: walletAddress,
+                    ip_address: clientIp
+                  }
+                },
+                data: {
+                  ...truncatedData,
+                  metadata: {
+                    ...ipRecord.metadata,
+                    geo_info: {
+                      org: ipInfo.org,
+                      postal: ipInfo.postal,
+                      timezone: ipInfo.timezone,
+                      loc: ipInfo.loc
+                    },
+                    updated_geo_at: new Date().toISOString()
+                  }
+                }
+              });
+
+              logApi.debug(`Updated geo info for user ${walletAddress} from IP ${clientIp}`, {
+                city: ipInfo.city,
+                region: ipInfo.region,
+                country: ipInfo.country
+              });
+            } catch (geoError) {
+              logApi.error('Failed to update geographic data:', geoError);
+            }
           }
-        });
-        
-        if (IP_TRACKING_CONFIG.debugLogging) {
-          logApi.debug(`${fancyColors.CYAN}[IP Tracking]${fancyColors.RESET} Updated IP record for user ${walletAddress}`, {
-            ip: clientIp,
-            access_count: existingRecord.access_count + 1
-          });
-        }
-      }
-    } else {
-      // Create new record
-      await prisma.user_ip_history.create({
-        data: {
-          wallet_address: walletAddress,
-          ip_address: clientIp,
-          user_agent: userAgent,
-          first_seen: new Date(),
-          last_seen: new Date(),
-          country_code: geoInfo.country_code,
-          region: geoInfo.region,
-          city: geoInfo.city,
-          metadata: {
-            first_path: req.path,
-            first_method: req.method,
-            first_referer: req.get('referer') || null
-          }
-        }
-      });
-      
-      if (IP_TRACKING_CONFIG.debugLogging) {
-        logApi.debug(`${fancyColors.CYAN}[IP Tracking]${fancyColors.RESET} New IP record for user ${walletAddress}`, {
-          ip: clientIp,
-          path: req.path
+        }).catch(() => {
+          // Silently fail geo lookup - don't block the request
         });
       }
     }
+
+    // Add IP info to request for other middleware to use
+    req.ipInfo = {
+      address: clientIp,
+      isPrivate: isPrivateIp,
+      accessCount: ipRecord.access_count,
+      firstSeen: ipRecord.first_seen,
+      lastSeen: ipRecord.last_seen
+    };
+
+    // Log significant events
+    if (ipRecord.access_count === 1) {
+      logApi.info(`🆕 New IP detected for user ${req.user.nickname || 'Unknown'} (${walletAddress}): ${clientIp}`, {
+        wallet_address: walletAddress,
+        ip_address: clientIp,
+        user_agent: userAgent,
+        path: req.originalUrl || req.url
+      });
+    } else if (ipRecord.access_count % 100 === 0) {
+      // Log every 100th access from same IP
+      logApi.debug(`📊 IP ${clientIp} has been used ${ipRecord.access_count} times by ${walletAddress}`);
+    }
+
   } catch (error) {
-    // Log error but don't affect request
-    logApi.error(`${fancyColors.RED}[IP Tracking]${fancyColors.RESET} Error tracking IP:`, {
+    // Log error but don't block the request
+    logApi.error('IP tracking middleware error:', {
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
+      wallet_address: req.user?.wallet_address,
+      ip: req.ip
     });
   }
+
+  next();
 };
 
 export default ipTrackingMiddleware;

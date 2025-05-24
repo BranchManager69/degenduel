@@ -15,6 +15,7 @@
 import jwt from 'jsonwebtoken';
 import prisma from '../config/prisma.js';
 import { logApi } from '../utils/logger-suite/logger.js';
+import { ipTrackingMiddleware } from './ipTrackingMiddleware.js';
 
 // Config
 import { config } from '../config/config.js';
@@ -68,8 +69,18 @@ export const requireAuth = async (req, res, next) => {
 
     // User found; attach user info to request
     req.user = user;
-    // Continue to next middleware
-    next();
+    
+    // Track IP address for authenticated user
+    try {
+      await ipTrackingMiddleware(req, res, () => {
+        // IP tracking completed, continue to next middleware
+        next();
+      });
+    } catch (ipError) {
+      // Log IP tracking error but don't block authentication
+      logApi.error('IP tracking error in auth middleware:', ipError);
+      next();
+    }
   } catch (error) {
     // Error; return 401
     logApi.error('Auth middleware error:', error);

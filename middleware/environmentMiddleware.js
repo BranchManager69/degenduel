@@ -44,6 +44,25 @@ export const environmentMiddleware = (req, res, next) => {
   // Create a unique key for this request type to avoid duplicate logs
   const requestKey = `${formattedOrigin}|${environment}|${config.services.active_profile}`;
   
+  // Helper function to format user info
+  const formatUserInfo = () => {
+    if (req.user && req.user.wallet_address) {
+      const nickname = req.user.nickname || 'No nickname';
+      const shortWallet = req.user.wallet_address.slice(0, 3) + '...' + req.user.wallet_address.slice(-4);
+      return ` 👤${fancyColors.GREEN}"${nickname}"${fancyColors.RESET} ${fancyColors.GRAY}(${shortWallet})${fancyColors.RESET}`;
+    }
+    return '';
+  };
+
+  // Helper function to create user metadata
+  const getUserMetadata = () => {
+    return req.user ? {
+      wallet_address: req.user.wallet_address,
+      nickname: req.user.nickname,
+      role: req.user.role
+    } : null;
+  };
+  
   // Debug logging - expanded to include NODE_ENV
   // Only log if:
   // 1. Debug mode is enabled, OR
@@ -147,43 +166,55 @@ export const environmentMiddleware = (req, res, next) => {
             locationInfo = `${ipInfo.city || ''}${ipInfo.region ? ', ' + ipInfo.region : ''}${ipInfo.country ? ' (' + ipInfo.country + ')' : ''}`;
           }
           
+          const userInfo = formatUserInfo();
+          
           // Format the final log with vertical bars and proper spacing (all on one line)
-          const logMessage = `${fancyColors.DARK_GRAY}[Env]${fancyColors.RESET} ${formattedMethod} ${formattedPath} ${deviceTypeEmoji}|${osEmoji}${browserEmoji} ${formattedIP}${locationInfo ? ' 🌎' + locationInfo : ''}`;
+          const logMessage = `${fancyColors.DARK_GRAY}[Env]${fancyColors.RESET} ${formattedMethod} ${formattedPath} ${deviceTypeEmoji}|${osEmoji}${browserEmoji} ${formattedIP}${locationInfo ? ' 🌎' + locationInfo : ''}${userInfo}`;
           
           // Send the log with minimal metadata in the JSON
           logApi.info(logMessage, { 
             environment,
             origin: req.headers.origin || 'internal',
-            path: req.originalUrl || req.url
+            path: req.originalUrl || req.url,
+            user: getUserMetadata()
           });
         }).catch(() => {
+          const userInfo = formatUserInfo();
+          
           // If IPInfo fails, fall back to a simpler log without location
-          const logMessage = `${fancyColors.DARK_GRAY}[Env]${fancyColors.RESET} ${formattedMethod} ${formattedPath} ${deviceTypeEmoji}|${osEmoji}${browserEmoji} ${formattedIP}`;
+          const logMessage = `${fancyColors.DARK_GRAY}[Env]${fancyColors.RESET} ${formattedMethod} ${formattedPath} ${deviceTypeEmoji}|${osEmoji}${browserEmoji} ${formattedIP}${userInfo}`;
           
           logApi.info(logMessage, { 
             environment,
             origin: req.headers.origin || 'internal',
-            path: req.originalUrl || req.url
+            path: req.originalUrl || req.url,
+            user: getUserMetadata()
           });
         });
       } catch (error) {
+        const userInfo = formatUserInfo();
+        
         // Fallback if getIpInfo fails completely
-        const logMessage = `${fancyColors.DARK_GRAY}[Env]${fancyColors.RESET} ${formattedMethod} ${formattedPath} ${deviceTypeEmoji}|${osEmoji}${browserEmoji} ${formattedIP}`;
+        const logMessage = `${fancyColors.DARK_GRAY}[Env]${fancyColors.RESET} ${formattedMethod} ${formattedPath} ${deviceTypeEmoji}|${osEmoji}${browserEmoji} ${formattedIP}${userInfo}`;
         
         logApi.info(logMessage, { 
           environment,
           origin: req.headers.origin || 'internal',
-          path: req.originalUrl || req.url
+          path: req.originalUrl || req.url,
+          user: getUserMetadata()
         });
       }
     } else {
+      const userInfo = formatUserInfo();
+      
       // If IPInfo service isn't available, use the simple format
-      const logMessage = `${fancyColors.DARK_GRAY}[Env]${fancyColors.RESET} ${formattedMethod} ${formattedPath} ${deviceTypeEmoji}|${osEmoji}${browserEmoji} ${formattedIP}`;
+      const logMessage = `${fancyColors.DARK_GRAY}[Env]${fancyColors.RESET} ${formattedMethod} ${formattedPath} ${deviceTypeEmoji}|${osEmoji}${browserEmoji} ${formattedIP}${userInfo}`;
       
       logApi.info(logMessage, { 
         environment,
         origin: req.headers.origin || 'internal',
-        path: req.originalUrl || req.url
+        path: req.originalUrl || req.url,
+        user: getUserMetadata()
       });
     }
     

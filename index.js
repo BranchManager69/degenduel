@@ -229,9 +229,8 @@ configureMiddleware(app);
 // This ensures banned IPs are blocked before any other processing
 app.use(ipBanMiddleware);
 
-// Apply IP tracking middleware for authenticated users
-// This runs after auth middleware sets req.user, but doesn't block requests
-app.use(ipTrackingMiddleware);
+// NOTE: IP tracking middleware is applied later in the chain after routes are mounted
+// This ensures req.user is set by authentication middleware first
 
 // Apply memory monitoring middleware
 app.use(memoryMonitoring.setupResponseTimeTracking());
@@ -294,6 +293,9 @@ app.use("/api/admin/vanity-callback", vanityCallbackRoutes);
 
 // Mount Liquidity Sim admin routes
 app.use("/api", liquiditySimRoutes);
+
+// NOTE: IP tracking middleware is applied within authentication middleware
+// This ensures proper timing after req.user is set
 
 // Protected routes (with maintenance check)
 // earliest protected routes
