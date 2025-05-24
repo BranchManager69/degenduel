@@ -23,6 +23,7 @@ import { fetchTerminalData } from './services.js';
 import { rateLimiter } from './modules/rate-limiter.js';
 import { heliusBalanceTracker } from '../../../services/solana-engine/helius-balance-tracker.js';
 import serviceEvents from '../../../utils/service-suite/service-events.js';
+import marketDataService from '../../../services/market-data/marketDataService.js';
 
 // Config
 import config from '../../../config/config.js';
