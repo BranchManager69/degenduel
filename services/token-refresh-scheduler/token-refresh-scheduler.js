@@ -953,11 +953,8 @@ class TokenRefreshScheduler extends BaseService {
         await new Promise(resolve => setTimeout(resolve, backoffMs));
       }
     } finally {
-      // Only reset the cycle flag if we actually started processing batches
-      // This prevents early returns from resetting the flag while batches are still running
-      if (batchesStarted) {
-        this.cycleInProgress = false;
-      }
+      // Always reset the cycle flag when exiting the method
+      this.cycleInProgress = false;
     }
   }
 
@@ -1281,6 +1278,37 @@ class TokenRefreshScheduler extends BaseService {
     
     // Store updated record
     this.failedTokens.set(token.id, failureRecord);
+    
+    // If token has failed too many times, mark it as inactive
+    if (failureRecord.failures >= 5) {
+      this.markTokenInactive(token, `Persistent price lookup failures (${failureRecord.failures} consecutive failures)`);
+    }
+  }
+
+  /**
+   * Mark a token as inactive in the database
+   * @param {Object} token - Token to mark as inactive
+   * @param {string} reason - Reason for deactivation
+   */
+  async markTokenInactive(token, reason = 'Price lookup failure') {
+    try {
+      await prisma.tokens.update({
+        where: { id: token.id },
+        data: {
+          is_active: false,
+          updated_at: new Date()
+        }
+      });
+      
+      // Remove from active tracking
+      this.activeTokens.delete(token.id);
+      this.failedTokens.delete(token.id);
+      this.prioritizationCache.delete(token.id);
+      
+      logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Marked token ${token.symbol || token.address} as inactive: ${reason}`);
+    } catch (error) {
+      logApi.error(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Failed to mark token ${token.id} as inactive:`, error);
+    }
   }
 
   /**
