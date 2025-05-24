@@ -256,12 +256,12 @@ class ContestWalletService extends BaseService {
             logApi.info(`${formatLog.tag()} ${formatLog.header('TREASURY (v2)')} Initializing new TreasuryCertifier (Minimalist Health Check)...`);
             
             // These should be class members or correctly scoped variables if not passed directly
-            // For this edit, I'm assuming they are available in the class scope (e.g., this.logApi, this.formatLog)
+            // For this edit, I'm assuming they are available in the class scope (e.g., logApi, this.formatLog)
             // or imported globally (like solanaEngine, prisma, config from the top of the file).
             this.treasuryCertifierInstance = new TreasuryCertifier({
                 solanaEngine: solanaEngine, // Assuming global/module scope import
                 prisma: prisma,             // Assuming global/module scope import
-                logApi: logApi,           // Assuming global/module scope import or this.logApi
+                logApi: logApi,           // Assuming global/module scope import or logApi
                 formatLog: formatLog,       // Assuming global/module scope import or this.formatLog
                 fancyColors: fancyColors,     // Assuming global/module scope import or this.fancyColors
                 config: config              // Assuming global/module scope import (appConfig)
@@ -1685,7 +1685,7 @@ class ContestWalletService extends BaseService {
      * @throws {ServiceError} - If decryption fails or format is unrecognized.
      */
     decryptPrivateKey(encryptedData) {
-        this.logApi.debug(`${formatLog.tag()} Attempting to decrypt private key data.`);
+        logApi.debug(`${formatLog.tag()} Attempting to decrypt private key data.`);
         try {
             const decryptedBuffer = walletCrypto.decryptWallet(encryptedData, process.env.WALLET_ENCRYPTION_KEY);
             if (!(decryptedBuffer instanceof Buffer)) {
@@ -1693,7 +1693,7 @@ class ContestWalletService extends BaseService {
             }
             return decryptedBuffer;
             } catch (error) {
-            this.logApi.error(`${formatLog.tag()} Error in decryptPrivateKey: ${error.message}`, { error });
+            logApi.error(`${formatLog.tag()} Error in decryptPrivateKey: ${error.message}`, { error });
             if (error instanceof ServiceError) throw error;
             throw ServiceError.operation(`Decryption failed: ${error.message}`, { originalError: error });
         }
@@ -1708,7 +1708,7 @@ class ContestWalletService extends BaseService {
      * @returns {Promise<Object>} - Transaction signature and details.
      */
     async performBlockchainTransfer(sourceWallet, destinationAddressString, amount) {
-        this.logApi.info(`${formatLog.tag()} Initiating blockchain transfer from ${sourceWallet.wallet_address} to ${destinationAddressString} for ${amount} SOL.`);
+        logApi.info(`${formatLog.tag()} Initiating blockchain transfer from ${sourceWallet.wallet_address} to ${destinationAddressString} for ${amount} SOL.`);
         const startTime = Date.now();
 
         if (!sourceWallet || !sourceWallet.encrypted_private_key) {
@@ -1720,18 +1720,18 @@ class ContestWalletService extends BaseService {
             const decryptedKeyOrSeed = this.decryptPrivateKey(sourceWallet.encrypted_private_key);
 
             if (decryptedKeyOrSeed.length === 32) {
-                this.logApi.debug(`${formatLog.tag()} Decrypted a 32-byte seed. Creating signer with createKeyPairSignerFromBytes.`);
+                logApi.debug(`${formatLog.tag()} Decrypted a 32-byte seed. Creating signer with createKeyPairSignerFromBytes.`);
                 signer = await createKeyPairSignerFromBytes(decryptedKeyOrSeed);
             } else if (decryptedKeyOrSeed.length === 64) {
-                this.logApi.debug(`${formatLog.tag()} Decrypted a 64-byte legacy key. Creating signer with createSignerFromLegacyKey (compat layer).`);
+                logApi.debug(`${formatLog.tag()} Decrypted a 64-byte legacy key. Creating signer with createSignerFromLegacyKey (compat layer).`);
                 signer = await createSignerFromLegacyKey(decryptedKeyOrSeed);
                 } else {
                 const errMsg = `Decrypted key/seed has an unexpected length: ${decryptedKeyOrSeed.length}. Expected 32 or 64 bytes.`;
-                this.logApi.error(`${formatLog.tag()} ${errMsg}`);
+                logApi.error(`${formatLog.tag()} ${errMsg}`);
                 throw ServiceError.operation(errMsg, { type: 'KEY_MATERIAL_LENGTH_ERROR' });
             }
         } catch (error) {
-            this.logApi.error(`${formatLog.tag()} Failed to decrypt key or create signer for wallet ${sourceWallet.wallet_address}: ${error.message}`, { stack: error.stack });
+            logApi.error(`${formatLog.tag()} Failed to decrypt key or create signer for wallet ${sourceWallet.wallet_address}: ${error.message}`, { stack: error.stack });
             if (error instanceof ServiceError) throw error;
             throw ServiceError.operation(`Key decryption or signer creation failed for ${sourceWallet.wallet_address}`, { originalError: error.message });
         }
@@ -1743,10 +1743,10 @@ class ContestWalletService extends BaseService {
         try {
             const transferResult = await this.executeTransfer(signer, destinationAddressString, amount);
             
-            this.logApi.info(`${formatLog.tag()} Blockchain transfer successful. Signature: ${transferResult.signature}. Duration: ${Date.now() - startTime}ms`);
+            logApi.info(`${formatLog.tag()} Blockchain transfer successful. Signature: ${transferResult.signature}. Duration: ${Date.now() - startTime}ms`);
             return transferResult;
         } catch (error) {
-            this.logApi.error(`${formatLog.tag()} Blockchain transfer from ${sourceWallet.wallet_address} failed: ${error.message}`, { stack: error.stack, amount, to: destinationAddressString });
+            logApi.error(`${formatLog.tag()} Blockchain transfer from ${sourceWallet.wallet_address} failed: ${error.message}`, { stack: error.stack, amount, to: destinationAddressString });
             if (error instanceof ServiceError) throw error;
             throw ServiceError.operation(`Blockchain transfer failed: ${error.message}`, { originalError: error });
         }
@@ -1762,10 +1762,10 @@ class ContestWalletService extends BaseService {
      * @returns {Promise<Object>} - Transaction signature and details.
      */
     async executeTransfer(fromSigner_v2, destinationAddressString, amount) {
-        this.logApi.info(`${formatLog.tag()} Executing transfer with v2 signer ${fromSigner_v2.address} to ${destinationAddressString} for ${amount} SOL.`);
+        logApi.info(`${formatLog.tag()} Executing transfer with v2 signer ${fromSigner_v2.address} to ${destinationAddressString} for ${amount} SOL.`);
         
         if (!solanaEngine || typeof solanaEngine.sendTransaction !== 'function') {
-             this.logApi.error(`${formatLog.tag()} solanaEngine.sendTransaction is not available or not a function.`);
+             logApi.error(`${formatLog.tag()} solanaEngine.sendTransaction is not available or not a function.`);
              throw ServiceError.internal('SolanaEngine transaction sending capability is missing or invalid.');
         }
 
@@ -1803,7 +1803,7 @@ class ContestWalletService extends BaseService {
                 waitForConfirmation: true 
             });
         } catch (error) {
-            this.logApi.error(`${formatLog.tag()} solanaEngine.sendTransaction failed during executeTransfer: ${error.message}`, { stack: error.stack });
+            logApi.error(`${formatLog.tag()} solanaEngine.sendTransaction failed during executeTransfer: ${error.message}`, { stack: error.stack });
             // Re-throw to be caught by performBlockchainTransfer's error handler
             throw error;
         }
@@ -2355,7 +2355,7 @@ class ContestWalletService extends BaseService {
                 dataType: typeof privateKeySeedBytes,
                 length: privateKeySeedBytes?.length
             });
-            throw new ServiceError.validation('Invalid input for encryptPrivateKey: Expected 32-byte Uint8Array seed.');
+            throw new ServiceError('Invalid input for encryptPrivateKey: Expected 32-byte Uint8Array seed.', 'VALIDATION_ERROR');
         }
 
         logApi.info(`${formatLog.tag()} Encrypting 32-byte private key seed.`);
@@ -2395,14 +2395,14 @@ class ContestWalletService extends BaseService {
 
     async createContestWallet(contestId, adminContext = null, preferredVanityType = null) {
         const startTime = Date.now();
-        this.logApi.info(`${formatLog.tag()} ${formatLog.header('CREATE WALLET')} Request for contest ID: ${contestId}, Vanity: ${preferredVanityType || 'any'}`);
+        logApi.info(`${formatLog.tag()} ${formatLog.header('CREATE WALLET')} Request for contest ID: ${contestId}, Vanity: ${preferredVanityType || 'any'}`);
         let contestWalletDbRecord;
         let vanityWalletDetails = null;
         let usedVanity = false;
 
         try {
             if (config.vanity_wallets && config.vanity_wallets.enabled) {
-                this.logApi.info(`${formatLog.tag()} Attempting to fetch vanity wallet (type: ${preferredVanityType || 'any'}).`);
+                logApi.info(`${formatLog.tag()} Attempting to fetch vanity wallet (type: ${preferredVanityType || 'any'}).`);
                 vanityWalletDetails = await VanityApiClient.getAvailableVanityWallet(preferredVanityType);
             }
 
@@ -2413,12 +2413,12 @@ class ContestWalletService extends BaseService {
 
             if (vanityWalletDetails && vanityWalletDetails.private_key) {
                 usedVanity = true;
-                this.logApi.info(`${formatLog.tag()} Using VANITY wallet: ${vanityWalletDetails.wallet_address} (ID: ${vanityWalletDetails.id}, Pattern: ${vanityWalletDetails.pattern})`);
+                logApi.info(`${formatLog.tag()} Using VANITY wallet: ${vanityWalletDetails.wallet_address} (ID: ${vanityWalletDetails.id}, Pattern: ${vanityWalletDetails.pattern})`);
                 
                 // VanityApiClient.getAvailableVanityWallet now returns the 32-byte seed as a Buffer.
                 const decryptedSeedBuffer = vanityWalletDetails.private_key;
                 if (!(decryptedSeedBuffer instanceof Buffer) || decryptedSeedBuffer.length !== 32) {
-                    this.logApi.error('VanityApiClient.getAvailableVanityWallet did not return a 32-byte Buffer for private_key.', { typeofKey: typeof decryptedSeedBuffer, length: decryptedSeedBuffer?.length });
+                    logApi.error('VanityApiClient.getAvailableVanityWallet did not return a 32-byte Buffer for private_key.', { typeofKey: typeof decryptedSeedBuffer, length: decryptedSeedBuffer?.length });
                     throw new ServiceError.validation('Invalid private key format received from VanityApiClient for vanity wallet.');
                 }
                 seed_32_bytes_uint8array = Uint8Array.from(decryptedSeedBuffer); // Convert Buffer to Uint8Array
@@ -2431,24 +2431,30 @@ class ContestWalletService extends BaseService {
                 const tempSignerFromVanitySeed = await createKeyPairSignerFromPrivateKeyBytes(seed_32_bytes_uint8array);
                 
                 if (tempSignerFromVanitySeed.address !== walletAddressToStore) {
-                    this.logApi.error(`${formatLog.tag()} ${formatLog.error('CRITICAL MISMATCH for VANITY wallet!')} Address from seed (${tempSignerFromVanitySeed.address}) != provided address (${walletAddressToStore}).`);
+                    logApi.error(`${formatLog.tag()} ${formatLog.error('CRITICAL MISMATCH for VANITY wallet!')} Address from seed (${tempSignerFromVanitySeed.address}) != provided address (${walletAddressToStore}).`);
                     throw ServiceError.operation('Vanity wallet key integrity check failed: Address mismatch.');
                 }
-                this.logApi.info(`${formatLog.tag()} Vanity wallet seed-to-address verification successful.`);
+                logApi.info(`${formatLog.tag()} Vanity wallet seed-to-address verification successful.`);
 
             } else {
                 // ... (random wallet generation logic remains the same, already provides 32-byte Uint8Array seed to seed_32_bytes_uint8array) ...
                 if (config.vanity_wallets && config.vanity_wallets.enabled) {
-                    this.logApi.warn(`${formatLog.tag()} ${formatLog.warning('No suitable vanity wallet. Generating RANDOM wallet.')}`);
+                    logApi.warn(`${formatLog.tag()} ${formatLog.warning('No suitable vanity wallet. Generating RANDOM wallet.')}`);
                 } else {
-                    this.logApi.info(`${formatLog.tag()} Vanity wallets disabled/not requested. Generating RANDOM wallet.`);
+                    logApi.info(`${formatLog.tag()} Vanity wallets disabled/not requested. Generating RANDOM wallet.`);
                 }
                 const newV2KeyPair = await generateKeyPairV2();
+                logApi.info(`${formatLog.tag()} Debug: newV2KeyPair structure:`, { 
+                    keys: Object.keys(newV2KeyPair),
+                    privateKeyType: typeof newV2KeyPair.privateKey,
+                    privateKeyLength: newV2KeyPair.privateKey?.length,
+                    publicKeyType: typeof newV2KeyPair.publicKey
+                });
                 walletAddressToStore = await getAddressFromPublicKey(newV2KeyPair.publicKey);
-                seed_32_bytes_uint8array = newV2KeyPair.secretKey;
+                seed_32_bytes_uint8array = newV2KeyPair.privateKey;
                 isVanityWallet = false;
                 vanityType = null;
-                this.logApi.info(`${formatLog.tag()} Generated RANDOM v2 wallet: ${walletAddressToStore}`);
+                logApi.info(`${formatLog.tag()} Generated RANDOM v2 wallet: ${walletAddressToStore}`);
             }
 
             const encryptedSeedJson = this.encryptPrivateKey(seed_32_bytes_uint8array);
@@ -2466,11 +2472,11 @@ class ContestWalletService extends BaseService {
                     updated_at: new Date()
                 }
             });
-            this.logApi.info(`${formatLog.tag()} ${formatLog.success('Contest wallet DB record created successfully.')} ID: ${contestWalletDbRecord.id}, Address: ${contestWalletDbRecord.wallet_address}`);
+            logApi.info(`${formatLog.tag()} ${formatLog.success('Contest wallet DB record created successfully.')} ID: ${contestWalletDbRecord.id}, Address: ${contestWalletDbRecord.wallet_address}`);
 
             if (usedVanity && vanityWalletDetails) {
                 await VanityApiClient.assignVanityWalletToContest(vanityWalletDetails.id, contestId);
-                this.logApi.info(`${formatLog.tag()} Marked vanity wallet ID ${vanityWalletDetails.id} as used by contest ID ${contestId}.`);
+                logApi.info(`${formatLog.tag()} Marked vanity wallet ID ${vanityWalletDetails.id} as used by contest ID ${contestId}.`);
             }
 
             // Update stats (example)
@@ -2499,7 +2505,7 @@ class ContestWalletService extends BaseService {
             return contestWalletDbRecord;
 
         } catch (error) {
-            this.logApi.error(`${formatLog.tag()} ${formatLog.error('Error creating contest wallet:')}`, { 
+            logApi.error(`${formatLog.tag()} ${formatLog.error('Error creating contest wallet:')}`, { 
                 error: error.message, 
                 contestId, 
                 preferredVanityType, 

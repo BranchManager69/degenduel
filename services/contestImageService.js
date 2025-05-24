@@ -174,7 +174,7 @@ async function enhanceTokensWithMetadata(tokens) {
                 token_prices: true,
                 pools: {
                   take: 5,
-                  orderBy: { updated_at: 'desc' }
+                  orderBy: { lastUpdated: 'desc' }
                 }
               }
             });

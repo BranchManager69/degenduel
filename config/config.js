@@ -825,6 +825,13 @@ const config = {
     maxConcurrentJobs: parseInt(process.env.VANITY_WALLET_MAX_CONCURRENT_JOBS || 1), // Use 1 job at a time to maximize resources per job
   },
 
+  // Vanity Wallet Usage Configuration (for contest wallet service)
+  vanity_wallets: {
+    enabled: process.env.VANITY_WALLETS_ENABLED !== 'false', // Default to true, can be disabled with env var
+    prefer_pattern: process.env.VANITY_WALLET_PREFER_PATTERN || 'DUEL', // Prefer DUEL wallets for contests
+    fallback_to_random: process.env.VANITY_WALLET_FALLBACK !== 'false' // If no vanity wallets available, fallback to random generation
+  },
+
   // Dialect Service Configuration (Blinks/Solana Actions integration)
   dialect: {
     // Wallet private key for signing Dialect provider registration

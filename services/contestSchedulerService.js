@@ -17,12 +17,15 @@ import { BaseService } from '../utils/service-suite/base-service.js';
 import { ServiceError } from '../utils/service-suite/service-error.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import prisma from '../config/prisma.js';
+import { Decimal } from '@prisma/client/runtime/library';
 import { fancyColors } from '../utils/colors.js';
 // ** Service Manager **
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
 // Service authentication for maintenance bypass
 import { generateServiceAuthHeader } from '../config/service-auth.js';
+// Contest wallet service for creating contest wallets
+import ContestWalletService from './contest-wallet/index.js';
 
 // Config
 import { config } from '../config/config.js';
@@ -554,43 +557,49 @@ class ContestSchedulerService extends BaseService {
                 schedule_id: isDbSchedule ? schedule.id : null
             };
             
-            // Create contest and wallet in a transaction
-            const result = await prisma.$transaction(async (prisma) => {
-                const contest = await prisma.contests.create({ data: contestData });
+            // Create contest first
+            const contest = await prisma.contests.create({ data: contestData });
 
-                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET}${fancyColors.BOLD}${fancyColors.BG_LIGHT_GREEN} Created scheduled contest ${fancyColors.RESET}`);
-                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Details: ${contest.name} (ID: ${contest.id}, Code: ${contest.contest_code})`);
-                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Timeframe: ${new Date(contest.start_time).toLocaleString()} to ${new Date(contest.end_time).toLocaleString()}`);
-                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Entry fee: ${contest.entry_fee}, Participants: ${contest.min_participants}-${contest.max_participants || 'unlimited'}`);
-                
-                if (isDbSchedule) {
-                    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Created from database schedule ID: ${schedule.id}`);
-                } else {
-                    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Created from config schedule: ${schedule.name}`);
+            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET}${fancyColors.BOLD}${fancyColors.BG_LIGHT_GREEN} Created scheduled contest ${fancyColors.RESET}`);
+            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Details: ${contest.name} (ID: ${contest.id}, Code: ${contest.contest_code})`);
+            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Timeframe: ${new Date(contest.start_time).toLocaleString()} to ${new Date(contest.end_time).toLocaleString()}`);
+            logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Entry fee: ${contest.entry_fee}, Participants: ${contest.min_participants}-${contest.max_participants || 'unlimited'}`);
+            
+            if (isDbSchedule) {
+                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Created from database schedule ID: ${schedule.id}`);
+            } else {
+                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Created from config schedule: ${schedule.name}`);
+            }
+            
+            // Create wallet after contest is committed to database
+            let contestWalletRecord;
+            try {
+                contestWalletRecord = await ContestWalletService.createContestWallet(contest.id);
+                logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Created wallet for contest via ContestWalletService: ${contestWalletRecord.wallet_address}`);
+                if (contestWalletRecord.is_vanity) {
+                    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.GREEN}Using ${contestWalletRecord.vanity_type} vanity wallet!${fancyColors.RESET}`);
                 }
+            } catch (walletServiceError) {
+                logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} CRITICAL ERROR ${fancyColors.RESET} ContestWalletService failed to create wallet for scheduled contest #${contest.id}: ${walletServiceError.message}`, {
+                    error: walletServiceError.message,
+                    stack: walletServiceError.stack,
+                    contestId: contest.id,
+                    contestCode: contest.contest_code
+                });
                 
-                let contestWalletRecord;
+                // If wallet creation fails, delete the contest to maintain consistency
                 try {
-                    // Use the refactored ContestWalletService directly
-                    contestWalletRecord = await ContestWalletService.createContestWallet(contest.id);
-                    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Created wallet for contest via ContestWalletService: ${contestWalletRecord.wallet_address}`);
-                    if (contestWalletRecord.is_vanity) {
-                        logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.GREEN}Using ${contestWalletRecord.vanity_type} vanity wallet!${fancyColors.RESET}`);
-                    }
-                } catch (walletServiceError) {
-                    logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.BG_RED}${fancyColors.WHITE} CRITICAL ERROR ${fancyColors.RESET} ContestWalletService failed to create wallet for scheduled contest #${contest.id}: ${walletServiceError.message}`, {
-                        error: walletServiceError.message,
-                        stack: walletServiceError.stack,
-                        contestId: contest.id,
-                        contestCode: contest.contest_code
-                    });
-                    // If ContestWalletService fails, we should not proceed with a fallback that uses old key formats.
-                    // Let the transaction rollback by re-throwing the error.
-                    this.schedulerStats.contests.failed++; // Mark failure for this schedule attempt
-                    throw new Error(`Wallet creation failed for contest ${contest.id} via ContestWalletService: ${walletServiceError.message}`);
+                    await prisma.contests.delete({ where: { id: contest.id } });
+                    logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Cleaned up contest ${contest.id} after wallet creation failure`);
+                } catch (deleteError) {
+                    logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Failed to clean up contest ${contest.id}: ${deleteError.message}`);
                 }
                 
-                // Try to generate an image for the contest after wallet is created
+                this.schedulerStats.contests.failed++;
+                throw new Error(`Wallet creation failed for contest ${contest.id} via ContestWalletService: ${walletServiceError.message}`);
+            }
+            
+            // Generate contest image
                 try {
                     // Import the contest image service
                     const contestImageService = (await import('../services/contestImageService.js')).default;
@@ -664,9 +673,6 @@ class ContestSchedulerService extends BaseService {
                 } catch (imageServiceError) {
                     logApi.warn(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} ${fancyColors.YELLOW}Error initializing image service: ${imageServiceError.message}${fancyColors.RESET}`);
                 }
-                
-                return { contest, wallet: contestWalletRecord };
-            });
             
             // Update stats
             this.schedulerStats.contests.created++;
@@ -677,11 +683,11 @@ class ContestSchedulerService extends BaseService {
             
             // Add to recently created contests list
             this.schedulerStats.lastCreatedContests.push({
-                id: result.contest.id,
-                name: result.contest.name,
-                contest_code: result.contest.contest_code,
-                start_time: result.contest.start_time,
-                end_time: result.contest.end_time,
+                id: contest.id,
+                name: contest.name,
+                contest_code: contest.contest_code,
+                start_time: contest.start_time,
+                end_time: contest.end_time,
                 created_at: new Date(),
                 creation_time_ms: Date.now() - functionStartTime,
                 schedule_type: isDbSchedule ? 'database' : 'config',
@@ -695,15 +701,15 @@ class ContestSchedulerService extends BaseService {
                 
                 // Emit contest created event for Discord notification
                 serviceEvents.emit(SERVICE_EVENTS.CONTEST_CREATED, {
-                    id: result.contest.id,
-                    name: result.contest.name,
-                    contest_code: result.contest.contest_code,
-                    start_time: result.contest.start_time,
-                    end_time: result.contest.end_time,
-                    prize_pool: result.contest.prize_pool,
-                    entry_fee: result.contest.entry_fee,
-                    status: result.contest.status,
-                    wallet_address: result.wallet?.wallet_address || 'Unknown',
+                    id: contest.id,
+                    name: contest.name,
+                    contest_code: contest.contest_code,
+                    start_time: contest.start_time,
+                    end_time: contest.end_time,
+                    prize_pool: contest.prize_pool,
+                    entry_fee: contest.entry_fee,
+                    status: contest.status,
+                    wallet_address: contestWalletRecord?.wallet_address || 'Unknown',
                     schedule_type: isDbSchedule ? 'database' : 'config'
                 });
                 
@@ -717,7 +723,7 @@ class ContestSchedulerService extends BaseService {
                 this.schedulerStats.lastCreatedContests.shift();
             }
             
-            return result;
+            return { contest, wallet: contestWalletRecord };
         } catch (error) {
             logApi.error(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET} Error creating scheduled contest:`, error);
             this.schedulerStats.contests.failed++;
