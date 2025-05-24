@@ -41,9 +41,9 @@ const CONFIG = {
     // Cleanup old token sets more frequently to save Redis memory
     CLEANUP_INTERVAL_MINUTES: 5,
     // Maximum number of tokens to process in a batch
-    BATCH_SIZE: 50,
+    BATCH_SIZE: 75, // INCREASED from 50 for more efficient batching
     // Delay between processing batches (in milliseconds)
-    BATCH_DELAY_MS: 100
+    BATCH_DELAY_MS: 50 // REDUCED from 100ms for faster discovery processing
 }; // extra config?
 
 /**
@@ -290,20 +290,50 @@ class TokenDetectionService extends BaseService {
         this.processingQueue = this.processingQueue.slice(CONFIG.BATCH_SIZE);
         
         try {
-          logApi.info(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.CYAN}Emitting discovery event for batch of ${batchOfAddresses.length} tokens${fancyColors.RESET}`);
+          logApi.info(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.CYAN}🔥 Processing discovery batch of ${batchOfAddresses.length} tokens${fancyColors.RESET}`);
           
-          // Process each token individually to get full enrichment
-          if (batchOfAddresses.length > 0) {
-            for (const address of batchOfAddresses) {
-              // Call handleNewToken directly for each new token
-              await this.handleNewToken(address);
-            }
+          // Check for existing tokens in batch
+          const existingTokens = await prisma.tokens.findMany({
+            where: { address: { in: batchOfAddresses } },
+            select: { address: true }
+          });
+          
+          const existingAddresses = new Set(existingTokens.map(t => t.address));
+          const newTokenAddresses = batchOfAddresses.filter(addr => !existingAddresses.has(addr));
+          
+          if (newTokenAddresses.length > 0) {
+            // Create minimal records for new tokens (TokenEnrichmentService will enrich them)
+            const tokenCreateData = newTokenAddresses.map(address => ({
+              address,
+              is_active: false, // Will be set by TokenActivationService
+              created_at: new Date(),
+              updated_at: new Date(),
+              first_seen_on_jupiter_at: new Date(),
+              discovery_count: 1,
+              metadata_status: 'pending'
+            }));
             
-            // Also emit the batch event for any other listeners
+            // Batch create tokens
+            const createResult = await prisma.tokens.createMany({
+              data: tokenCreateData,
+              skipDuplicates: true
+            });
+            
+            logApi.info(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.GREEN}✅ Created ${createResult.count} new token records${fancyColors.RESET}`);
+          } else {
+            logApi.debug(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.YELLOW}All ${batchOfAddresses.length} tokens already exist, skipping creation${fancyColors.RESET}`);
+          }
+          
+          // Emit batch discovery event for enrichment processing
+          if (batchOfAddresses.length > 0) {
             serviceEvents.emit('tokens:discovered', { 
               addresses: batchOfAddresses,
-              discoveredAt: new Date().toISOString()
+              discoveredAt: new Date().toISOString(),
+              newTokenCount: newTokenAddresses.length,
+              existingTokenCount: batchOfAddresses.length - newTokenAddresses.length
             });
+            
+            logApi.info(`${fancyColors.GOLD}[TokenDetectionSvc]${fancyColors.RESET} ${fancyColors.CYAN}📡 Emitted discovery event: ${newTokenAddresses.length} new, ${batchOfAddresses.length - newTokenAddresses.length} existing${fancyColors.RESET}`);
           }
           
           // Add a delay before processing next batch from the internal queue

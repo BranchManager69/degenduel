@@ -16,8 +16,8 @@
 
 // Service Suite
 import { BaseService } from '../../utils/service-suite/base-service.js';
-import { SERVICE_NAMES } from '../../utils/service-suite/service-constants.js';
-import serviceManager from '../../utils/service-suite/service-manager.js';
+import { ServiceError } from '../../utils/service-suite/service-error.js';
+import { SERVICE_NAMES, getServiceMetadata, DEFAULT_CIRCUIT_BREAKER_CONFIG } from '../../utils/service-suite/service-constants.js';
 import serviceEvents from '../../utils/service-suite/service-events.js';
 // Prisma
 import prisma from '../../config/prisma.js';
@@ -33,7 +33,7 @@ import jupiterCollector from './collectors/jupiterCollector.js';
 // Configuration
 const CONFIG = {
   BATCH_SIZE: 10, // Further Reduced from 15 (was 50). For main enrichment transactions.
-  BATCH_DELAY_MS: 5000, // Increased from 3000. Delay between main enrichment transactions.
+  BATCH_DELAY_MS: 1500, // REDUCED from 5000. Delay between main enrichment transactions (1.5 seconds).
   MAX_CONCURRENT_BATCHES: 1, 
   THROTTLE_MS: 100,
   DEXSCREENER_THROTTLE_MS: 500,
@@ -186,7 +186,7 @@ class TokenEnrichmentService extends BaseService {
     logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} Received batch of ${addressesFromEvent.length} discovered tokens to process.`);
     
     const processingChunkSize = 50; // Further Reduced from 100. For createMany.
-    const delayBetweenChunksMs = 15000; // Increased from 10000. Delay between createMany chunks (15 seconds).
+    const delayBetweenChunksMs = 3000; // REDUCED from 15000. Delay between createMany chunks (3 seconds).
 
     for (let i = 0; i < addressesFromEvent.length; i += processingChunkSize) {
       const currentChunkAddresses = addressesFromEvent.slice(i, i + processingChunkSize);
@@ -618,6 +618,19 @@ class TokenEnrichmentService extends BaseService {
     }
 
     logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.BG_GREEN}${fancyColors.BLACK} MASTER BATCH COMPLETE ${fancyColors.RESET} Attempted: ${batchItems.length}, DB Ops Prepared for: ${successfullyPreparedCount}, Failed to Prepare: ${failedToPrepareCount}`);
+    
+    // Emit batch enrichment event for WebSocket broadcasting
+    if (successfullyPreparedCount > 0) {
+      const enrichedAddresses = batchItems.slice(0, successfullyPreparedCount).map(item => item.address);
+      serviceEvents.emit('tokens:batch_enriched', {
+        addresses: enrichedAddresses,
+        count: successfullyPreparedCount,
+        batchId: Date.now().toString(36) + Math.random().toString(36).substring(2, 5),
+        completedAt: new Date().toISOString(),
+        processingTimeMs: Date.now() - (this.lastBatchStartTime || Date.now())
+      });
+      logApi.info(`${fancyColors.GOLD}[TokenEnrichmentSvc]${fancyColors.RESET} ${fancyColors.CYAN}🚀 Emitted batch enrichment event for ${successfullyPreparedCount} tokens${fancyColors.RESET}`);
+    }
     
     this.isProcessingBatch = false;
     if (this.processingQueue.length > 0 && this.activeApiCollectionBatches < CONFIG.MAX_CONCURRENT_BATCHES) {

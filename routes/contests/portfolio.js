@@ -184,7 +184,7 @@ router.get('/:id/portfolio/:wallet', requireAuth, async (req, res) => {
             id: true,
             symbol: true,
             name: true,
-            logo_url: true,
+            image_url: true,
             price: true,
             price_change_24h: true
           }

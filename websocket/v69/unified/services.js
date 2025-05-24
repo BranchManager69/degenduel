@@ -340,6 +340,76 @@ export function registerServiceEvents(server) {
   // Set up Solana PubSub handler
   setupSolanaPubSubHandler(server);
   
+  // TOKEN DISCOVERY & ENRICHMENT EVENT HANDLERS
+  // These provide real-time notifications for new token activity
+  
+  // New tokens discovered
+  server.registerEventHandler(
+    'tokens:discovered',
+    (data) => {
+      if (data.addresses && data.addresses.length > 0) {
+        logApi.info(`${wsColors.tag}[services]${fancyColors.RESET} ${fancyColors.GREEN}🔍 Broadcasting NEW TOKENS discovered: ${data.addresses.length} tokens${fancyColors.RESET}`);
+        
+        server.broadcastToTopic(config.websocket.topics.MARKET_DATA, {
+          type: 'EVENT',
+          topic: config.websocket.topics.MARKET_DATA,
+          action: 'TOKENS_DISCOVERED',
+          data: {
+            addresses: data.addresses,
+            count: data.addresses.length,
+            discoveredAt: data.discoveredAt
+          },
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
+  );
+
+  // Token enrichment completed
+  server.registerEventHandler(
+    'token:enriched',
+    (data) => {
+      if (data.address) {
+        logApi.info(`${wsColors.tag}[services]${fancyColors.RESET} ${fancyColors.GREEN}✨ Broadcasting TOKEN ENRICHED: ${data.address}${fancyColors.RESET}`);
+        
+        server.broadcastToTopic(config.websocket.topics.MARKET_DATA, {
+          type: 'EVENT',
+          topic: config.websocket.topics.MARKET_DATA,
+          action: 'TOKEN_ENRICHED',
+          data: {
+            address: data.address,
+            sources: data.sources,
+            enrichedAt: data.enrichedAt
+          },
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
+  );
+
+  // Batch of tokens enriched (for efficiency)
+  server.registerEventHandler(
+    'tokens:batch_enriched',
+    (data) => {
+      if (data.addresses && data.addresses.length > 0) {
+        logApi.info(`${wsColors.tag}[services]${fancyColors.RESET} ${fancyColors.GREEN}🚀 Broadcasting BATCH ENRICHED: ${data.addresses.length} tokens${fancyColors.RESET}`);
+        
+        server.broadcastToTopic(config.websocket.topics.MARKET_DATA, {
+          type: 'EVENT',
+          topic: config.websocket.topics.MARKET_DATA,
+          action: 'TOKENS_BATCH_ENRICHED',
+          data: {
+            addresses: data.addresses,
+            count: data.addresses.length,
+            batchId: data.batchId,
+            completedAt: data.completedAt
+          },
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
+  );
+  
   // Log successful registration
   logApi.info(`${wsColors.tag}[services]${fancyColors.RESET} ${fancyColors.GREEN}Service event handlers registered successfully${fancyColors.RESET}`);
 }

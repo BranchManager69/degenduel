@@ -259,4 +259,54 @@ export default class PriorityQueue {
     // If same priority, compare by id for stable sort
     return a.id - b.id;
   }
+
+  /**
+   * Remove a token from the queue by ID
+   * @param {string|number} tokenId - The ID of the token to remove
+   * @returns {boolean} True if token was found and removed, false otherwise
+   */
+  remove(tokenId) {
+    const index = this.tokenMap.get(tokenId);
+    
+    if (index === undefined) {
+      return false; // Token not found in queue
+    }
+    
+    // Remove from token map
+    this.tokenMap.delete(tokenId);
+    
+    // Handle different cases based on position in heap
+    if (index === this.items.length - 1) {
+      // Last item - just remove it
+      this.items.pop();
+    } else {
+      // Move last item to this position and restore heap property
+      const lastItem = this.items.pop();
+      
+      if (this.items.length > 0 && index < this.items.length) {
+        this.items[index] = lastItem;
+        this.tokenMap.set(lastItem.id, index);
+        
+        // Restore heap property - try both sift up and sift down
+        this.siftUp(index);
+        this.siftDown(index);
+      }
+    }
+    
+    // Update token map indices for all remaining items
+    this.updateTokenMapIndices();
+    
+    return true;
+  }
+
+  /**
+   * Update the token map indices after structural changes
+   * This ensures the tokenMap stays in sync with the items array
+   */
+  updateTokenMapIndices() {
+    this.tokenMap.clear();
+    for (let i = 0; i < this.items.length; i++) {
+      this.tokenMap.set(this.items[i].id, i);
+    }
+  }
 }

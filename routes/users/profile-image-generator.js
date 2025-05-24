@@ -116,14 +116,13 @@ router.post('/generate/:walletAddress', requireAuth, async (req, res) => {
             select: {
               address: true,
               symbol: true,
-              image_url: true,
-              logo_url: true
+              image_url: true
             }
           });
           
           // Add token logos to imagePaths
           for (const token of tokens) {
-            const logoUrl = token.logo_url || token.image_url;
+            const logoUrl = token.image_url;
             if (logoUrl) {
               // Convert from URL to local file path if needed
               if (logoUrl.startsWith('http')) {

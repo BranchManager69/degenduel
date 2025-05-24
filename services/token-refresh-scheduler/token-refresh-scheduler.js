@@ -30,7 +30,7 @@ import { heliusClient } from '../solana-engine/helius-client.js';
 import dexScreenerCollector from '../token-enrichment/collectors/dexScreenerCollector.js';
 // Logger and Progress Utilities
 import { logApi } from '../../utils/logger-suite/logger.js';
-import { fancyColors, serviceColors } from '../../utils/colors.js';
+import { fancyColors, serviceColors, serviceSpecificColors } from '../../utils/colors.js';
 import { createBatchProgress } from '../../utils/logger-suite/batch-progress.js';
 // Token Refresh Scheduler components
 import PriorityQueue from './priority-queue.js';
@@ -44,7 +44,7 @@ import { config } from '../../config/config.js';
 // Constants and configuration
 const DEFAULT_MAX_TOKENS_PER_BATCH = 100;  // Optimized for Jupiter API (100 tokens per request)
 const DEFAULT_MIN_INTERVAL_SECONDS = 15;   // Minimum refresh interval
-const DEFAULT_BATCH_DELAY_MS = 3000;       // Delay between batches       // Min 3000ms delay between batch executions to avoid rate limiting
+const DEFAULT_BATCH_DELAY_MS = 1200;       // REDUCED from 3000. Delay between batches (1.2 seconds)
 const DEFAULT_API_RATE_LIMIT = 30;         // Requests per second (30% of 100 limit to be conservative)
 const DEFAULT_METRICS_INTERVAL_MS = 60000; // Metrics reporting interval (1 minute)
 
@@ -89,19 +89,8 @@ let PRIORITY_TIERS = {
   }
 };
 
-// -- CURSOR AI MODIFICATION START --
-// Add formatLog definition for this service
-const formatLog = {
-  tag: () => `${serviceColors.tokenRefreshScheduler || fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET}`, // Assuming you have a color for it
-  header: (text) => `${serviceColors.tokenRefreshSchedulerHeader || fancyColors.BG_GOLD}${fancyColors.BLACK} ${text} ${fancyColors.RESET}`,
-  // Add other specific formats if needed, or a generic one:
-  info: (text) => `${fancyColors.GOLD}${text}${fancyColors.RESET}`,
-  error: (text) => `${fancyColors.RED}${text}${fancyColors.RESET}`,
-  success: (text) => `${fancyColors.GREEN}${text}${fancyColors.RESET}`,
-  warning: (text) => `${fancyColors.YELLOW}${text}${fancyColors.RESET}`,
-  token: (text) => `${fancyColors.MAGENTA}${text}${fancyColors.RESET}`
-};
-// -- CURSOR AI MODIFICATION END --
+// Service-specific color formatting
+const colors = serviceSpecificColors.tokenRefreshScheduler;
 
 import serviceEvents, { SERVICE_EVENTS } from '../../utils/service-suite/service-events.js';
 
@@ -193,7 +182,7 @@ class TokenRefreshScheduler extends BaseService {
     this.heliusClient = heliusClient;   // Might as well do it for heliusClient too for consistency
     this.dexScreenerCollector = dexScreenerCollector; // And for DexScreenerCollector
     // Log to confirm they are defined
-    logApi.debug(`${formatLog.tag()} Constructor: jupiterClient type: ${typeof this.jupiterClient}, heliusClient type: ${typeof this.heliusClient}, dexScreenerCollector type: ${typeof this.dexScreenerCollector}`);
+    logApi.debug(`${colors.info}[TokenRefreshScheduler]${fancyColors.RESET} Constructor: jupiterClient type: ${typeof this.jupiterClient}, heliusClient type: ${typeof this.heliusClient}, dexScreenerCollector type: ${typeof this.dexScreenerCollector}`);
     // -- CURSOR AI MODIFICATION END --
 
     // Bind methods to ensure correct 'this' context
@@ -243,15 +232,15 @@ class TokenRefreshScheduler extends BaseService {
       // -- CURSOR AI MODIFICATION START --
       // Double check clients are available before proceeding with logic that uses them
       if (!this.jupiterClient || typeof this.jupiterClient.getPrices !== 'function') {
-        logApi.error(`${formatLog.tag()} CRITICAL ERROR during initialize: JupiterClient is not available or missing getPrices.`);
+        logApi.error(`${colors.error}[TokenRefreshScheduler]${fancyColors.RESET} CRITICAL ERROR during initialize: JupiterClient is not available or missing getPrices.`);
         throw new Error("JupiterClient failed to load correctly for TokenRefreshScheduler.");
       }
       if (!this.heliusClient || typeof this.heliusClient.tokens?.getTokensMetadata !== 'function') {
-        logApi.error(`${formatLog.tag()} CRITICAL ERROR during initialize: HeliusClient is not available or missing tokens.getTokensMetadata.`);
+        logApi.error(`${colors.error}[TokenRefreshScheduler]${fancyColors.RESET} CRITICAL ERROR during initialize: HeliusClient is not available or missing tokens.getTokensMetadata.`);
         throw new Error("HeliusClient failed to load correctly for TokenRefreshScheduler.");
       }
       if (!this.dexScreenerCollector || typeof this.dexScreenerCollector.getTokensByAddressBatch !== 'function') {
-        logApi.error(`${formatLog.tag()} CRITICAL ERROR during initialize: DexScreenerCollector is not available or missing getTokensByAddressBatch.`);
+        logApi.error(`${colors.error}[TokenRefreshScheduler]${fancyColors.RESET} CRITICAL ERROR during initialize: DexScreenerCollector is not available or missing getTokensByAddressBatch.`);
         throw new Error("DexScreenerCollector failed to load correctly for TokenRefreshScheduler.");
       }
       // -- CURSOR AI MODIFICATION END --
@@ -1007,9 +996,9 @@ class TokenRefreshScheduler extends BaseService {
     const tokenAddresses = batch.map(t => t.address);
     // Reduce verbosity for small batches (typically test refreshes)
     if (batch.length <= 5) {
-      logApi.debug(`[TokenRefreshScheduler.processBatch] Processing batch ${batchNum}/${totalBatches} with ${batch.length} tokens. Addresses: ${tokenAddresses.slice(0,5).join(', ')}...`);
+      logApi.debug(`${colors.info}[TokenRefreshScheduler.processBatch]${fancyColors.RESET} Processing batch ${batchNum}/${totalBatches} with ${batch.length} tokens. Addresses: ${tokenAddresses.slice(0,5).join(', ')}...`);
     } else {
-      logApi.info(`[TokenRefreshScheduler.processBatch] Processing batch ${batchNum}/${totalBatches} with ${batch.length} tokens. Addresses: ${tokenAddresses.slice(0,5).join(', ')}...`);
+      logApi.info(`${colors.info}[TokenRefreshScheduler.processBatch]${fancyColors.RESET} Processing batch ${batchNum}/${totalBatches} with ${batch.length} tokens. Addresses: ${tokenAddresses.slice(0,5).join(', ')}...`);
     }
 
     let priceData = null;
@@ -1019,7 +1008,7 @@ class TokenRefreshScheduler extends BaseService {
     try {
       // Ensure we are using the instance property `this.jupiterClient`
       if (!this.jupiterClient || typeof this.jupiterClient.getPrices !== 'function') {
-        logApi.error(`${formatLog.tag()} [processBatch] JupiterClient or getPrices method is undefined when attempting to fetch prices.`);
+        logApi.error(`${colors.error}[TokenRefreshScheduler.processBatch]${fancyColors.RESET} JupiterClient or getPrices method is undefined when attempting to fetch prices.`);
         throw new Error('JupiterClient not available in processBatch');
       }
       priceData = await this.jupiterClient.getPrices(tokenAddresses);
@@ -1027,7 +1016,7 @@ class TokenRefreshScheduler extends BaseService {
       logApi.debug(`[TokenRefreshScheduler.processBatch] JupiterClient.getPrices returned for batch ${batchNum}. Found prices for ${Object.keys(priceData || {}).length} tokens.`);
 
     } catch (error) {
-      logApi.error(`${formatLog.tag()} [processBatch] Error fetching prices from JupiterClient for batch ${batchNum}: ${error.message}`, { 
+      logApi.error(`${colors.error}[TokenRefreshScheduler.processBatch]${fancyColors.RESET} Error fetching prices from JupiterClient for batch ${batchNum}: ${error.message}`, { 
         error: error.message, // Pass only message to avoid circular issues if error is complex
         batchTokenCount: batch.length,
       });
@@ -1055,9 +1044,9 @@ class TokenRefreshScheduler extends BaseService {
     
     // Reduce verbosity for small batches
     if (batch.length <= 5) {
-      logApi.debug(`[TokenRefreshScheduler.processBatch] Batch ${batchNum}/${totalBatches} completed. Processed: ${batch.length}, Updated in DB: ${updatedCount}, Failed to price: ${failedToPriceCount}. Duration: ${batchDuration}ms`);
+      logApi.debug(`${colors.info}[TokenRefreshScheduler.processBatch]${fancyColors.RESET} Batch ${batchNum}/${totalBatches} completed. ${colors.processed}Processed: ${batch.length}${fancyColors.RESET}, ${colors.updated}Updated in DB: ${updatedCount}${fancyColors.RESET}, ${colors.failed}Failed to price: ${failedToPriceCount}${fancyColors.RESET}. Duration: ${batchDuration}ms`);
     } else {
-      logApi.info(`[TokenRefreshScheduler.processBatch] Batch ${batchNum}/${totalBatches} completed. Processed: ${batch.length}, Updated in DB: ${updatedCount}, Failed to price: ${failedToPriceCount}. Duration: ${batchDuration}ms`);
+      logApi.info(`${colors.info}[TokenRefreshScheduler.processBatch]${fancyColors.RESET} Batch ${batchNum}/${totalBatches} completed. ${colors.processed}Processed: ${batch.length}${fancyColors.RESET}, ${colors.updated}Updated in DB: ${updatedCount}${fancyColors.RESET}, ${colors.failed}Failed to price: ${failedToPriceCount}${fancyColors.RESET}. Duration: ${batchDuration}ms`);
     }
 
     // Update rate limit window
@@ -1084,7 +1073,7 @@ class TokenRefreshScheduler extends BaseService {
     const tokensForRequeue = []; 
     const successfullyPricedTokens = new Set(); 
 
-    logApi.debug(`${formatLog.tag()} [updateTokenPrices] Updating prices for batch of ${batch.length} tokens. Received ${Object.keys(priceData || {}).length} price entries.`);
+    logApi.debug(`${colors.info}[TokenRefreshScheduler.updateTokenPrices]${fancyColors.RESET} Updating prices for batch of ${batch.length} tokens. Received ${Object.keys(priceData || {}).length} price entries.`);
 
     // -- CURSOR AI MODIFICATION START --
     const tokenPriceUpsertOps = [];
@@ -1097,7 +1086,7 @@ class TokenRefreshScheduler extends BaseService {
       if (currentPriceInfo && currentPriceInfo.price !== undefined && currentPriceInfo.price !== null) {
         const newPrice = parseFloat(currentPriceInfo.price);
         if (isNaN(newPrice)) {
-            logApi.warn(`${formatLog.tag()} [updateTokenPrices] Invalid price NaN for ${token.symbol || token.address}. Skipping price update.`);
+            logApi.warn(`${colors.warning}[TokenRefreshScheduler.updateTokenPrices]${fancyColors.RESET} Invalid price NaN for ${token.symbol || token.address}. Skipping price update.`);
             failedToPriceCount++;
             this.trackFailedToken(token); 
             continue;
@@ -1179,7 +1168,7 @@ class TokenRefreshScheduler extends BaseService {
             await prisma.$transaction(async (tx) => {
                 // Bulk update tokens table
                 if (tokenMetaUpdateOps.length > 0) {
-                    logApi.debug(`${formatLog.tag()} [updateTokenPrices] Bulk updating ${tokenMetaUpdateOps.length} records in 'tokens' table.`);
+                    logApi.debug(`${colors.info}[TokenRefreshScheduler.updateTokenPrices]${fancyColors.RESET} Bulk updating ${tokenMetaUpdateOps.length} records in 'tokens' table.`);
                     
                     // Group updates by what fields are being updated
                     const refreshSuccessUpdates = [];
@@ -1211,7 +1200,7 @@ class TokenRefreshScheduler extends BaseService {
                 
                 // Bulk upsert token prices using raw SQL for maximum performance
                 if (tokenPriceUpsertOps.length > 0) {
-                    logApi.debug(`${formatLog.tag()} [updateTokenPrices] Bulk upserting ${tokenPriceUpsertOps.length} records in 'token_prices' table.`);
+                    logApi.debug(`${colors.info}[TokenRefreshScheduler.updateTokenPrices]${fancyColors.RESET} Bulk upserting ${tokenPriceUpsertOps.length} records in 'token_prices' table.`);
                     
                     // Build bulk upsert query
                     const values = tokenPriceUpsertOps.map(op => 
@@ -1232,7 +1221,7 @@ class TokenRefreshScheduler extends BaseService {
             }, {
                 timeout: 10000, // Increase timeout to 10 seconds for bulk operations
             });
-            logApi.debug(`${formatLog.tag()} [updateTokenPrices] Bulk Prisma transaction for price updates completed.`);
+            logApi.debug(`${colors.info}[TokenRefreshScheduler.updateTokenPrices]${fancyColors.RESET} Bulk Prisma transaction for price updates completed.`);
         } catch (dbError) {
             logApi.error(`[TokenRefreshScheduler] DB transaction error during updateTokenPrices: ${dbError.message}`, { error: dbError });
             failedToPriceCount += batch.length - updatedCount; 
@@ -1304,6 +1293,14 @@ class TokenRefreshScheduler extends BaseService {
       this.activeTokens.delete(token.id);
       this.failedTokens.delete(token.id);
       this.prioritizationCache.delete(token.id);
+      
+      // Remove from priority queue - this is the missing piece!
+      if (this.priorityQueue) {
+        const removed = this.priorityQueue.remove(token.id);
+        if (removed) {
+          logApi.debug(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Removed token ${token.symbol || token.address} from priority queue`);
+        }
+      }
       
       logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Marked token ${token.symbol || token.address} as inactive: ${reason}`);
     } catch (error) {

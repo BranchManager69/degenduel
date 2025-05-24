@@ -163,10 +163,10 @@ class ServiceManager {
             serviceOrName && 
             serviceOrName.name === 'vanity_wallet_service'
         ) {
-            logApi.info(`${fancyColors.RED}🔥 VANITY WALLET HOOK POINT${fancyColors.RESET}`);
+            //logApi.info(`${fancyColors.RED}🔥 VANITY WALLET HOOK POINT${fancyColors.RESET}`);
             
             // Print out the next 5 items in the call stack
-            logApi.info(`${fancyColors.RED}🔥 STACK AFTER VANITY: ${callStack.split('\n').slice(1, 10).join('\n')}${fancyColors.RESET}`);
+            //logApi.info(`${fancyColors.RED}🔥 STACK AFTER VANITY: ${callStack.split('\n').slice(1, 10).join('\n')}${fancyColors.RESET}`);
         }
 
         // Enhanced protection for service name resolution

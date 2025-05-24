@@ -552,7 +552,7 @@ router.get("/search", async (req, res) => {
         market_cap: true,
         total_supply: true,
         circulating_supply: true,
-        logo_url: true,
+        image_url: true,
         volume_24h: true,
         change_24h: true
       },

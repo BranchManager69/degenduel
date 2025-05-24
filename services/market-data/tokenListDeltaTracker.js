@@ -120,7 +120,12 @@ class TokenListDeltaTracker {
       const removedTokens = await client.sdiff(previousLatestKeyName, currentKeyName);
       const unchanged = tokenAddresses.length - newTokens.length;
       
-      logApi.info(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} ${fancyColors.GREEN}Change detected: ${fancyColors.RESET}+${newTokens.length} new, -${removedTokens.length} removed, ${unchanged} unchanged tokens`);
+      // Log appropriate message based on whether changes were detected
+      if (newTokens.length > 0 || removedTokens.length > 0) {
+        logApi.info(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} ${fancyColors.GREEN}Change detected: ${fancyColors.RESET}+${newTokens.length} new, -${removedTokens.length} removed, ${unchanged} unchanged tokens`);
+      } else {
+        logApi.info(`${fancyColors.GOLD}[TokenListDeltaTracker]${fancyColors.RESET} ${fancyColors.CYAN}No change detected: ${fancyColors.RESET}${unchanged} tokens unchanged`);
+      }
       
       return {
         added: newTokens,

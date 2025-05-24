@@ -12,7 +12,7 @@ import prisma from '../config/prisma.js';
 import { BaseService } from '../utils/service-suite/base-service.js';
 import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
 import { logApi } from '../utils/logger-suite/logger.js';
-import { fancyColors, serviceColors } from '../utils/colors.js';
+import { fancyColors, serviceColors, serviceSpecificColors } from '../utils/colors.js';
 import { Decimal } from '@prisma/client/runtime/library';
 import serviceManager from '../utils/service-suite/service-manager.js';
 import serviceEvents from '../utils/service-suite/service-events.js';
@@ -37,7 +37,7 @@ class PortfolioSnapshotService extends BaseService {
    */
   async onPerformOperation() {
     const startTime = Date.now();
-    logApi.info(`${serviceColors.info}[${this.name}]${fancyColors.RESET} Starting portfolio snapshot cycle...`);
+    logApi.info(`${serviceSpecificColors.portfolioSnapshot.info}[${this.name}]${fancyColors.RESET} Starting portfolio snapshot cycle...`);
 
     try {
       let totalParticipantsProcessed = 0;
@@ -237,7 +237,7 @@ class PortfolioSnapshotService extends BaseService {
       } // End while loop
 
       const durationMs = Date.now() - startTime;
-      logApi.info(`[${this.name}] Cycle complete. Processed: ${totalParticipantsProcessed}, Saved: ${totalSnapshotsSaved}, Duration: ${durationMs}ms`);
+      logApi.info(`${serviceSpecificColors.portfolioSnapshot.info}[${this.name}]${fancyColors.RESET} Cycle complete. Processed: ${totalParticipantsProcessed}, Saved: ${totalSnapshotsSaved}, Duration: ${durationMs}ms`);
 
     } catch (error) {
       logApi.error(`[${this.name}] Error during snapshot cycle:`, error);

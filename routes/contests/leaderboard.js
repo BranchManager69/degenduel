@@ -62,7 +62,7 @@ router.get('/:id/leaderboard', async (req, res) => {
                 id: true,
                 symbol: true,
                 name: true,
-                logo_url: true
+                image_url: true
               }
             }
           }
@@ -88,7 +88,7 @@ router.get('/:id/leaderboard', async (req, res) => {
           id: portfolio.tokens?.id,
           symbol: portfolio.tokens?.symbol,
           name: portfolio.tokens?.name,
-          logo_url: portfolio.tokens?.logo_url
+          logo_url: portfolio.tokens?.image_url
         }
       }));
       

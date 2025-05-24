@@ -340,7 +340,23 @@ export const serviceSpecificColors = {
   },
   
   // =============================================================
-  // 4. MAGENTA/PINK FAMILY - Contest Services
+  // 4. PURPLE FAMILY - Portfolio Services
+  // =============================================================
+  
+  // Portfolio Snapshot Service - Purple
+  portfolioSnapshot: {
+    tag: '\x1b[1m\x1b[38;5;129m',                   // Purple (129)
+    header: '\x1b[1m\x1b[38;5;255m\x1b[48;5;129m',  // White on Purple background
+    info: '\x1b[38;5;129m',                         // Regular Purple
+    success: '\x1b[38;5;129m',                      // Purple instead of green
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red
+    highlight: '\x1b[1m\x1b[38;5;129m',             // Bold Purple
+    cycle: '\x1b[1m\x1b[38;5;255m\x1b[48;5;129m',   // White on Purple for cycle messages
+  },
+
+  // =============================================================
+  // 5. MAGENTA/PINK FAMILY - Contest Services
   // =============================================================
   
   // Contest Evaluation Service - Light Pink
@@ -388,7 +404,26 @@ export const serviceSpecificColors = {
   },
   
   // =============================================================
-  // 5. YELLOW/ORANGE FAMILY - Analytics & Tracking
+  // 5. GRAY/DARK FAMILY - Scheduler Services
+  // =============================================================
+  
+  // Token Refresh Scheduler - Dark Gray
+  tokenRefreshScheduler: {
+    tag: '\x1b[1m\x1b[38;5;240m',                   // Dark Gray (240)
+    header: '\x1b[1m\x1b[38;5;255m\x1b[48;5;240m',  // White on Dark Gray background
+    info: '\x1b[38;5;240m',                         // Regular Dark Gray
+    success: '\x1b[38;5;46m',                       // Bright Green for success metrics
+    warning: '\x1b[38;5;214m',                      // Standard orange
+    error: '\x1b[38;5;196m',                        // Standard red for failures
+    highlight: '\x1b[1m\x1b[38;5;240m',             // Bold Dark Gray
+    processed: '\x1b[38;5;240m',                    // Dark Gray for processed count
+    updated: '\x1b[38;5;46m',                       // Green for updated count
+    failed: '\x1b[38;5;196m',                       // Red for failed count
+    batch: '\x1b[1m\x1b[38;5;255m\x1b[48;5;240m',   // White on Dark Gray for batch messages
+  },
+
+  // =============================================================
+  // 6. YELLOW/ORANGE FAMILY - Analytics & Tracking
   // =============================================================
   
   // Balance Tracking - Dark Yellow with subtle background

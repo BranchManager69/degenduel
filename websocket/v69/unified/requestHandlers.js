@@ -179,6 +179,162 @@ async function handleAdminRequest(ws, message, sendMessage, sendError) {
         requestId: message.requestId
       });
       break;
+      
+    case 'getRpcBenchmarks':
+      try {
+        // Get the latest test run ID
+        const latestRun = await prisma.rpc_benchmark_results.findFirst({
+          orderBy: {
+            timestamp: 'desc'
+          },
+          select: {
+            test_run_id: true,
+            timestamp: true
+          }
+        });
+        
+        if (!latestRun) {
+          return sendMessage(ws, {
+            type: MESSAGE_TYPES.RESPONSE,
+            topic: TOPICS.ADMIN,
+            action: 'getRpcBenchmarks',
+            data: {
+              success: false,
+              message: 'No benchmark data found'
+            },
+            requestId: message.requestId
+          });
+        }
+        
+        // Get all results from the latest run
+        const results = await prisma.rpc_benchmark_results.findMany({
+          where: {
+            test_run_id: latestRun.test_run_id
+          },
+          orderBy: [
+            { method: 'asc' },
+            { median_latency: 'asc' }
+          ]
+        });
+        
+        // Group by method
+        const methodResults = {};
+        for (const result of results) {
+          if (!methodResults[result.method]) {
+            methodResults[result.method] = [];
+          }
+          methodResults[result.method].push(result);
+        }
+        
+        // Format results
+        const formattedResults = {};
+        const methods = Object.keys(methodResults);
+        
+        // Get provider rankings for each method
+        for (const method of methods) {
+          formattedResults[method] = {
+            providers: methodResults[method].map(result => ({
+              provider: result.provider,
+              median_latency: result.median_latency,
+              avg_latency: result.avg_latency,
+              min_latency: result.min_latency,
+              max_latency: result.max_latency,
+              success_count: result.success_count,
+              failure_count: result.failure_count
+            }))
+          };
+          
+          // Add percentage comparisons
+          if (formattedResults[method].providers.length > 1) {
+            const fastestLatency = formattedResults[method].providers[0].median_latency;
+            
+            for (let i = 1; i < formattedResults[method].providers.length; i++) {
+              const provider = formattedResults[method].providers[i];
+              const percentSlower = ((provider.median_latency - fastestLatency) / fastestLatency) * 100;
+              provider.percent_slower = percentSlower;
+            }
+          }
+        }
+        
+        // Get fastest provider overall
+        let overallFastestProvider = null;
+        const providerWins = {};
+        
+        for (const method of methods) {
+          const fastestProvider = methodResults[method][0].provider;
+          providerWins[fastestProvider] = (providerWins[fastestProvider] || 0) + 1;
+        }
+        
+        let maxWins = 0;
+        for (const [provider, wins] of Object.entries(providerWins)) {
+          if (wins > maxWins) {
+            maxWins = wins;
+            overallFastestProvider = provider;
+          }
+        }
+        
+        // Construct performance advantage summary
+        const performanceAdvantage = [];
+        
+        if (overallFastestProvider) {
+          for (const method of methods) {
+            const results = methodResults[method];
+            const providers = results.map(r => r.provider);
+            
+            if (providers[0] === overallFastestProvider && providers.length > 1) {
+              const bestLatency = results[0].median_latency;
+              const secondLatency = results[1].median_latency;
+              const improvementVsSecond = ((secondLatency - bestLatency) / bestLatency) * 100;
+              
+              let thirdPlaceAdvantage = null;
+              if (providers.length >= 3) {
+                const thirdLatency = results[2].median_latency;
+                const improvementVsThird = ((thirdLatency - bestLatency) / bestLatency) * 100;
+                thirdPlaceAdvantage = improvementVsThird;
+              }
+              
+              performanceAdvantage.push({
+                method,
+                vs_second_place: improvementVsSecond,
+                vs_third_place: thirdPlaceAdvantage,
+                second_place_provider: providers[1],
+                third_place_provider: providers.length >= 3 ? providers[2] : null
+              });
+            }
+          }
+        }
+        
+        // Return the results
+        sendMessage(ws, {
+          type: MESSAGE_TYPES.RESPONSE,
+          topic: TOPICS.ADMIN,
+          action: 'getRpcBenchmarks',
+          data: {
+            success: true,
+            test_run_id: latestRun.test_run_id,
+            timestamp: latestRun.timestamp,
+            methods: formattedResults,
+            overall_fastest_provider: overallFastestProvider,
+            performance_advantage: performanceAdvantage
+          },
+          requestId: message.requestId
+        });
+      } catch (error) {
+        logApi.error(`${wsColors.tag}[request-handlers]${fancyColors.RESET} ${fancyColors.RED}Error getting RPC benchmark results:${fancyColors.RESET}`, error);
+        
+        sendMessage(ws, {
+          type: MESSAGE_TYPES.RESPONSE,
+          topic: TOPICS.ADMIN,
+          action: 'getRpcBenchmarks',
+          data: {
+            success: false,
+            message: 'Error retrieving RPC benchmark results',
+            error: error.message
+          },
+          requestId: message.requestId
+        });
+      }
+      break;
     
     default:
       sendError(ws, `Unknown action for admin: ${message.action}`, 4009);
