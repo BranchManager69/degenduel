@@ -742,7 +742,7 @@ const config = {
       token_dex_data_service: false, // DEX pool data service
       token_detection_service: true, // New token detection service
       token_enrichment_service: false, // ???
-      token_activation_service: false, // ???
+      token_activation_service: true, // ENABLED - manages is_active flag
       discord_notification_service: true,
       discord_interactive_service: true,
       launch_event_service: true,
@@ -1070,7 +1070,7 @@ const config = {
       return profile.portfolio_snapshot_service;
     },
 
-    // TOKEN ACTIVATION SERVICE
+    // TOKEN ACTIVATION SERVICE  
     get token_activation_service() {
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
