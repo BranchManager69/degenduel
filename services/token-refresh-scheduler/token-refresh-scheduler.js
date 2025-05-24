@@ -994,11 +994,11 @@ class TokenRefreshScheduler extends BaseService {
     }
 
     const tokenAddresses = batch.map(t => t.address);
-    // Reduce verbosity for small batches (typically test refreshes)
+    // Simple, clean batch processing log
     if (batch.length <= 5) {
-      logApi.debug(`${colors.info}[TokenRefreshScheduler.processBatch]${fancyColors.RESET} Processing batch ${batchNum}/${totalBatches} with ${batch.length} tokens. Addresses: ${tokenAddresses.slice(0,5).join(', ')}...`);
+      logApi.debug(`${colors.info}[TokenRefreshScheduler.processBatch]${fancyColors.RESET} Processing batch ${batchNum}/${totalBatches} with ${batch.length} tokens`);
     } else {
-      logApi.info(`${colors.info}[TokenRefreshScheduler.processBatch]${fancyColors.RESET} Processing batch ${batchNum}/${totalBatches} with ${batch.length} tokens. Addresses: ${tokenAddresses.slice(0,5).join(', ')}...`);
+      logApi.info(`${colors.info}[TokenRefreshScheduler.processBatch]${fancyColors.RESET} Processing batch ${batchNum}/${totalBatches} with ${batch.length} tokens`);
     }
 
     let priceData = null;
