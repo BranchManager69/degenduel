@@ -878,16 +878,17 @@ class ContestSchedulerService extends BaseService {
         try {
             // Check maintenance mode
             const isInMaintenance = await this.isInMaintenanceMode();
-            
+            // Even if Maintenance Mode *is* active, chug right along with the contest scheduling (I like this because MM is mostly to prevent users from doing *unexpected* actions that could break the system during a tranisition)
             if (isInMaintenance) {
                 logApi.info(`${fancyColors.MAGENTA}[${this.name}]${fancyColors.RESET}${fancyColors.BOLD}${fancyColors.YELLOW} System is in maintenance mode, but contest scheduler will continue to operate ${fancyColors.RESET}`);
             }
             
-            // Check if we have database schedules first
+            // Pull the contest schedule data from db (source of truth)
             const dbSchedules = await this.loadSchedulesFromDatabase();
             
-            // Choose database schedules if available, otherwise use config schedules
             let schedules;
+            // If db doesn't work for some reason I can't imagine, fallback to the config file
+            // (seems kind of pointless, but I'm keeping it for now)
             let scheduleSource;
             
             if (dbSchedules && dbSchedules.length > 0) {

@@ -10,19 +10,19 @@
  * @module services/userBalanceTrackingService
  */
 
-import { BaseService } from '../utils/service-suite/base-service.js';
-import { ServiceError } from '../utils/service-suite/service-error.js';
-import { logApi } from '../utils/logger-suite/logger.js';
-import prisma from '../config/prisma.js';
-import { solanaEngine } from '../services/solana-engine/index.js';
+import { BaseService } from '../../utils/service-suite/base-service.js';
+import { ServiceError } from '../../utils/service-suite/service-error.js';
+import { logApi } from '../../utils/logger-suite/logger.js';
+import prisma from '../../config/prisma.js';
+import { solanaEngine } from '../solana-engine/index.js';
 // Legacy Helius tracker as fallback
-import { heliusBalanceTracker } from '../services/solana-engine/index.js';
+import { heliusBalanceTracker } from '../solana-engine/index.js';
 import { isAddress } from '@solana/addresses';
-import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
-import { fancyColors } from '../utils/colors.js';
+import { SERVICE_NAMES } from '../../utils/service-suite/service-constants.js';
+import { fancyColors } from '../../utils/colors.js';
 
 // Config
-import { config } from '../config/config.js';
+import { config } from '../../config/config.js';
 
 // TEST OVERRIDE - Set to true to force WebSocket mode regardless of environment settings
 const FORCE_WEBSOCKET_MODE = true;
@@ -186,7 +186,7 @@ class UserBalanceTrackingService extends BaseService {
                     // Initialize direct RPC WebSocket monitoring
                     try {
                         // Import the wallet-balance-ws module
-                        this.walletBalanceWs = (await import('./user-balance-tracking/wallet-balance-ws.js')).default;
+                        this.walletBalanceWs = (await import('./wallet-balance-ws.js')).default;
 
                         // Initialize the WebSocket connection
                         const initialized = await this.walletBalanceWs.initializeWalletBalanceWebSocket(solanaEngine, this.config);
@@ -1422,54 +1422,8 @@ class UserBalanceTrackingService extends BaseService {
     }
 }
 
-// Verify Prisma schema is properly set up for wallet balance tracking
-
-/**
- * Verify the wallet balance tracking schema exists
- * 
- * @returns {Promise<boolean>} - True if the schema exists, false otherwise
- */
-async function ensureSchemaExists() {
-    try {
-        // Since we've already generated the Prisma client with the new schema, this works.
-        //
-        // We no longer need to create tables manually as they'll be created by Prisma
-        // This function now just verifies the tables exist through Prisma
-        
-        // Verify wallet_balance_history table exists by doing a count query
-        
-        // No need to log the table count
-        //const historyCount = await prisma.wallet_balance_history.count();
-        //logApi.info(`${fancyColors.MAGENTA}[userBalanceTrackingService]${fancyColors.RESET} ${fancyColors.ORANGE} ✅ ${fancyColors.BOLD}${fancyColors.ORANGE}wallet_balance_history${fancyColors.RESET} ${fancyColors.ORANGE}table exists (records: ${historyCount})`);
-        
-        // No need to do anything at all!
-        return true;
-    } catch (error) {
-        logApi.error('Error verifying balance tracking schema:', error);
-        throw new Error(`Balance tracking schema verification failed: ${error.message}`);
-    }
-}
-
-// First ensure schema exists, then create and export service
-/**
- * Create and export the user balance tracking service
- * 
- * @returns {UserBalanceTrackingService} - The user balance tracking service
- */
+// Create and export the user balance tracking service
 const userBalanceTrackingService = new UserBalanceTrackingService();
 
-// Export with schema check wrapper
-/**
- * Export the user balance tracking service
- * 
- * @returns {UserBalanceTrackingService} - The user balance tracking service
- */
+// Export the service
 export default userBalanceTrackingService;
-
-// Export schema check function for initialization
-/**
- * Export the schema check function for initialization
- * 
- * @returns {Promise<boolean>} - True if the schema exists, false otherwise
- */
-export { ensureSchemaExists };

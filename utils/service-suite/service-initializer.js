@@ -2,13 +2,14 @@
 
 /**
  * Service Initializer
+ * 
  * @description This module is responsible for orchestrating the initialization of all DegenDuel services.
  * It ensures services are registered and initialized in the correct dependency order.
  * 
  * @author BranchManager69
- * @version 1.9.0
+ * @version 2.0.0
  * @created 2025-04-10
- * @updated 2025-05-02
+ * @updated 2025-05-24
  */
 
 /**
@@ -19,40 +20,42 @@
 
 // Service Suite
 import serviceManager from './service-manager.js';
-import { SERVICE_NAMES, SERVICE_LAYERS, SERVICE_VERBOSITY } from './service-constants.js';
+import { 
+    SERVICE_NAMES, 
+    //SERVICE_LAYERS, SERVICE_VERBOSITY
+} from './service-constants.js';
 // Logger
 import { logApi } from '../logger-suite/logger.js';
 import { fancyColors, serviceColors } from '../colors.js';
 import AdminLogger from '../admin-logger.js';
+//import prisma from '../../config/prisma.js';
+
 // Config
 import { config } from '../../config/config.js';
+
+// Manual debug modes
 const VERBOSE_SERVICE_INIT_LOGS = false;
-// Service initialization verbosity - disable verbosity
+
 
 /* Import all DegenDuel services */
 
 //   (1)  Infrastructure Layer
 import solanaEngine from '../../services/solana-engine/index.js';
-import walletGeneratorService from '../../services/walletGenerationService.js';
 import liquidityService from '../../services/liquidityService.js';
-// Legacy solana service - imported but not used as primary [EDIT 4/27/25: Now deprecated. Fully removed from here!]
-////import solanaService from '../../services/solanaService.js';
+// REMOVED: Legacy solana service - replaced entirely by SolanaEngine
+// REMOVED: walletGeneratorService - was over-engineered and barely used
 
 //   (2)  Data Layer
-// tokenSyncService has been permanently removed
-// tokenWhitelistService has been permanently disabled (using token.is_active flag instead)
-import marketDataService from '../../services/market-data/marketDataService.js';
-import tokenRefreshScheduler from '../../services/token-refresh-scheduler/token-refresh-scheduler.js';
-import tokenDEXDataService from '../../services/token-dex-data-service.js';
-import tokenDetectionService from '../../services/market-data/tokenDetectionService.js';
-// [the one below is brand new!]
+import marketDataService from '../../services/market-data/index.js';
+import tokenRefreshScheduler from '../../services/token-refresh-scheduler/index.js';
 import tokenEnrichmentService from '../../services/token-enrichment/index.js';
 import tokenActivationService from '../../services/token-activation/index.js';
-// [the one below doesn't exist yet...]
-//import tokenPriorityService from '../../services/token-priority/index.js';
+import tokenDEXDataService from '../../services/token-dex-data-service/index.js';
+import tokenDetectionService from '../../services/token-detection-service/index.js';
+// REMOVED: tokenSyncService - no longer needed
+// REMOVED: tokenWhitelistService - no longer needed
 
-//   (3)  Contest Layer
-// Discord notification service
+//   (3)  Comms Layer (?; call it whatever, not important)
 import discordNotificationService from '../../services/discord/discordNotificationService.js';
 import discordInteractiveService from '../../services/discord/discord-interactive-service.js';
 
@@ -68,14 +71,13 @@ import portfolioSnapshotService from '../../services/portfolioSnapshotService.js
 //   (5)  Wallet Layer
 import contestWalletService from '../../services/contest-wallet/index.js';
 import adminWalletService from '../../services/admin-wallet/index.js';
-import userBalanceTrackingService, { ensureSchemaExists } from '../../services/userBalanceTrackingService.js';
+import userBalanceTrackingService from '../../services/user-balance-tracking/index.js';
 import vanityWalletService from '../../services/vanity-wallet/index.js';
-// DEPRECATED: walletRakeService - functionality has been integrated into contestWalletService
-// import walletRakeService from '../../services/walletRakeService.js';
 
 //   (6) Application Layer (New)
 import aiService from '../../services/ai-service/index.js';
 
+//   (7?) ??? Client layer??? IDK.  What is this? I forget!
 import { jupiterClient } from '../../services/solana-engine/jupiter-client.js';
 
 /**
@@ -151,16 +153,9 @@ class ServiceInitializer {
         //     logApi.info(`${fancyColors.YELLOW}Skipping registration of solana_service - disabled in config${fancyColors.RESET}`);
         // }
         
-        // Only register wallet generator and liquidity services if they're enabled in the config
-        if (config.services.wallet_generator_service) {
-            serviceManager.register(walletGeneratorService);
-        } else {
-            logApi.info(`${fancyColors.YELLOW}Skipping registration of wallet_generator_service - disabled in config${fancyColors.RESET}`);
-        }
-        
-        // Register liquidity service
+        // Register liquidity service (no longer depends on wallet generator)
         if (config.services.liquidity) {
-            serviceManager.register(liquidityService, [SERVICE_NAMES.WALLET_GENERATOR]);
+            serviceManager.register(liquidityService);
         } else {
             logApi.info(`${fancyColors.YELLOW}Skipping registration of liquidity_service - disabled in config${fancyColors.RESET}`);
         }
@@ -298,7 +293,8 @@ class ServiceInitializer {
             if (VERBOSE_SERVICE_INIT_LOGS) {
                 logApi.info(`${fancyColors.YELLOW}┃ 🔹 Registering Contest Scheduler Service ${fancyColors.RESET}`);
             }
-            serviceManager.register(contestSchedulerService, [SERVICE_NAMES.WALLET_GENERATOR]);
+            // REMOVED dependency on WALLET_GENERATOR since that service was deleted
+            serviceManager.register(contestSchedulerService);
         } else {
             logApi.info(`${fancyColors.YELLOW}Skipping registration of contest_scheduler_service - disabled in config${fancyColors.RESET}`);
         }
@@ -375,7 +371,6 @@ class ServiceInitializer {
         
         // Ensure schema exists for user balance tracking
         if (config.services.user_balance_tracking) {
-            await ensureSchemaExists();
             serviceManager.register(userBalanceTrackingService, [SERVICE_NAMES.SOLANA_ENGINE]);
         } else {
             logApi.info(`${fancyColors.YELLOW}Skipping registration of user_balance_tracking_service - disabled in config${fancyColors.RESET}`);
@@ -519,7 +514,7 @@ class ServiceInitializer {
         };
 
         // Infrastructure Layer Dependencies
-        addDependencyIfEnabled(SERVICE_NAMES.LIQUIDITY, SERVICE_NAMES.WALLET_GENERATOR);
+        // REMOVED: Liquidity service dependency on WALLET_GENERATOR since that service was deleted
 
         // Data Layer Dependencies
         // Removed dependency on TOKEN_SYNC as it's no longer needed
@@ -636,7 +631,7 @@ class ServiceInitializer {
             // Log cleanup results
             const successCount = results.successful.length;
             const failCount = results.failed.length;
-            logApi.info(`✅ Services cleanup: ${successCount} succeeded, ${failCount} failed`);
+            logApi.info(`[Svc Initlzr --> Shutdown] ✅ Services cleanup: ${successCount} succeeded, ${failCount} failed`);
             
             // Always show failed cleanups
             if (failCount > 0) {

@@ -14,8 +14,8 @@ import liquidityService from '../../services/liquidityService.js';
 // tokenWhitelistService has been permanently disabled (using token.is_active flag instead)
 import marketDataService from '../../services/market-data/marketDataService.js';
 import tokenRefreshIntegration from '../../services/token-refresh-integration.js';
-import tokenDEXDataService from '../../services/token-dex-data-service.js';
-import tokenDetectionService from '../../services/market-data/tokenDetectionService.js';
+import tokenDEXDataService from '../../services/token-dex-data-service/index.js';
+import tokenDetectionService from '../../services/token-detection-service/index.js';
 // [the one below is brand new!]
 import tokenEnrichmentService from '../../services/token-enrichment/index.js';
 // [the one below doesn't exist yet...]
@@ -38,7 +38,7 @@ import portfolioSnapshotService from '../../services/portfolioSnapshotService.js
 //   (5)  Wallet Layer
 import contestWalletService from '../../services/contest-wallet/index.js';
 import adminWalletService from '../../services/admin-wallet/index.js';
-import userBalanceTrackingService, { ensureSchemaExists } from '../../services/userBalanceTrackingService.js';
+import userBalanceTrackingService from '../../services/user-balance-tracking/index.js';
 import vanityWalletService from '../../services/vanity-wallet/index.js';
 // DEPRECATED: walletRakeService - functionality has been integrated into contestWalletService
 // import walletRakeService from '../../services/walletRakeService.js';

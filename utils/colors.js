@@ -299,6 +299,7 @@ export const serviceSpecificColors = {
     highlight: '\x1b[1m\x1b[38;5;214m',             // Bold amber
   },
   
+  // Token DEX Data Service - Copper/Bronze
   tokenDEXData: {
     tag: '\x1b[1m\x1b[38;5;130m',                   // Copper/Bronze (130)
     header: '\x1b[1m\x1b[38;5;130m\x1b[48;5;236m',  // Copper on dark gray

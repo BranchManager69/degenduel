@@ -1,5 +1,18 @@
 // routes/superadmin.js
 
+/**
+ * Superadmin API
+ * 
+ * @description: This file contains the superadmin API routes for the DegenDuel application.
+ * 
+ * @note: This file is a work in progress and is not yet complete.
+ * 
+ * @author: BranchManager69
+ * @version: 2.0.0
+ * @created: 2025-02-14
+ * @updated: 2025-05-24
+ */
+
 import { exec } from 'child_process';
 import express from 'express';
 import fs from 'fs/promises';
@@ -9,37 +22,32 @@ import chalk from 'chalk';
 import logApi from '../utils/logger-suite/logger.js';
 import prisma from '../config/prisma.js';
 import { requireAuth, requireSuperAdmin } from '../middleware/auth.js';
-import { 
-    Connection, PublicKey, Keypair, 
-    Transaction, SystemProgram, 
-    LAMPORTS_PER_SOL
-} from '@solana/web3.js';
 // Route imports
 import walletMonitoringRouter from './admin-api/wallet-monitoring.js';
 // Services
-import walletGenerationService from '../services/walletGenerationService.js';
 import adminWalletService from '../services/admin-wallet/index.js';
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES } from '../utils/service-suite/service-constants.js';
 import ContestWalletService from '../services/contest-wallet/contestWalletService.js';
-////import liquidityService from '../services/liquidityService.js';
-////import userBalanceTrackingService from '../services/userBalanceTrackingService.js';
+// SolanaEngine (unified connection management)
+import { solanaEngine } from '../services/solana-engine/index.js';
+// Solana v2 imports (correct)
+import { address } from '@solana/addresses';
 
 // Config
 import { config } from '../config/config.js';
-// Logs go into current working directory + /logs
-const LOG_DIR = path.join(process.cwd(), 'logs');
+
 // Constants
 const TEST_RECOVERY_AMOUNT_PER_WALLET = config.contest_wallet_test_recovery_amount_per_wallet; // SOL (default = 0.00420690 SOL)
 const ABSOLUTE_MINIMUM_SOL_TO_LEAVE_IN_EACH_WALLET_DURING_RECOVERY = config.contest_wallet_min_amount_to_leave_in_each_wallet_during_recovery; // SOL (default = 0.0001 SOL)
 const ACCEPTABLE_LOSS_AMOUNT_PER_WALLET_DURING_RECOVERY = config.contest_wallet_acceptable_loss_amount_per_wallet_during_recovery; // SOL (default = 0.0001 SOL)
 const SECONDS_BETWEEN_TRANSACTIONS_DURING_RECOVERY = config.contest_wallet_seconds_between_transactions_during_recovery; // default = 2 seconds
+const LAMPORTS_PER_SOL = 1_000_000_000; // Solana constant
+// App logs get stored in 'logs' project directory
+const LOG_DIR = path.join(process.cwd(), 'logs');
 
 // Router
 const router = express.Router();
-
-// Solana connection
-const connection = new Connection(config.rpc_urls.primary, 'confirmed');
 
 // Middleware ensures superadmin role
 const requireSuperAdminMiddleware = (req, res, next) => {
@@ -50,7 +58,6 @@ const requireSuperAdminMiddleware = (req, res, next) => {
     }
     next();
 };
-
 
 // ==== WALLET MANAGEMENT ENDPOINTS ====
 
@@ -117,7 +124,9 @@ router.get('/wallets', requireAuth, requireSuperAdmin, async (req, res) => {
         const walletsWithBalance = await Promise.all(
             wallets.map(async (wallet) => {
                 try {
-                    const balance = await connection.getBalance(new PublicKey(wallet.wallet_address));
+                    // Get balance using SolanaEngine instead of custom connection
+                    const balanceResult = await solanaEngine.executeConnectionMethod('getBalance', wallet.wallet_address);
+                    const balance = balanceResult.value || balanceResult; // Handle different response formats
                     return {
                         ...wallet,
                         balance: balance / LAMPORTS_PER_SOL,
@@ -195,25 +204,63 @@ router.post('/wallets/generate', requireAuth, requireSuperAdmin, async (req, res
             });
         }
         
-        // Create wallets
+        // Create wallets using proper service pattern
         const wallets = [];
         
         for (let i = 0; i < count; i++) {
             const identifier = `${purpose}_${prefix}${Date.now()}_${i}`;
             
-            // Generate the wallet
-            const wallet = await walletGenerationService.generateWallet(identifier, {
-                metadata: {
-                    purpose,
-                    created_by: req.user.wallet_address,
-                    created_at: new Date().toISOString()
-                }
-            });
-            
-            wallets.push({
-                public_key: wallet.publicKey,
-                identifier
-            });
+            try {
+                // Generate wallet using the same pattern as liquidityService and contestWalletService
+                const { generateKeyPair } = await import('@solana/keys');
+                const { getAddressFromPublicKey } = await import('@solana/addresses');
+                
+                // Generate new v2 keypair
+                const keyPair = await generateKeyPair();
+                const walletAddress = await getAddressFromPublicKey(keyPair.publicKey);
+                
+                // Encrypt the private key using the same method as other services
+                const seed32Bytes = keyPair.privateKey;
+                const crypto = await import('crypto');
+                const iv = crypto.randomBytes(12);
+                const aad = crypto.randomBytes(16);
+                const cipher = crypto.createCipheriv('aes-256-gcm', Buffer.from(process.env.WALLET_ENCRYPTION_KEY, 'hex'), iv);
+                cipher.setAAD(aad);
+                let encrypted = cipher.update(seed32Bytes);
+                encrypted = Buffer.concat([encrypted, cipher.final()]);
+                const tag = cipher.getAuthTag();
+                
+                const encryptedSeedJson = JSON.stringify({
+                    version: 'v2_seed_superadmin',
+                    encrypted: encrypted.toString('hex'),
+                    iv: iv.toString('hex'),
+                    tag: tag.toString('hex'),
+                    aad: aad.toString('hex')
+                });
+                
+                // Store in database
+                const walletRecord = await prisma.seed_wallets.create({
+                    data: {
+                        wallet_address: walletAddress,
+                        private_key: encryptedSeedJson,
+                        purpose: purpose,
+                        is_active: true,
+                        metadata: {
+                            created_by: req.user.wallet_address,
+                            created_at: new Date().toISOString(),
+                            identifier
+                        }
+                    }
+                });
+                
+                wallets.push({
+                    public_key: walletAddress,
+                    identifier
+                });
+            } catch (walletError) {
+                logApi.error(`Error generating wallet ${i + 1}:`, walletError);
+                throw new Error(`Failed to generate wallet ${i + 1}: ${walletError.message}`);
+            }
         }
         
         // Log the action
@@ -266,8 +313,9 @@ router.get('/wallets/:address', requireAuth, requireSuperAdmin, async (req, res)
             return res.status(404).json({ error: 'Wallet not found' });
         }
         
-        // Get balance
-        const balance = await connection.getBalance(new PublicKey(address));
+        // Get balance using SolanaEngine instead of custom connection
+        const balanceResult = await solanaEngine.executeConnectionMethod('getBalance', address);
+        const balance = balanceResult.value || balanceResult; // Handle different response formats
         
         // Get recent transactions
         const transactions = await prisma.transactions.findMany({
@@ -481,8 +529,9 @@ router.get('/wallet-test/direct-balance', requireAuth, requireSuperAdmin, async 
         // Default to active liquidity wallet if no address provided
         const walletAddress = address || 'DEoSkiU8kmG2crkbyoQgwKVrASLaWhYMPVKa6mnA15xM';
         
-        // Get balance directly from Solana
-        const balance = await connection.getBalance(new PublicKey(walletAddress));
+        // Get balance using SolanaEngine instead of custom connection
+        const balanceResult = await solanaEngine.executeConnectionMethod('getBalance', walletAddress);
+        const balance = balanceResult.value || balanceResult; // Handle different response formats
         
         // Get wallet from database
         const wallet = await prisma.seed_wallets.findUnique({
@@ -570,19 +619,19 @@ router.post('/wallet-test/transfer', requireAuth, requireSuperAdmin, async (req,
             );
             
             // Get updated balances
-            const fromBalance = await connection.getBalance(new PublicKey(from));
-            const toBalance = await connection.getBalance(new PublicKey(to));
+            const fromBalance = await solanaEngine.executeConnectionMethod('getBalance', from);
+            const toBalance = await solanaEngine.executeConnectionMethod('getBalance', to);
             
             return res.json({
                 success: true,
                 signature: result.signature,
                 source: {
                     address: from,
-                    balance: fromBalance / LAMPORTS_PER_SOL
+                    balance: fromBalance.value / LAMPORTS_PER_SOL
                 },
                 destination: {
                     address: to,
-                    balance: toBalance / LAMPORTS_PER_SOL
+                    balance: toBalance.value / LAMPORTS_PER_SOL
                 },
                 amount,
                 timestamp: new Date().toISOString()
@@ -650,7 +699,9 @@ router.post('/wallet-test/mass-check', requireAuth, requireSuperAdmin, async (re
         const results = await Promise.allSettled(
             wallets.map(async (wallet) => {
                 try {
-                    const balance = await connection.getBalance(new PublicKey(wallet.wallet_address));
+                    // Get balance using SolanaEngine instead of custom connection
+                    const balanceResult = await solanaEngine.executeConnectionMethod('getBalance', wallet.wallet_address);
+                    const balance = balanceResult.value || balanceResult; // Handle different response formats
                     return {
                         wallet_address: wallet.wallet_address,
                         purpose: wallet.purpose,
@@ -771,8 +822,8 @@ router.post('/wallet-test/round-trip', requireAuth, requireSuperAdmin, async (re
         }
         
         // Step 1: Get initial balances of source and destination wallets
-        const initialSourceBalance = await connection.getBalance(new PublicKey(source));
-        const initialDestBalance = await connection.getBalance(new PublicKey(destination));
+        const initialSourceBalance = await solanaEngine.executeConnectionMethod('getBalance', source);
+        const initialDestBalance = await solanaEngine.executeConnectionMethod('getBalance', destination);
         
         // Step 2: First transfer (source --> destination)
         const outboundTransfer = await adminWalletService.transferSOL(
@@ -791,8 +842,8 @@ router.post('/wallet-test/round-trip', requireAuth, requireSuperAdmin, async (re
         await new Promise(resolve => setTimeout(resolve, waitTime));
         
         // Step 4: Get interim balances
-        const interimSourceBalance = await connection.getBalance(new PublicKey(source));
-        const interimDestBalance = await connection.getBalance(new PublicKey(destination));
+        const interimSourceBalance = await solanaEngine.executeConnectionMethod('getBalance', source);
+        const interimDestBalance = await solanaEngine.executeConnectionMethod('getBalance', destination);
         
         // Step 5: Calculate return amount
         //         Keep a very small amount for return transfer fee (default = keep 0.0001 SOL)
@@ -815,12 +866,12 @@ router.post('/wallet-test/round-trip', requireAuth, requireSuperAdmin, async (re
         await new Promise(resolve => setTimeout(resolve, waitTime));
         
         // Step 8: Get final balances of source and destination wallets
-        const finalSourceBalance = await connection.getBalance(new PublicKey(source));
-        const finalDestBalance = await connection.getBalance(new PublicKey(destination));
+        const finalSourceBalance = await solanaEngine.executeConnectionMethod('getBalance', source);
+        const finalDestBalance = await solanaEngine.executeConnectionMethod('getBalance', destination);
         
         // Step 9: Calculate balance changes and fees
-        const sourceDiff = (finalSourceBalance - initialSourceBalance) / LAMPORTS_PER_SOL;
-        const destDiff = (finalDestBalance - initialDestBalance) / LAMPORTS_PER_SOL;
+        const sourceDiff = (finalSourceBalance.value - initialSourceBalance.value) / LAMPORTS_PER_SOL;
+        const destDiff = (finalDestBalance.value - initialDestBalance.value) / LAMPORTS_PER_SOL;
         const totalFees = amount - returnAmount - destDiff;
 
         // Step 10: Return results
@@ -828,16 +879,16 @@ router.post('/wallet-test/round-trip', requireAuth, requireSuperAdmin, async (re
             success: true,
             source: {
                 address: source,
-                initial_balance: initialSourceBalance / LAMPORTS_PER_SOL,
-                interim_balance: interimSourceBalance / LAMPORTS_PER_SOL,
-                final_balance: finalSourceBalance / LAMPORTS_PER_SOL,
+                initial_balance: initialSourceBalance.value / LAMPORTS_PER_SOL,
+                interim_balance: interimSourceBalance.value / LAMPORTS_PER_SOL,
+                final_balance: finalSourceBalance.value / LAMPORTS_PER_SOL,
                 net_change: sourceDiff
             },
             destination: {
                 address: destination,
-                initial_balance: initialDestBalance / LAMPORTS_PER_SOL,
-                interim_balance: interimDestBalance / LAMPORTS_PER_SOL,
-                final_balance: finalDestBalance / LAMPORTS_PER_SOL,
+                initial_balance: initialDestBalance.value / LAMPORTS_PER_SOL,
+                interim_balance: interimDestBalance.value / LAMPORTS_PER_SOL,
+                final_balance: finalDestBalance.value / LAMPORTS_PER_SOL,
                 net_change: destDiff
             },
             transfers: {
@@ -1426,13 +1477,13 @@ router.post('/liquidity/recover-nuclear', requireAuth, requireSuperAdmin, async 
         for (const user of testUsers) {
             try {
                 // Get balance of test user
-                const balance = await connection.getBalance(new PublicKey(user.wallet_address));
+                const balance = await solanaEngine.executeConnectionMethod('getBalance', user.wallet_address);
 
                 // Skip this wallet if balance is 0
-                if (balance <= 0) continue; // TODO: Build in the configured buffer amount
+                if (balance.value <= 0) continue; // TODO: Build in the configured buffer amount
 
                 // Convert lamports to Solana
-                const balanceSOL = balance / LAMPORTS_PER_SOL;
+                const balanceSOL = balance.value / LAMPORTS_PER_SOL;
 
                 // Get this wallet's private key
                 const walletInfo = await WalletGenerator.getWallet(`test-user-${user.id}`);
@@ -1446,7 +1497,7 @@ router.post('/liquidity/recover-nuclear', requireAuth, requireSuperAdmin, async 
                 
                 // Calculate minimum SOL to leave in each wallet before recovery
                 const leaveInWalletAmountLamports = ABSOLUTE_MINIMUM_SOL_TO_LEAVE_IN_EACH_WALLET_DURING_RECOVERY * LAMPORTS_PER_SOL;
-                const recoveryAmountLamports = balance - leaveInWalletAmountLamports;
+                const recoveryAmountLamports = balance.value - leaveInWalletAmountLamports;
                 
                 // Skip this wallet if there's nothing to recover
                 if (recoveryAmountLamports <= 0) continue;

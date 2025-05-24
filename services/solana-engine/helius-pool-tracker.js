@@ -1,5 +1,20 @@
 // services/solana-engine/helius-pool-tracker.js
 
+/**
+ * ⚠️ DEPRECATED - INCOMPLETE IMPLEMENTATION ⚠️
+ * 
+ * This service has significant functional gaps and incomplete DEX parsing:
+ * - Pool data parsing is simplified/placeholder (lines 320-400+)
+ * - Price calculations are mostly stubbed out
+ * - DEX-specific logic is incomplete for Raydium, Orca, PumpSwap
+ * - Real-time WebSocket monitoring never properly implemented
+ * 
+ * RECOMMENDATION: Use Jupiter API or DexScreener API directly for token prices.
+ * This was an ambitious attempt at real-time pool monitoring that was never finished.
+ * 
+ * STATUS: Partially functional but unreliable for production use
+ */
+
 import { logApi } from '../../utils/logger-suite/logger.js';
 import { serviceSpecificColors, fancyColors } from '../../utils/colors.js';
 import { heliusClient } from './helius-client.js';

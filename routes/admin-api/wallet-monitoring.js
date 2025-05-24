@@ -1,5 +1,19 @@
 // routes/admin-api/wallet-monitoring.js
 
+/**
+ * User Balance Tracking Service
+ * 
+ * NOTE:    DO NOT CONFUSE THIS WITH
+ *          routes/admin/wallet-monitoring.js
+ * 
+ * @description: This is the superadmin interface for monitoring and controlling user wallet balance tracking.
+ * The API routes are used by the superadmin dashboard.
+ * 
+ * @author BranchManager69
+ * @version 2.0.0
+ * @created 2025-04-20
+ * @updated 2025-05-24
+*/
 
 /**
  * admin-api/wallet-monitoring.js provides:
@@ -21,26 +35,14 @@
  * - 'admin/wallet-monitoring.js' implements admin controls for the wallet monitoring service
  */
 
-/**
- * NOTE:    DO NOT CONFUSE THIS WITH
- *          routes/admin/wallet-monitoring.js
- * 
- * This is the superadmin interface for monitoring and controlling user wallet balance tracking.
- * The API routes are used by the superadmin dashboard.
- * 
- * @author BranchManager69
- * @version 1.9.0
- * @created 2025-04-20
- * @updated 2025-05-01
-*/
-
 import express from 'express';
 import { requireAuth, requireSuperAdmin } from '../../middleware/auth.js';
 import { safeBigIntToJSON, lamportsToSol } from '../../utils/bigint-utils.js';
 import prisma from '../../config/prisma.js';
-import userBalanceTrackingService from '../../services/userBalanceTrackingService.js';
+import userBalanceTrackingService from '../../services/user-balance-tracking/index.js';
+// Logger
 import { logApi } from '../../utils/logger-suite/logger.js';
-import { fancyColors } from '../../utils/colors.js'; // why is this unused?
+import { fancyColors, serviceColors } from '../../utils/colors.js';
 
 const router = express.Router();
 
@@ -67,7 +69,7 @@ router.get('/status', requireAuth, requireSuperAdmin, async (req, res) => {
       baseStats: userBalanceTrackingService.stats
     });
   } catch (error) {
-    logApi.error('Error getting wallet tracking status', error);
+    logApi.error(`${serviceColors.balanceTracking.error}Error getting wallet tracking status${fancyColors.RESET}`, error);
     return res.status(500).json({ error: 'Failed to get service status' });
   }
 });
@@ -155,7 +157,7 @@ router.get('/wallets', requireAuth, requireSuperAdmin, async (req, res) => {
       offset
     });
   } catch (error) {
-    logApi.error('Error getting tracked wallets', error);
+    logApi.error(`${serviceColors.balanceTracking.error}Error getting tracked wallets${fancyColors.RESET}`, error);
     return res.status(500).json({ error: 'Failed to get tracked wallets' });
   }
 });
@@ -226,7 +228,7 @@ router.get('/history/:walletAddress', requireAuth, requireSuperAdmin, async (req
       history: formattedHistory
     });
   } catch (error) {
-    logApi.error(`Error getting balance history for ${req.params.walletAddress}`, error);
+    logApi.error(`${serviceColors.balanceTracking.error}Error getting balance history for ${req.params.walletAddress}${fancyColors.RESET}`, error);
     return res.status(500).json({ error: 'Failed to get balance history' });
   }
 });
@@ -271,7 +273,7 @@ router.post('/check/:walletAddress', requireAuth, requireSuperAdmin, async (req,
       });
     }
   } catch (error) {
-    logApi.error(`Error forcing balance check for ${req.params.walletAddress}`, error);
+    logApi.error(`${serviceColors.balanceTracking.error}Error forcing balance check for ${req.params.walletAddress}${fancyColors.RESET}`, error);
     return res.status(500).json({ error: 'Failed to check balance' });
   }
 });
@@ -344,7 +346,7 @@ router.put('/settings', requireAuth, requireSuperAdmin, async (req, res) => {
       effectiveCheckIntervalMs: userBalanceTrackingService.effectiveCheckIntervalMs
     });
   } catch (error) {
-    logApi.error('Error updating tracking settings', error);
+    logApi.error(`${serviceColors.balanceTracking.error}Error updating tracking settings${fancyColors.RESET}`, error);
     return res.status(500).json({ error: 'Failed to update settings' });
   }
 });
@@ -503,7 +505,7 @@ router.get('/dashboard', requireAuth, requireSuperAdmin, async (req, res) => {
       }
     });
   } catch (error) {
-    logApi.error('Error getting dashboard data', error);
+    logApi.error(`${serviceColors.balanceTracking.error}Error getting dashboard data${fancyColors.RESET}`, error);
     return res.status(500).json({ error: 'Failed to get dashboard data' });
   }
 });
@@ -568,7 +570,7 @@ router.post('/start', requireAuth, requireSuperAdmin, async (req, res) => {
       serviceStatus: updatedStatus.status
     });
   } catch (error) {
-    logApi.error('Error starting wallet monitoring service', error);
+    logApi.error(`${serviceColors.balanceTracking.error}Error starting wallet monitoring service${fancyColors.RESET}`, error);
     return res.status(500).json({ 
       success: false,
       error: 'Failed to start monitoring service',
@@ -631,13 +633,14 @@ router.post('/stop', requireAuth, requireSuperAdmin, async (req, res) => {
     // Get updated status
     const updatedStatus = userBalanceTrackingService.getServiceStatus();
 
+    // Return the updated status
     return res.json({
       success: true,
       message: 'Monitoring service stopped',
       serviceStatus: updatedStatus.status
     });
   } catch (error) {
-    logApi.error('Error stopping wallet monitoring service', error);
+    logApi.error(`${serviceColors.balanceTracking.error}Error stopping wallet monitoring service${fancyColors.RESET}`, error);
     return res.status(500).json({ 
       success: false,
       error: 'Failed to stop monitoring service',

@@ -25,14 +25,21 @@ import { SERVICE_NAMES, SERVICE_LAYERS, DEFAULT_CIRCUIT_BREAKER_CONFIG, getServi
 // Prisma
 import { prisma } from '../../config/prisma.js';
 // Solana Engine
-import { jupiterClient, getJupiterClient } from '../solana-engine/jupiter-client.js';
+import { 
+  jupiterClient, 
+  //getJupiterClient
+} from '../solana-engine/jupiter-client.js';
 import { heliusClient } from '../solana-engine/helius-client.js';
 import dexScreenerCollector from '../token-enrichment/collectors/dexScreenerCollector.js';
 // Logger and Progress Utilities
 import { logApi } from '../../utils/logger-suite/logger.js';
-import { fancyColors, serviceColors, serviceSpecificColors } from '../../utils/colors.js';
+import { 
+  fancyColors, 
+  serviceSpecificColors, 
+  //serviceColors, 
+} from '../../utils/colors.js';
 import { createBatchProgress } from '../../utils/logger-suite/batch-progress.js';
-// Token Refresh Scheduler components
+// Token Refresh Scheduler key components
 import PriorityQueue from './priority-queue.js';
 import TokenRankAnalyzer from './rank-analyzer.js';
 import BatchOptimizer from './batch-optimizer.js';
@@ -1517,8 +1524,8 @@ class TokenRefreshScheduler extends BaseService {
   }
 }
 
-// Token refresh scheduler helper modules -----------------------
-
-// Create and export the token refresh scheduler singleton
+// Create the token refresh scheduler singleton
 const tokenRefreshScheduler = new TokenRefreshScheduler();
+
+// Export the token refresh scheduler singleton
 export default tokenRefreshScheduler;

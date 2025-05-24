@@ -1,8 +1,8 @@
-// services/market-data/tokenDetectionService.js
+// services/token-detection-service/token-detection-service.js
 
 /**
  * Token Detection Service
- * @module services/market-data/tokenDetectionService
+ * @module services/token-detection-service/token-detection-service
  * 
  * @description A service that continuously monitors for new tokens on the Solana blockchain.
  * 
@@ -10,9 +10,9 @@
  * from Jupiter API and schedules processing of new tokens.
  * 
  * @author BranchManager69
- * @version 1.9.0
+ * @version 2.0.0
  * @created 2025-04-10
- * @updated 2025-05-02
+ * @updated 2025-05-24
  */
 
 // Service Suite
@@ -26,10 +26,10 @@ import { logApi } from '../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../utils/colors.js';
 // Jupiter Client
 import { getJupiterClient } from '../solana-engine/jupiter-client.js';
-// Token List Delta Tracker
-import tokenListDeltaTracker from './tokenListDeltaTracker.js';
-// Market Data Repository
-import marketDataRepository from './marketDataRepository.js';
+// Token List Delta Tracker (still in market-data folder)
+import tokenListDeltaTracker from '../market-data/tokenListDeltaTracker.js';
+// Market Data Repository (still in market-data folder)  
+import marketDataRepository from '../market-data/marketDataRepository.js';
 // Database
 import { prisma } from '../../config/prisma.js';
 

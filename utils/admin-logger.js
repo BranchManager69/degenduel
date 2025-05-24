@@ -1,7 +1,25 @@
+// utils/admin-logger.js
+
+/**
+ * Admin Logger util
+ * 
+ * @description: This class is used to log admin actions to the database and to the console.
+ *
+ * @author: BranchManager69
+ * @version: 2.0.0
+ * @created: 2025-02-14
+ * @updated: 2025-05-24
+ */
+
+import os from 'os';
 import prisma from '../config/prisma.js';
 import { logApi } from './logger-suite/logger.js';
-import os from 'os';
 
+/**
+ * AdminLogger class
+ * 
+ * This class is used to log admin actions to the database and to the console.
+ */
 class AdminLogger {
     static async logAction(adminAddress, action, details = {}, context = {}) {
         try {

@@ -14,9 +14,9 @@
  * [BECAUSE THE MESS I AM NOW SOLVING WILL NEVER BE ALLOWED TO HAPPEN AGAIN!!!!!!!!!]
  * 
  * @author BranchManager69
- * @version 1.9.0
+ * @version 1.9.1
  * @created 2025-04-10
- * @updated 2025-05-02
+ * @updated 2025-05-24
  */
 
 // Default circuit breaker configuration
@@ -33,38 +33,37 @@ export const DEFAULT_CIRCUIT_BREAKER_CONFIG = {
 
 export const SERVICE_NAMES = {
     // Data Layer Services
-    // TOKEN_SYNC has been permanently removed
-    // TOKEN_WHITELIST is deprecated - using token.is_active flag instead
-    MARKET_DATA: 'market_data_service',
-    TOKEN_WHITELIST: 'token_whitelist_service', // Kept for backwards compatibility
-    TOKEN_REFRESH_SCHEDULER: 'token_refresh_scheduler',
-    TOKEN_DEX_DATA: 'token_dex_data_service', // DEX pool data service
+    // TOKEN_SYNC has been permanently removed - not needed
+    // TOKEN_WHITELIST is deprecated - using token.is_active flag from db instead
+    MARKET_DATA: 'market_data_service', // Market Data service
+    TOKEN_REFRESH_SCHEDULER: 'token_refresh_scheduler', // Token Refresh Scheduler service
+    TOKEN_DEX_DATA: 'token_dex_data_service', // DexScreener token data service
     TOKEN_DETECTION: 'token_detection_service', // New token detection service
     TOKEN_ENRICHMENT: 'token_enrichment_service', // New token enrichment service
-    JUPITER_CLIENT: 'jupiter_client', // Jupiter API client for market data
-    TOKEN_ACTIVATION: 'token_activation_service', // <-- ADDED NEW SERVICE NAME
+    TOKEN_ACTIVATION: 'token_activation_service', // Token Activation service
+    JUPITER_CLIENT: 'jupiter_client', // Jupiter API client (???)
 
     // Contest Layer Services
-    CONTEST_EVALUATION: 'contest_evaluation_service',
-    CONTEST_SCHEDULER: 'ContestSchedulerService',
-    ACHIEVEMENT: 'achievement_service',
-    REFERRAL: 'referral_service',
-    LEVELING: 'leveling_service',
-    PORTFOLIO_SNAPSHOT: 'portfolio_snapshot_service', // Added new service name
+    CONTEST_EVALUATION: 'contest_evaluation_service', // Contest Evaluation service
+    CONTEST_SCHEDULER: 'ContestSchedulerService', // Contest Scheduler service
+    PORTFOLIO_SNAPSHOT: 'portfolio_snapshot_service', // Portfolio Snapshot service
+    ACHIEVEMENT: 'achievement_service', // Achievement service
+    REFERRAL: 'referral_service', // Referral service
+    LEVELING: 'leveling_service', // Leveling service
 
     // Wallet Layer Services
-    CONTEST_WALLET: 'contest_wallet_service',
-    WALLET_RAKE: 'wallet_rake_service',
-    ADMIN_WALLET: 'admin_wallet_service',
-    USER_BALANCE_TRACKING: 'user_balance_tracking_service',
-    VANITY_WALLET: 'vanity_wallet_service', // New Vanity Wallet service
-    //// WALLET_SERVICE: 'wallet_service',
-    //// WALLET_GENERATOR: 'wallet_generator_service',
+    CONTEST_WALLET: 'contest_wallet_service', // Contest Wallet service
+    //WALLET_RAKE: 'wallet_rake_service', // deprecated - not needed
+    ADMIN_WALLET: 'admin_wallet_service', // Admin Wallet service
+    USER_BALANCE_TRACKING: 'user_balance_tracking_service', // User Balance Tracking service
+    VANITY_WALLET: 'vanity_wallet_service', // Vanity Wallet service
+    //// WALLET_SERVICE: 'wallet_service', // deprecated - wtf even is a "wallet service" lmao?
+    //// WALLET_GENERATOR: 'wallet_generator_service', // deprecated - replaced by other services
 
     // Infrastructure Layer Services
     LIQUIDITY: 'liquidity_service',
-    WALLET_GENERATOR: 'wallet_generator_service',
-    SOLANA: 'solana_service', // New Solana service
+    // WALLET_GENERATOR: 'wallet_generator_service', // REMOVED - was over-engineered and barely used
+    //SOLANA: 'solana_service', // New Solana service
     SOLANA_ENGINE: 'solana_engine_service', // Solana Engine service
     SYSTEM_SETTINGS: 'system_settings_service', // New System Settings service
     AI_SERVICE: 'ai_service', // AI Analysis and Processing Service
@@ -175,7 +174,7 @@ export const SERVICE_METADATA = {
         description: 'Automatic contest creation and scheduling',
         updateFrequency: '1h',
         criticalLevel: 'medium',
-        dependencies: [SERVICE_NAMES.WALLET_GENERATOR]
+        dependencies: [] // REMOVED dependency on WALLET_GENERATOR since that service was deleted
     },
     [SERVICE_NAMES.ACHIEVEMENT]: {
         layer: SERVICE_LAYERS.CONTEST,
@@ -217,6 +216,7 @@ export const SERVICE_METADATA = {
         criticalLevel: 'critical',
         dependencies: [] // Removing hard dependency on CONTEST_EVALUATION
     },
+    /* REMOVED: WALLET_RAKE service was deleted
     [SERVICE_NAMES.WALLET_RAKE]: {
         layer: SERVICE_LAYERS.WALLET,
         description: 'Post-contest fund collection',
@@ -224,6 +224,7 @@ export const SERVICE_METADATA = {
         criticalLevel: 'high',
         dependencies: [SERVICE_NAMES.CONTEST_WALLET]
     },
+    */
     [SERVICE_NAMES.ADMIN_WALLET]: {
         layer: SERVICE_LAYERS.WALLET,
         description: 'Administrative wallet operations',
@@ -252,8 +253,9 @@ export const SERVICE_METADATA = {
         description: 'Test user SOL distribution and recovery',
         updateFrequency: '1h',
         criticalLevel: 'medium',
-        dependencies: [SERVICE_NAMES.WALLET_GENERATOR]
+        dependencies: [] // REMOVED dependency on WALLET_GENERATOR since that service was deleted
     },
+    /* REMOVED: WALLET_GENERATOR service was deleted
     [SERVICE_NAMES.WALLET_GENERATOR]: {
         layer: SERVICE_LAYERS.INFRASTRUCTURE,
         description: 'Wallet generation and encryption',
@@ -261,8 +263,9 @@ export const SERVICE_METADATA = {
         criticalLevel: 'high',
         dependencies: []
     },
+    */
     
-    // New Solana service metadata
+    /* REMOVED: SOLANA service was deleted and replaced with SolanaEngine
     [SERVICE_NAMES.SOLANA]: {
         layer: SERVICE_LAYERS.INFRASTRUCTURE,
         description: 'Solana blockchain connectivity service',
@@ -270,7 +273,8 @@ export const SERVICE_METADATA = {
         criticalLevel: 'critical',
         dependencies: []
     },
-    
+    */
+
     // Solana Engine service metadata
     [SERVICE_NAMES.SOLANA_ENGINE]: {
         layer: SERVICE_LAYERS.INFRASTRUCTURE,
@@ -289,7 +293,7 @@ export const SERVICE_METADATA = {
         dependencies: []
     },
 
-    // New System Settings service metadata
+    // New System Settings service metadata (what???)
     [SERVICE_NAMES.SYSTEM_SETTINGS]: {
         layer: SERVICE_LAYERS.INFRASTRUCTURE,
         description: 'System settings management',
@@ -298,7 +302,7 @@ export const SERVICE_METADATA = {
         dependencies: []
     },
 
-    // Notification services metadata
+    // Notification services metadata (what??? This is NOT Discord Notification Service but rather *another* notification service? Hmm...)
     [SERVICE_NAMES.NOTIFICATION]: {
         layer: SERVICE_LAYERS.INFRASTRUCTURE,
         description: 'User notification service',
@@ -328,7 +332,7 @@ export const SERVICE_METADATA = {
     // Dialect service metadata
     [SERVICE_NAMES.DIALECT]: {
         layer: SERVICE_LAYERS.INFRASTRUCTURE,
-        description: 'Dialect integrations for Blinks (Solana Actions)',
+        description: 'Integration for Blinks (Solana Actions)',
         updateFrequency: 'on demand',
         criticalLevel: 'medium',
         dependencies: [SERVICE_NAMES.SOLANA_ENGINE]
@@ -343,6 +347,10 @@ export const SERVICE_METADATA = {
         dependencies: [] // No hard dependencies defined yet
     }
 
+    // (likely missing a handful of services)  
+    //
+    // Any new services should be added here
+    //
 };
 
 

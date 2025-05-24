@@ -14,10 +14,14 @@
  * @created 2025-05-10
  */
 
+// Prisma
+import prisma from '../../config/prisma.js';
+// WebSocket
+import { WebSocket } from 'ws';
+// Logger
 import { logApi } from '../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../utils/colors.js';
-import prisma from '../../config/prisma.js';
-import { WebSocket } from 'ws';
+// Config
 import { config } from '../../config/config.js';
 
 // Constants

@@ -1,6 +1,6 @@
 // Test script to verify token metadata refresh functionality
 import { PrismaClient } from '@prisma/client';
-import tokenDEXDataService from '../services/token-dex-data-service.js';
+import tokenDEXDataService from '../services/token-dex-data-service/index.js';
 import { logApi } from '../utils/logger-suite/logger.js';
 import '../utils/colors.js';  // Import colors for formatting
 import { config } from '../config/config.js';

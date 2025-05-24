@@ -14,30 +14,29 @@
  * Log files are stored in the /logs directory.
  */
 
-// Get environment from NODE_ENV - declaring before any references to ensure it's available
-const environment = process.env.NODE_ENV || 'production';
-
-import dotenv from "dotenv";
+// Prisma
+import prisma from '../../config/prisma.js';
 import chalk from "chalk";
 import path from "path";
 import winston from "winston";
 import "winston-daily-rotate-file";
 import { Logtail } from "@logtail/node";
 import { LogtailTransport } from "@logtail/winston";
+import { IPinfoWrapper } from 'node-ipinfo';
 import { Socket } from 'net';
 import { Stream } from 'stream';
-import { fancyColors, logColors, serviceColors } from '../colors.js';
-import axios from 'axios';
-import { IPinfoWrapper } from 'node-ipinfo';
+import { 
+  fancyColors, 
+  logColors, 
+  //serviceColors 
+} from '../colors.js';
 
 // Config
 import { config } from '../../config/config.js';
 
-// Import PrismaClient for service_logs database logging
-import prisma from '../../config/prisma.js';
-
-// Load environment variables
-dotenv.config();
+// Get env
+// >> use 'environment' instead of 'NODE_ENV' since it already exists 50+ times in this file (more unappealing than hacky; this works fine)
+const environment = config.getEnvironment();
 
 // Logtail Config
 const LOGTAIL_TOKEN = config.logtail.token;
@@ -115,7 +114,7 @@ export const getIpInfo = async (ip) => {
 };
 
 // Helper function to handle circular references in objects
-// (currently not used)
+// (not used)
 const getCircularReplacer = () => {
   const seen = new WeakSet();
   return (key, value) => {
@@ -130,7 +129,7 @@ const getCircularReplacer = () => {
 };
 
 // Custom format that safely stringifies objects
-// (currently not used)
+// (not used)
 const safeStringify = (obj) => {
   const seen = new WeakSet();
   return JSON.stringify(obj, (key, value) => {
@@ -1070,7 +1069,8 @@ const logtail = new Logtail(LOGTAIL_TOKEN, {
   // Add environment as context to all logs
   contextMetadata: {
     environment,
-    port: process.env.PORT,
+    ////port: process.env.PORT,
+    port: config.port,
     nodeVersion: process.version,
     appName: 'DegenDuel API'
   }
@@ -1340,7 +1340,7 @@ const writeToServiceLogs = async (service, level, message, details = {}, metadat
         duration_ms: durationMs,
         related_entity: relatedEntity,
         environment,
-        instance_id: process.env.INSTANCE_ID || null
+        instance_id: null
       }
     });
   } catch (error) {
@@ -1670,7 +1670,7 @@ logApi.analytics = {
   },
 };
 
-// Add the IP info lookup functionality
+// Add IP info lookup functionality
 logApi.getIpInfo = getIpInfo;
 
 // Expose service logs API directly

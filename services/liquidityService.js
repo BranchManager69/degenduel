@@ -15,11 +15,11 @@ import { fancyColors } from '../utils/colors.js';
 // ** Service Manager **
 import serviceManager from '../utils/service-suite/service-manager.js';
 import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js';
-import walletGenerationService from './walletGenerationService.js';
-import { solanaEngine } from './solana-engine/index.js'; // Assuming solanaEngine is correctly imported
+import serviceEvents from '../utils/service-suite/service-events.js';
 import { generateKeyPair as generateKeyPairV2 } from '@solana/keys';
 import { getAddressFromPublicKey } from '@solana/addresses';
 import crypto from 'crypto'; // For encryption
+import { solanaEngine } from './solana-engine/index.js';
 
 const LIQUIDITY_CONFIG = {
     name: SERVICE_NAMES.LIQUIDITY,
@@ -72,13 +72,6 @@ class LiquidityService extends BaseService {
                 average_operation_time_ms: 0,
                 last_operation_time_ms: 0,
                 average_transfer_time_ms: 0
-            },
-            dependencies: {
-                walletGenerator: {
-                    status: 'unknown',
-                    lastCheck: null,
-                    errors: 0
-                }
             }
         };
 
@@ -172,9 +165,6 @@ class LiquidityService extends BaseService {
                 return false; // Skip initialization
             }
             
-            const walletGenStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.WALLET_GENERATOR);
-            if (!walletGenStatus) throw ServiceError.initialization('Wallet Generator Service not healthy');
-
             // Test connection via solanaEngine
             await solanaEngine.executeConnectionMethod('getLatestBlockhash');
             logApi.info(`${fancyColors.MAGENTA}[liquidityService]${fancyColors.RESET} Connection test via solanaEngine successful.`);
@@ -406,18 +396,6 @@ class LiquidityService extends BaseService {
         const startTime = Date.now();
         
         try {
-            // Check dependency health
-            const walletGenStatus = await serviceManager.checkServiceHealth(SERVICE_NAMES.WALLET_GENERATOR);
-            this.liquidityStats.dependencies.walletGenerator = {
-                status: walletGenStatus ? 'healthy' : 'unhealthy',
-                lastCheck: new Date().toISOString(),
-                errors: walletGenStatus ? 0 : this.liquidityStats.dependencies.walletGenerator.errors + 1
-            };
-
-            if (!walletGenStatus) {
-                throw ServiceError.dependency('Wallet Generator Service unhealthy');
-            }
-
             // Check if we have a wallet configured
             if (!this.wallet) {
                 // No wallet, operate in degraded mode

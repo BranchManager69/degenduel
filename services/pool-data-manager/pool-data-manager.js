@@ -1,6 +1,21 @@
 // services/pool-data-manager/pool-data-manager.js
 
 /**
+ * ⚠️ DEPRECATED - DO NOT USE ⚠️
+ * 
+ * This service has MASSIVE side effects that will interfere with token management:
+ * - Auto-creates token records in database bypassing approval workflow
+ * - Overwrites token refresh tracking and metadata 
+ * - Sets arbitrary priority scores and activation flags
+ * - Emits service events that confuse other systems
+ * 
+ * RECOMMENDATION: Use individual DexScreener API calls instead of this service.
+ * This was designed before proper token management workflows existed.
+ * 
+ * PROBLEM: Lines 388-445 modify tokens table without permission
+ */
+
+/**
  * PoolDataManager
  * 
  * A reactive, on-demand manager for token pools that ensures pool data

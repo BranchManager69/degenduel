@@ -7,18 +7,20 @@
  */
 
 // Master Circuit Breaker
-import { createCircuitBreakerWebSocket } from '../../websocket/circuit-breaker-ws.js';
 import prisma from '../../config/prisma.js';
 import { logApi } from '../logger-suite/logger.js';
-import { getCircuitBreakerConfig, isHealthy, shouldReset } from './circuit-breaker-config.js';
-import { config } from '../../config/config.js';
+import { 
+    isHealthy, shouldReset,
+    //getCircuitBreakerConfig, 
+} from './circuit-breaker-config.js';
+import { createCircuitBreakerWebSocket } from '../../websocket/circuit-breaker-ws.js';
 import { 
     SERVICE_NAMES, 
     SERVICE_LAYERS, 
     getServiceMetadata,
     getServiceDependencies,
+    validateDependencyChain,
     //getServiceCriticalLevel,
-    validateDependencyChain 
 } from './service-constants.js';
 //import { ServiceError } from './service-error.js';
 import serviceEvents from './service-events.js';
@@ -28,6 +30,10 @@ import AdminLogger from '../admin-logger.js';
 import SystemSettingsUtil from '../system-settings-util.js';
 import { fancyColors } from '../colors.js';
 
+// Config
+import { config } from '../../config/config.js';
+
+// Manual debug modes
 const VERBOSE_SERVICE_INIT = false;
 const DEBUG_SERVICE_REGISTRATION = process.env.DEBUG_SERVICE_REGISTRATION === 'true' || false;
 
@@ -717,7 +723,6 @@ class ServiceManager {
                         (serviceName === SERVICE_NAMES.LEVELING && !config.services.leveling_service) ||
                         (serviceName === SERVICE_NAMES.CONTEST_WALLET && !config.services.contest_wallet_service) ||
                         (serviceName === SERVICE_NAMES.ADMIN_WALLET && !config.services.admin_wallet_service) ||
-                        (serviceName === SERVICE_NAMES.WALLET_GENERATOR && !config.services.wallet_generator_service) ||
                         (serviceName === SERVICE_NAMES.SOLANA && !config.services.solana_service)) {
                         
                         // For intentionally disabled services, log as warning instead of error

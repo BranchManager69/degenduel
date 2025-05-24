@@ -1,6 +1,19 @@
 // services/token-dex-data-service.js
 
 /**
+ * ⚠️ DEPRECATED - DISABLE THIS SERVICE ⚠️
+ * 
+ * This service is currently failing with database connection pool timeouts 
+ * and circuit breaker protection. It's causing excessive database load.
+ * 
+ * RECOMMENDATION: Set token_dex_data_service: false in config/config.js
+ * production profile to disable. Use individual token pool fetching instead.
+ * 
+ * ISSUE: Bulk token processing overwhelms database connection pool
+ * STATUS: Circuit breaker is permanently open due to repeated failures
+ */
+
+/**
  * TokenDEXDataService
  * 
  * This service is responsible for fetching and updating token DEX data
@@ -8,17 +21,20 @@
  * the token refresh scheduler to regularly update token pool data.
  */
 
-import { BaseService } from '../utils/service-suite/base-service.js';
-import { ServiceError } from '../utils/service-suite/service-error.js'; // why unused?
-import { logApi } from '../utils/logger-suite/logger.js';
-import prisma from '../config/prisma.js';
-import serviceManager from '../utils/service-suite/service-manager.js'; // why unused?
-import { SERVICE_NAMES, getServiceMetadata } from '../utils/service-suite/service-constants.js'; // why getServiceMetadata unused?
-import { fancyColors, serviceSpecificColors } from '../utils/colors.js';
-import serviceEvents from '../utils/service-suite/service-events.js';
-import { config } from '../config/config.js';
-import { dexscreenerClient } from './solana-engine/dexscreener-client.js';
-import solanaEngine from './solana-engine/index.js'; // why unused?
+import { BaseService } from '../../utils/service-suite/base-service.js';
+import { logApi } from '../../utils/logger-suite/logger.js';
+import prisma from '../../config/prisma.js';
+import {
+  SERVICE_NAMES, 
+  //getServiceMetadata
+} from '../../utils/service-suite/service-constants.js'; // why getServiceMetadata unused?
+import { fancyColors, serviceSpecificColors } from '../../utils/colors.js';
+import serviceEvents from '../../utils/service-suite/service-events.js';
+import { config } from '../../config/config.js';
+import { dexscreenerClient } from '../solana-engine/dexscreener-client.js';
+//import serviceManager from '../../utils/service-suite/service-manager.js'; // why unused?
+//import { ServiceError } from '../../utils/service-suite/service-error.js'; // why unused?
+//import solanaEngine from '../solana-engine/index.js'; // why unused?
 
 // Formatting helpers for consistent logging
 const formatLog = {

@@ -734,12 +734,12 @@ const config = {
       leveling_service: true,
       contest_wallet_service: true,
       admin_wallet_service: true,
-      wallet_generator_service: true,
+      wallet_generator_service: false, // REMOVED - service was deleted (over-engineered and barely used)
       vanity_wallet_service: true, // Vanity Wallet Service
       solana_service: true,
       solana_engine_service: true, // New SolanaEngine service
       token_refresh_scheduler: true, // Main scheduler service
-      token_dex_data_service: false, // DEX pool data service
+      token_dex_data_service: false, // DEPRECATED - Disabled due to database connection pool issues and circuit breaker failures
       token_detection_service: true, // New token detection service
       token_enrichment_service: false, // ???
       token_activation_service: true, // ENABLED - manages is_active flag
@@ -972,12 +972,12 @@ const config = {
       return profile.admin_wallet_service;
     },
 
-    // WALLET GENERATOR SERVICE
-    get wallet_generator_service() {
-      const profile = config.service_profiles[config.services.active_profile] || 
-                     config.service_profiles.development;
-      return profile.wallet_generator_service;
-    },
+    // WALLET GENERATOR SERVICE - REMOVED (service was deleted)
+    // get wallet_generator_service() {
+    //   const profile = config.service_profiles[config.services.active_profile] || 
+    //                  config.service_profiles.development;
+    //   return profile.wallet_generator_service;
+    // },
 
     // AI SERVICE
     get ai_service() {
