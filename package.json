@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "// MAY 2025 SCRIPTS": "================================================================================================================",
+    "analyze-db": "node scripts/_important/analyze-db/analyze_db.js",
+    "backfill-token-data": "node scripts/_important/backfill-token-data/backfill_token_data.js",
     "make:admin:wallet": "node services/admin-wallet/utils/populate_managed_wallets.mjs --owner-wallet BPuRhkeCkor7DxMrcPVsB4AdW6Pmp5oACjVzpPb72Mhp --count 10",
     "findbad": "./analyze_routes.sh --help",
     "findbad:old": "./analyze_routes.sh --sort date --reverse",

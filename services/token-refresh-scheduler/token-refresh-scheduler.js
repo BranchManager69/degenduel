@@ -159,6 +159,7 @@ class TokenRefreshScheduler extends BaseService {
 
     // Scheduler state
     this.isRunning = false;              // Whether scheduler is actively running
+    this.cycleInProgress = false;        // Whether a scheduler cycle is currently running
     this.schedulerInterval = null;       // Main scheduling interval
     this.metricsInterval = null;         // Metrics collection interval
     
@@ -605,10 +606,7 @@ class TokenRefreshScheduler extends BaseService {
       clearInterval(this.schedulerInterval);
     }
     
-    // Run immediately
-    await this.runSchedulerCycle();
-    
-    // Set up interval for scheduler cycles
+    // Set up interval for scheduler cycles (first cycle will run naturally within 5 seconds)
     this.schedulerInterval = setInterval(
       this.runSchedulerCycle.bind(this),
       5000 // Check for due tokens every 5 seconds
@@ -650,6 +648,17 @@ class TokenRefreshScheduler extends BaseService {
   async runSchedulerCycle() {
     try {
       if (!this.isRunning) return;
+      
+      // Prevent concurrent cycles from running
+      if (this.cycleInProgress) {
+        if (this.debugMode) {
+          logApi.info(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Previous cycle still in progress, skipping this interval`);
+        }
+        return;
+      }
+      
+      // Mark cycle as in progress
+      this.cycleInProgress = true;
       
       // Check if the scheduler is initialized properly
       if (!this.isInitialized) {
@@ -855,6 +864,9 @@ class TokenRefreshScheduler extends BaseService {
         logApi.warn(`${fancyColors.GOLD}[TokenRefreshSched]${fancyColors.RESET} Too many failures, backing off for ${backoffMs}ms`);
         await new Promise(resolve => setTimeout(resolve, backoffMs));
       }
+    } finally {
+      // Always reset the cycle flag, regardless of success or failure
+      this.cycleInProgress = false;
     }
   }
 

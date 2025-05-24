@@ -359,114 +359,28 @@ class TokenRefreshService extends BaseService {
   
   /**
    * Perform the service's main operation 
+   * 
+   * NOTE: This wrapper service no longer performs periodic operations to avoid
+   * conflicts with the main TokenRefreshScheduler. The main scheduler handles
+   * all token refresh operations via its own 5-second interval cycle.
    */
   async performOperation() {
     try {
       // Check if service is disabled in the current profile
-      // Use the imported config object
       if (!config.services.token_refresh_scheduler) {
-        // Just log info and return success
-        logApi.debug(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} ${fancyColors.YELLOW}Token refresh scheduler is disabled in the current service profile, nothing to do${fancyColors.RESET}`);
+        logApi.debug(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} ${fancyColors.YELLOW}Token refresh scheduler is disabled in the current service profile${fancyColors.RESET}`);
         return true;
       }
-    
-      // First, check if the scheduler exists and has basic properties
-      if (!tokenRefreshScheduler) {
-        throw new Error(`Scheduler not available: tokenRefreshScheduler is null or undefined`);
+      
+      // Simple health check - just verify the scheduler exists and is initialized
+      if (!tokenRefreshScheduler || !tokenRefreshScheduler.isInitialized) {
+        logApi.debug(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} ${fancyColors.YELLOW}Main scheduler not ready${fancyColors.RESET}`);
+        return true; // Don't interfere - let the main scheduler handle its own lifecycle
       }
       
-      // Check if the scheduler appears to be properly defined
-      if (typeof tokenRefreshScheduler.initialize !== 'function' || 
-          typeof tokenRefreshScheduler.start !== 'function') {
-        throw new Error(`Scheduler appears corrupted: essential functions missing`);
-      }
+      // Log that the main scheduler is handling operations
+      logApi.debug(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Main scheduler is operational (${tokenRefreshScheduler.isRunning ? 'running' : 'stopped'})`);
       
-      // If scheduler is not initialized, try initializing it
-      if (!tokenRefreshScheduler.isInitialized) {
-        logApi.warn(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} ${fancyColors.YELLOW}Scheduler not initialized, attempting to initialize...${fancyColors.RESET}`);
-        try {
-          // Try re-initializing
-          await tokenRefreshScheduler.initialize();
-        } catch (initError) {
-          throw new Error(`Scheduler initialization failed: ${initError.message}`);
-        }
-      }
-      
-      // Get scheduler metrics to verify health
-      const metrics = await getSchedulerMetrics();
-      
-      if (metrics.error) {
-        // Instead of immediately throwing, try to recover
-        logApi.warn(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} ${fancyColors.YELLOW}Scheduler health check issue: ${metrics.error}. Attempting recovery...${fancyColors.RESET}`);
-        
-        // Try initializing from scratch
-        const initResult = await initializeTokenRefresh();
-        if (!initResult) {
-          throw new Error(`Scheduler health check failed: ${metrics.error} (recovery failed)`);
-        }
-        
-        // Re-check metrics after recovery
-        const recoveryMetrics = await getSchedulerMetrics();
-        if (recoveryMetrics.error) {
-          throw new Error(`Scheduler health check still failing after recovery: ${recoveryMetrics.error}`);
-        }
-      }
-      
-      // Verify that token scheduler is operating correctly
-      if (!metrics.scheduler || metrics.scheduler.isRunning === false) {
-        logApi.info(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Restarting token refresh scheduler`);
-        // Try to restart the scheduler if it's not running
-        await tokenRefreshScheduler.start();
-      } /*
-      // NO LONGER NEEDED:
-      else {
-        // Run a token refresh cycle to verify system is working
-        // 1.) Find highest priority tokens to refresh as a test
-        const tokens = await prisma.tokens.findMany({
-          where: { is_active: true },
-          orderBy: [
-            { priority_score: 'desc' }
-          ],
-          take: 3,
-          select: {
-            id: true,
-            address: true,
-            symbol: true,
-          }
-        });
-        // 2.) Execute a token refresh cycle to verify system is working
-        if (tokens && tokens.length > 0) {
-          const addresses = tokens.map(t => t.address);
-          logApi.info(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Performing test refresh of ${tokens.length} tokens`);
-          
-          // Process a batch using the scheduler directly
-          const batch = tokens.map(token => ({
-            id: token.id,
-            address: token.address,
-            symbol: token.symbol,
-            priority: 1000,
-            nextRefreshTime: Date.now(),
-            interval: 30
-          }));
-          
-          // Check if processBatch exists
-          if (typeof tokenRefreshScheduler.processBatch !== 'function') {
-            logApi.warn(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Scheduler processBatch method not available, skipping test refresh`);
-          } else if (tokenRefreshScheduler.isRunning) {
-            // Process the batch through the scheduler
-            try {
-              await tokenRefreshScheduler.processBatch(batch);
-              logApi.debug(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Test refresh completed successfully`);
-            } catch (batchError) {
-              logApi.warn(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Test refresh failed, but service is still operational:`, batchError);
-              // Don't throw here - the service can still operate even if test refresh fails
-            }
-          }
-        }
-        
-      }
-      logApi.info(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} Operation completed successfully`);
-      */
       return true;
     } catch (error) {
       logApi.error(`${fancyColors.GOLD}[TokenRefreshService]${fancyColors.RESET} ${fancyColors.RED}Operation error:${fancyColors.RESET}`, error);

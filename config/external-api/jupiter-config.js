@@ -15,8 +15,8 @@ if (!JUPITER_API_KEY) {
 
 // Base URLs for different Jupiter API endpoints
 // Updated per March 2025 API Gateway changes
-const API_KEY = JUPITER_API_KEY ? 'api' : 'lite-api'; // Use api.jup.ag for pro/paid users, lite-api.jup.ag for free users
-const JUPITER_BASE_URL = `https://${API_KEY}.jup.ag`;
+const API_SUBDOMAIN = JUPITER_API_KEY ? 'api' : 'lite-api'; // Use api.jup.ag for pro/paid users, lite-api.jup.ag for free users
+const JUPITER_BASE_URL = `https://${API_SUBDOMAIN}.jup.ag`;
 const JUPITER_SWAP_API_URL = `${JUPITER_BASE_URL}/swap/v1`;
 const JUPITER_PRICE_API_URL = `${JUPITER_BASE_URL}/price/v2`;
 const JUPITER_TOKEN_API_URL = `${JUPITER_BASE_URL}/tokens/v1`;
@@ -54,10 +54,18 @@ const websocket = {
 };
 
 // Headers for API requests
-const getHeaders = () => ({
-  'Content-Type': 'application/json',
-  'Authorization': JUPITER_API_KEY ? `Bearer ${JUPITER_API_KEY}` : undefined,
-});
+const getHeaders = () => {
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+  
+  // Only add Authorization header if we have a valid API key and are using the paid endpoint
+  if (JUPITER_API_KEY && JUPITER_API_KEY.trim().length > 0) {
+    headers.Authorization = `Bearer ${JUPITER_API_KEY}`;
+  }
+  
+  return headers;
+};
 
 // Rate limiting configuration
 const rateLimit = {
@@ -69,7 +77,7 @@ const rateLimit = {
   initialBackoffMs: 1000, // ms for initial backoff (adjusted from 2000ms for faster first retry)
   maxBackoffMs: 30000, // Maximum backoff time (30s)
   backoffFactor: 2.0, // Exponential backoff multiplier (for reference, current client logic doubles)
-  maxRetries: 1, // Max number of retries for a failed batch request (1 initial + 1 retry)
+  maxRetries: 0, // No retries - scheduler runs every 5s so failed tokens will be retried in next cycle
 };
 
 // Export the Jupiter configuration

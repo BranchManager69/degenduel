@@ -1359,12 +1359,13 @@ export async function handleCommand(ws, message, server) {
  * @param {Object} server - The unified WebSocket server instance
  */
 export async function sendInitialData(ws, topic, server) {
+  // Normalize the topic to support both hyphenated and underscore formats
+  const normalizedTopic = normalizeTopic(topic);
+  
+  // Add scope-level declaration for this function to avoid reference errors in the catch block
+  let topicForLogs = normalizedTopic;
+  
   try {
-    // Normalize the topic to support both hyphenated and underscore formats
-    const normalizedTopic = normalizeTopic(topic);
-
-    // Add scope-level declaration for this function to avoid reference errors in the catch block
-    let topicForLogs = normalizedTopic;
 
     switch (normalizedTopic) {
       case TOPICS.MARKET_DATA:

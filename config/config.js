@@ -413,6 +413,15 @@ const config = {
     },
   },
 
+  // Jupiter API configuration
+  jupiter: {
+    prices: {
+      maxRetries: 0, // No retries - scheduler runs every 5s so failed tokens will be retried in next cycle
+      batchSize: 100, // Max tokens per batch request
+      delayBetweenBatches: 250, // ms delay between batches
+    },
+  },
+
   // Service testing configuration
   service_test: {
     contest_wallet_self_test: process.env.CONTEST_WALLET_SELF_TEST === 'true',

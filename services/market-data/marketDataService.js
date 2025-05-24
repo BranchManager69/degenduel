@@ -774,6 +774,88 @@ class MarketDataService extends BaseService {
         }
     }
 
+    // Get tokens with optional filters, pagination, and ordering
+    async getTokens(filters = {}, options = {}) {
+        try {
+            const startTime = Date.now();
+            await this.checkServiceHealth();
+            
+            // Set defaults for options
+            const {
+                limit = 100,
+                offset = 0,
+                orderBy = { updated_at: 'desc' }
+            } = options;
+            
+            // Build where clause from filters
+            const where = {};
+            
+            if (filters.symbol) {
+                where.symbol = {
+                    contains: filters.symbol,
+                    mode: 'insensitive'
+                };
+            }
+            
+            if (filters.name) {
+                where.name = {
+                    contains: filters.name,
+                    mode: 'insensitive'
+                };
+            }
+            
+            if (filters.hasPrice) {
+                where.token_prices = {
+                    price: { not: null }
+                };
+            }
+            
+            if (filters.hasMarketCap) {
+                where.token_prices = {
+                    ...where.token_prices,
+                    market_cap: { not: null }
+                };
+            }
+            
+            if (filters.minMarketCap) {
+                where.token_prices = {
+                    ...where.token_prices,
+                    market_cap: { gte: filters.minMarketCap }
+                };
+            }
+            
+            if (filters.maxMarketCap) {
+                where.token_prices = {
+                    ...where.token_prices,
+                    market_cap: { lte: filters.maxMarketCap }
+                };
+            }
+            
+            // Query tokens with filters and pagination
+            const tokens = await prisma.tokens.findMany({
+                where,
+                include: {
+                    token_prices: true,
+                    token_socials: true,
+                    token_websites: true
+                },
+                orderBy,
+                take: limit,
+                skip: offset
+            });
+            
+            // Format tokens for API response
+            const formattedTokens = tokens.map(token => this.formatTokenData(token));
+            this.marketStats.performance.lastQueryTimeMs = Date.now() - startTime;
+            
+            return formattedTokens;
+        } catch (error) {
+            logApi.error(`${fancyColors.GOLD}[MktDataSvc]${fancyColors.RESET} ${fancyColors.RED}Error getting tokens with filters:${fancyColors.RESET}`, error);
+            await this.handleError(error);
+            return [];
+        }
+    }
+
     // Get token by symbol - direct query
     async getToken(symbol) {
         try {

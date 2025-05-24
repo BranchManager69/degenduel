@@ -10,19 +10,12 @@ import { config } from './config.js';
 // ⛔ REMOVED: import { websocketBypassMiddleware } from '../middleware/debugMiddleware.js';
 import { fancyColors } from '../utils/colors.js';
 
-// Load from config
+// Load Middleware Debug Mode from config (different from CORS_DEBUG_MODE)
 const LOG_EVERY_REQUEST = config.logging.request_logging !== false;
-
-// Whether to use verbose logging
 const VERBOSE_LOGGING = config.logging.verbose === true;
 
-// Middleware debug mode
-const MIDDLEWARE_DEBUG_MODE = false;
-
-// Game origin
-const gameOrigin = config.api_urls.game;
-const lobbyOrigin = config.api_urls.lobby;
-const reflectionsOrigin = config.api_urls.reflections;
+// CORS Debug Mode
+const CORS_DEBUG_MODE = false;
 
 // Master middleware config
 export function configureMiddleware(app) {
@@ -181,7 +174,9 @@ export function configureMiddleware(app) {
 
     // Skip for blinks API endpoints (handled by NGINX)
     if (req.path.startsWith('/api/blinks/')) {
-      logApi.info(`[CORS_DEBUG] Skipping CORS handling for blinks API: ${req.path}, Method: ${req.method}`);
+      if (CORS_DEBUG_MODE) {
+        logApi.info(`[CORS_DEBUG] Skipping CORS handling for blinks API: ${req.path}, Method: ${req.method}`);
+      }
       return next();
     }
 
@@ -205,11 +200,15 @@ export function configureMiddleware(app) {
       derivedFrom = 'req.headers.host';
     }
 
-    logApi.info(`[CORS_DEBUG] Evaluating origin: '${origin}', Derived from: '${derivedFrom}', Path: ${req.path}, Method: ${req.method}`);
+    if (CORS_DEBUG_MODE) {
+      logApi.info(`[CORS_DEBUG] Evaluating origin: '${origin}', Derived from: '${derivedFrom}', Path: ${req.path}, Method: ${req.method}`);
+    }
 
     const isOriginAllowed = (originToCheck) => {
       if (allowedOrigins.includes(originToCheck)) {
-        logApi.info(`[CORS_DEBUG] Origin '${originToCheck}' IS in allowedOrigins list.`);
+        if (CORS_DEBUG_MODE) {
+          logApi.info(`[CORS_DEBUG] Origin '${originToCheck}' IS in allowedOrigins list.`);
+        }
         return true;
       }
       if (originToCheck && (
@@ -218,21 +217,29 @@ export function configureMiddleware(app) {
           originToCheck.startsWith('https://localhost:') ||
           originToCheck.startsWith('https://127.0.0.1:')
       )) {
-        logApi.info(`[CORS_DEBUG] Origin '${originToCheck}' IS a localhost variant.`);
+        if (CORS_DEBUG_MODE) {
+          logApi.info(`[CORS_DEBUG] Origin '${originToCheck}' IS a localhost variant.`);
+        }
         return true;
       }
-      logApi.warn(`[CORS_DEBUG] Origin '${originToCheck}' NOT in allowedOrigins or localhost variants.`);
+      if (CORS_DEBUG_MODE) {
+        logApi.warn(`[CORS_DEBUG] Origin '${originToCheck}' NOT in allowedOrigins or localhost variants.`);
+      }
       return false;
     };
 
     if (origin && isOriginAllowed(origin)) {
       const existingAcao = res.getHeader('Access-Control-Allow-Origin');
-      logApi.info(`[CORS_DIAGNOSTIC] Before setHeader, current ACAO: ${existingAcao}, Origin to set: '${origin}'`);
+      if (CORS_DEBUG_MODE) {
+        logApi.info(`[CORS_DIAGNOSTIC] Before setHeader, current ACAO: ${existingAcao}, Origin to set: '${origin}'`);
+      }
 
       res.setHeader('Access-Control-Allow-Origin', origin);
 
       const newAcao = res.getHeader('Access-Control-Allow-Origin');
-      logApi.info(`[CORS_DIAGNOSTIC] After setHeader, new ACAO: ${newAcao}`);
+      if (CORS_DEBUG_MODE) {
+        logApi.info(`[CORS_DIAGNOSTIC] After setHeader, new ACAO: ${newAcao}`);
+      }
       res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Cache-Control,X-Wallet-Address,Accept,Origin');
       res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -242,7 +249,9 @@ export function configureMiddleware(app) {
     }
 
     if (req.method === 'OPTIONS') {
-      logApi.info(`[CORS_DEBUG] OPTIONS request for path: ${req.path}, origin: '${origin}'. Responding 204.`);
+      if (CORS_DEBUG_MODE) {
+        logApi.info(`[CORS_DEBUG] OPTIONS request for path: ${req.path}, origin: '${origin}'. Responding 204.`);
+      }
       return res.status(204).end();
     }
     next();
