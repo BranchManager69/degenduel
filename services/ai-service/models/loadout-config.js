@@ -85,7 +85,7 @@ const AI_SERVICE_CONFIG = {
           'solana_engine_service',
           'contest_scheduler_service',
           'token_monitoring_service',
-          'token_refresh_scheduler_service',
+          'token_refresh_scheduler',
           'admin_wallet_service',
           'ai_service',
           'contest_wallet_service',

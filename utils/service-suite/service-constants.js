@@ -37,7 +37,7 @@ export const SERVICE_NAMES = {
     // TOKEN_WHITELIST is deprecated - using token.is_active flag instead
     MARKET_DATA: 'market_data_service',
     TOKEN_WHITELIST: 'token_whitelist_service', // Kept for backwards compatibility
-    TOKEN_REFRESH_SCHEDULER: 'token_refresh_scheduler_service',
+    TOKEN_REFRESH_SCHEDULER: 'token_refresh_scheduler',
     TOKEN_DEX_DATA: 'token_dex_data_service', // DEX pool data service
     TOKEN_DETECTION: 'token_detection_service', // New token detection service
     TOKEN_ENRICHMENT: 'token_enrichment_service', // New token enrichment service

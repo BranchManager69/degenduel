@@ -42,7 +42,7 @@ import liquidityService from '../../services/liquidityService.js';
 // tokenSyncService has been permanently removed
 // tokenWhitelistService has been permanently disabled (using token.is_active flag instead)
 import marketDataService from '../../services/market-data/marketDataService.js';
-import tokenRefreshIntegration from '../../services/token-refresh-scheduler/token-refresh-integration.js';
+import tokenRefreshScheduler from '../../services/token-refresh-scheduler/token-refresh-scheduler.js';
 import tokenDEXDataService from '../../services/token-dex-data-service.js';
 import tokenDetectionService from '../../services/market-data/tokenDetectionService.js';
 // [the one below is brand new!]
@@ -217,9 +217,9 @@ class ServiceInitializer {
             
             // Register advanced token refresh scheduler if enabled in config
             if (config.services.token_refresh_scheduler) {
-                // Register the service directly (it's already a proper BaseService)
-                serviceManager.register(tokenRefreshIntegration, [SERVICE_NAMES.MARKET_DATA, SERVICE_NAMES.SOLANA_ENGINE]);
-                logApi.info(`${fancyColors.GREEN}Registered advanced token refresh scheduler${fancyColors.RESET}`);
+                // Register the main scheduler directly (single service approach)
+                serviceManager.register(tokenRefreshScheduler, [SERVICE_NAMES.MARKET_DATA, SERVICE_NAMES.SOLANA_ENGINE]);
+                logApi.info(`${fancyColors.GREEN}Registered main token refresh scheduler${fancyColors.RESET}`);
             } else {
                 logApi.info(`${fancyColors.YELLOW}Skipping registration of token_refresh_scheduler - disabled in config${fancyColors.RESET}`);
             }
@@ -524,7 +524,7 @@ class ServiceInitializer {
                 [SERVICE_NAMES.SOLANA_ENGINE]: 'solana_engine_service',
                 [SERVICE_NAMES.VANITY_WALLET]: 'vanity_wallet_service',
                 [SERVICE_NAMES.TOKEN_DEX_DATA]: 'token_dex_data_service',
-                [SERVICE_NAMES.TOKEN_REFRESH_SCHEDULER]: 'token_refresh_scheduler_service',
+                [SERVICE_NAMES.TOKEN_REFRESH_SCHEDULER]: 'token_refresh_scheduler',
                 [SERVICE_NAMES.TOKEN_DETECTION]: 'token_detection_service',
                 [SERVICE_NAMES.TOKEN_ENRICHMENT]: 'token_enrichment_service',
                 [SERVICE_NAMES.PORTFOLIO_SNAPSHOT]: 'portfolio_snapshot_service',

@@ -646,6 +646,8 @@ class TokenRefreshScheduler extends BaseService {
    * Run a single scheduler cycle
    */
   async runSchedulerCycle() {
+    let batchesStarted = false; // Track if we actually started processing batches
+    
     try {
       if (!this.isRunning) return;
       
@@ -787,6 +789,9 @@ class TokenRefreshScheduler extends BaseService {
       
       // Start the progress tracker
       progress.start();
+      
+      // Mark that we've started processing batches
+      batchesStarted = true;
 
       // Execute batches sequentially with proper rate limiting
       for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
@@ -865,8 +870,11 @@ class TokenRefreshScheduler extends BaseService {
         await new Promise(resolve => setTimeout(resolve, backoffMs));
       }
     } finally {
-      // Always reset the cycle flag, regardless of success or failure
-      this.cycleInProgress = false;
+      // Only reset the cycle flag if we actually started processing batches
+      // This prevents early returns from resetting the flag while batches are still running
+      if (batchesStarted) {
+        this.cycleInProgress = false;
+      }
     }
   }
 

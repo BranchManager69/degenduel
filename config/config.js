@@ -738,7 +738,7 @@ const config = {
       vanity_wallet_service: true, // Vanity Wallet Service
       solana_service: true,
       solana_engine_service: true, // New SolanaEngine service
-      token_refresh_scheduler_service: true, // Renamed key to underscore format
+      token_refresh_scheduler: true, // Main scheduler service
       token_dex_data_service: false, // DEX pool data service
       token_detection_service: true, // New token detection service
       token_enrichment_service: false, // ???
@@ -790,7 +790,7 @@ const config = {
       vanity_wallet_service: false, // Disable vanity wallet service in development
       solana_service: false, // [EDIT: DISABLED 4/24/25] Keep Solana service enabled in development for connection management
       solana_engine_service: false, // [EDIT: DISABLED 4/24/25] Keep SolanaEngine service enabled in development for testing
-      token_refresh_scheduler_service: false, // Renamed key to underscore format, kept disabled in dev
+      token_refresh_scheduler: false, // Main scheduler service, kept disabled in dev
       token_dex_data_service: false, // Disable DEX pool data service in development
       token_detection_service: false, // Disable token detection service in development
       token_enrichment_service: false, // Temporarily disable
@@ -1001,10 +1001,10 @@ const config = {
     },
 
     // TOKEN REFRESH SCHEDULER SERVICE
-    get token_refresh_scheduler() { // Renamed getter (removed _service suffix)
+    get token_refresh_scheduler() { // Main scheduler service
       const profile = config.service_profiles[config.services.active_profile] || 
                      config.service_profiles.development;
-      return profile.token_refresh_scheduler_service; // Access profile using the new underscore key
+      return profile.token_refresh_scheduler; // Access the correct profile key
     },
 
     // TOKEN DEX DATA SERVICE

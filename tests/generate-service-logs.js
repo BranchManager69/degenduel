@@ -62,7 +62,7 @@ const testEvents = {
   'admin_wallet_service': ['fund_transfer', 'balance_check', 'key_rotation', 'wallet_create'],
   'contest_wallet_service': ['prize_payout', 'entry_fee_collect', 'wallet_provision', 'balance_reconcile'],
   'market_data_service': ['price_update', 'volume_check', 'liquidity_calculation', 'token_rank_update'],
-  'token_refresh_scheduler_service': ['refresh_job_scheduled', 'priority_recalculation', 'batch_optimization'],
+      'token_refresh_scheduler': ['refresh_job_scheduled', 'priority_recalculation', 'batch_optimization'],
   'default': ['system_check', 'task_scheduled', 'operation_complete', 'heartbeat']
 };
 

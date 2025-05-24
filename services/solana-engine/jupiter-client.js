@@ -174,7 +174,7 @@ class PriceService extends JupiterBase {
     this.priceUpdateCallbacks = [];
     this.refreshInterval = config.jupiter?.prices?.refreshIntervalMs || 60000; // Default 1 minute
     this.batchSize = config.jupiter?.prices?.batchSize || 90; // DEGENS: Changed default from 20 to 90
-    this.maxRetries = config.jupiter?.prices?.maxRetries || 3;
+    this.maxRetries = 0; // No retries - scheduler runs every 5s so failed tokens will be retried in next cycle
     this.retryDelayMs = config.jupiter?.prices?.retryDelayMs || 1000;
     this.activeFetches = new Set(); // Track active fetches to prevent overlap
 
