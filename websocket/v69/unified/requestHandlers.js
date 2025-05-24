@@ -23,7 +23,7 @@ import { DDWebSocketActions } from '@branchmanager69/degenduel-shared';
 // The 'Contest Service' was designed as a service but has since been converted 
 // to a module that exports functions. This is because the service was not 
 // properly registering as a service, so it may not be available to other services.
-import { joinContest, createContest, getContestById, getAllContests, getAllContestsByUser, getContestSchedules } from '../../../services/contestService.js';
+import { joinContest, createContest, getContestById, getAllContests, getAllContestsByUser, getContestSchedules } from '../../../utils/contest-utils.js';
 import { verifyUserHasCredit } from '../../../utils/contest-credit-verifier.js';
 
 // Config

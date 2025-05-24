@@ -16,9 +16,8 @@ class StartupLogBuffer {
     
     // Define high priority services and initialization steps
     this.highPriorityServices = [
-      'Database', 'WebSocket', 'MarketData', 'SolanaService', 
-      'TokenSync', 'Wallet', 'System', 'SYSTEM', 'Server',
-      'ContestService', 'WalletService', 'Achievement'
+      'Database', 'WebSocket', 'MarketData', 'SolanaEngine', 
+      'TokenSync', 'Wallet', 'System', 'SYSTEM', 'Server'
     ];
     
     // Define keywords to identify important log messages

@@ -382,8 +382,8 @@ export const serviceSpecificColors = {
     highlight: '\x1b[1m\x1b[38;5;211m',             // Bold Pink
   },
   
-  // Contest Core Service - Hot Pink
-  contestService: {
+  // Contest Utils - Hot Pink
+  contestService: { // MISNOMER - Not a true service (utils/contest-utils.js)
     tag: '\x1b[1m\x1b[38;5;198m',                   // Hot Pink (198)
     header: '\x1b[1m\x1b[38;5;198m\x1b[48;5;236m',  // Hot Pink on dark gray
     info: '\x1b[38;5;198m',                         // Regular Hot Pink
@@ -393,8 +393,8 @@ export const serviceSpecificColors = {
     highlight: '\x1b[1m\x1b[38;5;198m',             // Bold Hot Pink
   },
   
-  // Contest Image Service - Turquoise (AI Service)
-  contestImage: {
+  // Contest Image Utils - Turquoise (AI Service)
+  contestImage: { // Like contestService, this is ALSO a misnomer (utils/contest-image-utils.js)
     tag: '\x1b[1m\x1b[38;5;43m',                    // Turquoise (43) - like AI Service
     header: '\x1b[1m\x1b[38;5;43m\x1b[48;5;236m',   // Turquoise on dark gray
     info: '\x1b[38;5;43m',                          // Regular Turquoise

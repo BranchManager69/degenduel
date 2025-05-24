@@ -5,12 +5,12 @@ import OpenAI from 'openai';
 import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { logApi } from '../utils/logger-suite/logger.js';
-import { fancyColors } from '../utils/colors.js';
+import { logApi } from './logger-suite/logger.js';
+import { fancyColors } from './colors.js';
 import prisma from '../config/prisma.js';
 import { config } from '../config/config.js';
 import dexscreenerClient from '../services/solana-engine/dexscreener-client.js';
-import serviceEvents from '../utils/service-suite/service-events.js';
+import serviceEvents from './service-suite/service-events.js';
 
 // Initialize OpenAI API client with dedicated image generation API key
 const openai = new OpenAI({

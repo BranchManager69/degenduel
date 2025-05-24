@@ -3,7 +3,7 @@ import { body, param } from 'express-validator';
 import { validateRequest } from '../../middleware/validateRequest.js';
 import { requireAdmin } from '../../middleware/auth.js';
 import adminContestController from '../../controllers/adminContestController.js';
-import contestImageService from '../../services/contestImageService.js';
+import contestImageService from '../../utils/contest-image-utils.js';
 import AdminLogger from '../../utils/admin-logger.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import { fancyColors } from '../../utils/colors.js';

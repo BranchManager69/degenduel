@@ -152,7 +152,7 @@ profile: {
 }
 ```
 
-2. **Contest Image Service** (`contestImageService.js` - separate service)
+2. **Contest Image Service** (`utils/contest-image-utils.js` - separate service)
 ```javascript
 // Contest images configuration
 DEFAULT_CONFIG = {
@@ -206,7 +206,7 @@ standalone visual design without any text elements whatsoever. Create a
 centered composition that works well as a profile picture.
 ```
 
-#### 2. Contest Image Generator (`contestImageService.js`)
+#### 2. Contest Image Generator (`utils/contest-image-utils.js`)
 
 **Purpose:** Creates banner images for trading contests with token-specific elements
 

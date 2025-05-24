@@ -372,7 +372,7 @@ async function testContestImageWithTokens() {
     await fs.mkdir(OUTPUT_DIR, { recursive: true });
     
     // 1. Get the contest image service
-    const contestImageService = await import('../services/contestImageService.js').then(m => m.default);
+    const contestImageService = await import('../utils/contest-image-utils.js').then(m => m.default);
     console.log("Loaded contest image service");
     
     // 2. Get random tokens from database

@@ -6,7 +6,7 @@ The contest image generation service has been updated to save images using the c
 
 ## Changes Made
 
-1. Modified the image filename generation in `contestImageService.js`:
+1. Modified the image filename generation in `utils/contest-image-utils.js`:
    - Now uses `<contest_code>.png` format when a contest code is available
    - Falls back to the previous `contest_<id>_<uuid>.png` format for backwards compatibility
    - Maintains the same approach for JSON prompt files
@@ -41,4 +41,4 @@ The changes have been tested and confirmed working. When running the test script
 
 ## Files Modified
 
-- `/services/contestImageService.js`
+- `/utils/contest-image-utils.js`

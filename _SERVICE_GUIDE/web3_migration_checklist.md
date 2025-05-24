@@ -87,7 +87,7 @@ This document provides a visual overview of the migration status from the legacy
       <td style="border: 1px solid #ddd; padding: 8px;"> </td>
     </tr>
     <tr>
-      <td style="border: 1px solid #ddd; padding: 8px;">contestService.js</td>
+      <td style="border: 1px solid #ddd; padding: 8px;">utils/contest-utils.js</td>
       <td style="border: 1px solid #ddd; padding: 8px; background-color: #D0F0C0;">OK / N-A</td>
       <td style="border: 1px solid #ddd; padding: 8px;"> </td>
     </tr>

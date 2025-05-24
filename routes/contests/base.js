@@ -1,3 +1,5 @@
+// routes/contests/base.js
+
 /**
  * Base Contest Routes
  * 
@@ -6,15 +8,20 @@
  * @author BranchManager69
  * @version 1.0.0
  * @created 2025-05-08
+ * @updated 2025-05-24
  */
 
 import express from 'express';
-import { requireAuth, requireAdmin, requireSuperAdmin } from '../../middleware/auth.js';
+import { 
+  requireAuth, 
+  //requireAdmin, 
+  requireSuperAdmin
+} from '../../middleware/auth.js';
 import { logApi } from '../../utils/logger-suite/logger.js';
 import prisma from '../../config/prisma.js';
 import { Prisma } from '@prisma/client';
 import ContestWalletService from '../../services/contest-wallet/contestWalletService.js';
-import contestImageService from '../../services/contestImageService.js';
+import contestImageService from '../../utils/contest-image-utils.js';
 import { 
   validateContestParams,
   getAndValidateContest

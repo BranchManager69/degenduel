@@ -23,7 +23,7 @@ This separation of concerns follows the facade pattern - WebSocket interfaces wr
 | `Market Data WebSocket`   | → `marketDataService.js`, `tokenEnrichmentService.js` |
 | `Terminal Data WebSocket` | → `aiService.js`, `terminalFunctionHandler.js` |
 | `Wallet Balance WebSocket` | → `heliusBalanceTracker.js`, `solanaServiceManager.js` |
-| `Contest WebSocket`       | → `contestService.js`, `contestEvaluationService.js` |
+| `Contest Utils`       | → `utils/contest-utils.js`, `contestEvaluationService.js` |
 | `System Settings WebSocket` | → `systemSettingsUtil.js` |
 | `Vanity Dashboard WebSocket` | → `vanityWalletService.js` |
 | `Admin Monitor WebSocket` | → `serviceManager.js`, `circuitBreaker.js` |
@@ -106,7 +106,7 @@ This integration connects user wallet addresses to real-time blockchain monitori
 
 **Core Files:**
 - `websocket/v69/contest-ws.js` (WebSocket interface)
-- `services/contestService.js` (Contest management)
+- `utils/contest-utils.js` (Contest management)
 - `services/contestEvaluationService.js` (Scoring and ranking)
 - `services/contestSchedulerService.js` (Timing and automation)
 

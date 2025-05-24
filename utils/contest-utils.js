@@ -1,4 +1,4 @@
-// services/contestService.js
+// utils/contest-utils.js
 
 /*
  * NOTE:
@@ -28,10 +28,10 @@
 
 import prisma from '../config/prisma.js';
 import { Decimal } from '@prisma/client/runtime/library';
-import marketDataService from './market-data/marketDataService.js';
-import { logApi } from '../utils/logger-suite/logger.js';
+import marketDataService from '../services/market-data/marketDataService.js';
+import { logApi } from './logger-suite/logger.js';
 import config from '../config/config.js';
-import { solanaEngine } from './solana-engine/index.js';
+import { solanaEngine } from '../services/solana-engine/index.js';
 import { PublicKey } from '@solana/web3.js';
 import bs58 from 'bs58';
 import { Buffer } from 'node:buffer';
@@ -290,10 +290,10 @@ export async function joinContest(contestId, walletAddress, transactionSignature
  */
 export async function createContest(contestData, userData, options = {}) {
   // Import the credit verifier utility
-  const { verifyUserHasCredit, consumeCredit } = await import('../utils/contest-credit-verifier.js');
+  const { verifyUserHasCredit, consumeCredit } = await import('./contest-credit-verifier.js');
   
   // Import wallet service
-  const contestWalletService = await import('./contest-wallet/contestWalletService.js');
+  const contestWalletService = await import('../services/contest-wallet/contestWalletService.js');
   
   // Validate inputs
   if (!contestData || !userData) {
@@ -403,7 +403,7 @@ export async function createContest(contestData, userData, options = {}) {
     if (options.generateImage !== false) {
       try {
         // Use dynamic import to avoid circular dependencies
-        const contestImageService = await import('./contestImageService.js');
+        const contestImageService = await import('./contest-image-utils.js');
         
         // Start image generation in the background (non-blocking)
         contestImageService.default.generateContestImage(contest)

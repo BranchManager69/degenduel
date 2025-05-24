@@ -602,7 +602,7 @@ class ContestSchedulerService extends BaseService {
             // Generate contest image
                 try {
                     // Import the contest image service
-                    const contestImageService = (await import('../services/contestImageService.js')).default;
+                    const contestImageService = (await import('../utils/contest-image-utils.js')).default;
                     
                     // First set a placeholder image while we generate the real one
                     // Get a random placeholder from our collection

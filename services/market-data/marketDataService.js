@@ -29,15 +29,19 @@ import { Decimal } from 'decimal.js';
 import prisma from '../../config/prisma.js';
 
 
-// Import modular components
-import marketData from './index.js';
-const {
-    rankTracker,
-    batchProcessor,
-    analytics,
-    enricher,
-    repository
-} = marketData;
+// Import modular components directly (avoid circular dependency)
+import marketDataRankTracker from './marketDataRankTracker.js';
+import marketDataBatchProcessor from './marketDataBatchProcessor.js';
+import marketDataAnalytics from './marketDataAnalytics.js';
+import marketDataEnricher from './marketDataEnricher.js';
+import marketDataRepository from './marketDataRepository.js';
+
+// Assign for backwards compatibility with existing code
+const rankTracker = marketDataRankTracker;
+const batchProcessor = marketDataBatchProcessor;
+const analytics = marketDataAnalytics;
+const enricher = marketDataEnricher;
+const repository = marketDataRepository;
 
 // Import WebSocket-based price monitoring
 import tokenPriceWs from './token-price-ws.js';
